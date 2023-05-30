@@ -17,8 +17,7 @@ jobs:
           create_release: true
           validate_version: |
             echo hi
-            env
-            exit 1
+            exit 0
       - run: |
           echo "local-action outputs:"
           echo "  previous_ref: ${{ steps.local-action.outputs.previous_ref }}"
