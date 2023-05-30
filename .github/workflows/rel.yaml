@@ -18,3 +18,5 @@ jobs:
           echo "  previous_ref: ${{ steps.local-action.outputs.previous_ref }}"
           echo "  previous_version: ${{ steps.local-action.outputs.previous_version }}"
           echo "  first_release: ${{ steps.local-action.outputs.first_release }}"
+          echo "  release_version: ${{ steps.local-action.outputs.release_version }}"
+          echo "  release_tag: ${{ steps.local-action.outputs.release_tag }}"

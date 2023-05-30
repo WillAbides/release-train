@@ -50,6 +50,14 @@ outputs:
     value: ${{ steps.prev.outputs.first_release }}
     description: |
       Whether this is the first release on the release branch. Either "true" or "false".
+  release_version:
+    value: ${{ steps.next.outputs.release_version }}
+    description: |
+      The version of the new release. Empty if no release is called for.
+  release_tag:
+    value: ${{ steps.next.outputs.release_tag }}
+    description: |
+      The tag of the new release. Empty if no release is called for.
 runs:
   using: composite
   steps:
@@ -71,4 +79,16 @@ runs:
       working-directory: ${{ inputs.checkout_dir }}
       run: |
         "${{ github.action_path }}"/script/prev > $GITHUB_OUTPUT
-
+    - name: get next tag
+      shell: sh
+      id: next
+      env:
+        PREVIOUS_VERSION: ${{ steps.prev.outputs.version }}
+        PREVIOUS_TAG: ${{ steps.prev.outputs.tag }}
+        FIRST_RELEASE: ${{ steps.prev.outputs.first_release }}
+        REF: ${{ inputs.ref }}
+        REPO: ${{ github.repository }}
+        TAG_PREFIX: ${{ inputs.tag_prefix }}
+      working-directory: ${{ inputs.checkout_dir }}
+      run: |
+        "${{ github.action_path }}"/script/next > $GITHUB_OUTPUT

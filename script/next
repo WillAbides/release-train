@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -e
+
+REPO_DIR="$(CDPATH="" cd -- "$(dirname -- "$0")/.." && pwd -P)"
+
+if [ "$FIRST_RELEASE" = "true" ]; then
+  echo release_version="$PREVIOUS_VERSION"
+  echo release_tag="${TAG_PREFIX}${PREVIOUS_VERSION}"
+  exit 0
+fi
+
+"$REPO_DIR"/script/bindown -q install semver-next
