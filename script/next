@@ -12,15 +12,15 @@ fi
 
 "$REPO_DIR"/script/bindown -q install semver-next jq
 
-GOT="$("REPO_DIR"/bin/semver-next "$REPO" --ref="$REF" --prev-ref="$PREVIOUS_TAG" --prev-version="$PREVIOUS_VERSION" --json)"
+GOT="$("$REPO_DIR"/bin/semver-next "$REPO" --ref="$REF" --prev-ref="$PREVIOUS_TAG" --prev-version="$PREVIOUS_VERSION" --json)"
 
-CHANGE_LEVEL="$(echo "$GOT" | "REPO_DIR"/bin/jq -r .change_level)"
+CHANGE_LEVEL="$(echo "$GOT" | "$REPO_DIR"/bin/jq -r .change_level)"
 if [ "$CHANGE_LEVEL" = "no change" ]; then
   echo "No changes since last release" >&2
   exit 0
 fi
 
-RELEASE_VERSION="$(echo "$GOT" | "REPO_DIR"/bin/jq -r .next_version)"
+RELEASE_VERSION="$(echo "$GOT" | "$REPO_DIR"/bin/jq -r .next_version)"
 
 echo release_version="$RELEASE_VERSION"
 echo release_tag="${TAG_PREFIX}${RELEASE_VERSION}"
