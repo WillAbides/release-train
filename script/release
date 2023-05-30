@@ -1,14 +1,10 @@
 #!/bin/sh
 
-set -ex
+set -e
 
 REPO_DIR="$(CDPATH="" cd -- "$(dirname -- "$0")/.." && pwd -P)"
 
 "$REPO_DIR"/script/bindown -q install gh
-
-echo CREATE_RELEASE="$CREATE_RELEASE"
-echo CREATE_TAG="$CREATE_TAG"
-echo RELEASE_TAG="$RELEASE_TAG"
 
 if [ -n "$RELEASE_NOTES" ] && [ -z "$CREATE_RELEASE" ]; then
   CREATE_RELEASE=1
@@ -28,3 +24,10 @@ git push origin "$RELEASE_TAG"
 if [ -z "$CREATE_RELEASE" ]; then
   exit 0
 fi
+
+if [ -n "$RELEASE_NOTES" ]; then
+  "$REPO_DIR"/bin/gh release create "$RELEASE_TAG" --notes "$RELEASE_NOTES"
+  exit 0
+fi
+
+"$REPO_DIR"/bin/gh release create "$RELEASE_TAG" --generate-notes --notes-start-tag "$PREVIOUS_TAG"
