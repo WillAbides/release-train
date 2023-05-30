@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -e
+set -ex
 
 REPO_DIR="$(CDPATH="" cd -- "$(dirname -- "$0")/.." && pwd -P)"
 
