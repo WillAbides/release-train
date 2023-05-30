@@ -1,0 +1,26 @@
+#!/bin/sh
+
+set -e
+
+REPO_DIR="$(CDPATH="" cd -- "$(dirname -- "$0")/.." && pwd -P)"
+
+"$REPO_DIR"/script/bindown -q install gh
+
+if [ -n "$RELEASE_NOTES" ] && [ -z "$CREATE_RELEASE" ]; then
+  CREATE_RELEASE=1
+fi
+
+if [ -n "$CREATE_RELASE" ] && [ -z "$CREATE_TAG" ]; then
+  CREATE_TAG=1
+fi
+
+if [ -z "$CREATE_TAG" ]; then
+  exit 0
+fi
+
+git tag "$RELEASE_TAG" "$REF"
+git push origin "$RELEASE_TAG"
+
+if [ -z "$CREATE_RELEASE" ]; then
+  exit 0
+fi

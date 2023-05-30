@@ -13,6 +13,8 @@ jobs:
       # composite action from this repo
       - uses: './'
         id: local-action
+        with:
+          create_release: true
       - run: |
           echo "local-action outputs:"
           echo "  previous_ref: ${{ steps.local-action.outputs.previous_ref }}"
