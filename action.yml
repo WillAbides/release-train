@@ -44,6 +44,10 @@ inputs:
       
       The environment variables `RELEASE_VERSION`, 'RELEASE_TAG', `PREVIOUS_VERSION`, `FIRST_RELEASE` and `GITHUB_TOKEN` 
       will be set.
+  post_release_hook:
+    description: |
+      Command to run after the release is complete. The environment variables `RELEASE_VERSION`, 'RELEASE_TAG`, 
+      `PREVIOUS_VERSION`, `FIRST_RELEASE` and `GITHUB_TOKEN` will be set.
 outputs:
   previous_ref:
     value: ${{ steps.prev.outputs.ref }}
@@ -126,3 +130,14 @@ runs:
         FIRST_RELEASE: ${{ steps.prev.outputs.first_release }}
       run: |
         "${{ github.action_path }}"/script/release
+    - name: post release hook
+      shell: sh
+      if: ${{ steps.next.outputs.release_version != '' && steps.next.outputs.release_tag != '' && inputs.post_release_hook != '' }}
+      working-directory: ${{ inputs.checkout_dir }}
+      env:
+          RELEASE_VERSION: ${{ steps.next.outputs.release_version }}
+          RELEASE_TAG: ${{ steps.next.outputs.release_tag }}
+          PREVIOUS_VERSION: ${{ steps.prev.outputs.version }}
+          FIRST_RELEASE: ${{ steps.prev.outputs.first_release }}
+          GITHUB_TOKEN: ${{ inputs.github_token }}
+      run: ${{ inputs.post_release_hook }}
