@@ -14,7 +14,7 @@ if [ -n "$RELEASE_NOTES" ] && [ -z "$CREATE_RELEASE" ]; then
   CREATE_RELEASE=1
 fi
 
-if [ -n "$CREATE_RELASE" ] && [ -z "$CREATE_TAG" ]; then
+if [ -n "$CREATE_RELEASE" ] && [ -z "$CREATE_TAG" ]; then
   CREATE_TAG=1
 fi
 
