@@ -89,6 +89,7 @@ runs:
         REF: ${{ inputs.ref }}
         REPO: ${{ github.repository }}
         TAG_PREFIX: ${{ inputs.tag_prefix }}
+        GITHUB_TOKEN: ${{ inputs.github_token }}
       working-directory: ${{ inputs.checkout_dir }}
       run: |
         "${{ github.action_path }}"/script/next > $GITHUB_OUTPUT
