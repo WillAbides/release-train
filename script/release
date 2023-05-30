@@ -30,4 +30,9 @@ if [ -n "$RELEASE_NOTES" ]; then
   exit 0
 fi
 
+if [ -n "$FIRST_RELEASE" ]; then
+  "$REPO_DIR"/bin/gh release create "$RELEASE_TAG"
+  exit 0
+fi
+
 "$REPO_DIR"/bin/gh release create "$RELEASE_TAG" --generate-notes --notes-start-tag "$PREVIOUS_TAG"

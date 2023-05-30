@@ -105,5 +105,6 @@ runs:
         PREVIOUS_TAG: ${{ steps.prev.outputs.ref }}
         REF: ${{ inputs.ref }}
         GH_TOKEN: ${{ inputs.github_token }}
+        FIRST_RELEASE: ${{ steps.prev.outputs.first_release }}
       run: |
         "${{ github.action_path }}"/script/release
