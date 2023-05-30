@@ -1,0 +1,10 @@
+#!/bin/sh
+
+set -e
+
+CDPATH="" cd -- "$(dirname -- "$0")/.."
+
+mkdir -p bin
+
+[ -f bin/bindown ] || script/bootstrap-bindown.sh 2>/dev/null
+exec bin/bindown "$@"
