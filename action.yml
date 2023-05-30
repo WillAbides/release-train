@@ -1,4 +1,4 @@
-name: semver-release-action
+name: semver-release
 description: release
 inputs:
   checkout_dir:
