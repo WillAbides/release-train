@@ -84,7 +84,7 @@ runs:
       id: next
       env:
         PREVIOUS_VERSION: ${{ steps.prev.outputs.version }}
-        PREVIOUS_TAG: ${{ steps.prev.outputs.tag }}
+        PREVIOUS_TAG: ${{ steps.prev.outputs.ref }}
         FIRST_RELEASE: ${{ steps.prev.outputs.first_release }}
         REF: ${{ inputs.ref }}
         REPO: ${{ github.repository }}
