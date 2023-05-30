@@ -16,7 +16,10 @@ jobs:
         with:
           create_release: true
           validate_version: |
-            echo hi
+            echo LGTM
+            exit 0
+          post_release_hook: |
+            echo all done
             exit 0
       - run: |
           echo "local-action outputs:"
