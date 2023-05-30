@@ -1,0 +1,20 @@
+name: rel test
+on: push
+jobs:
+  rel:
+    name: rel
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      # composite action from this repo
+      - uses: './action.yml'
+        id: local-action
+      - run: |
+          echo "local-action outputs:"
+          echo "  previous_ref: ${{ steps.local-action.outputs.previous_ref }}"
+          echo "  previous_version: ${{ steps.local-action.outputs.previous_version }}"
+          echo "  first_release: ${{ steps.local-action.outputs.first_release }}"
