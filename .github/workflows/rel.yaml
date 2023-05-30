@@ -11,7 +11,7 @@ jobs:
         with:
           fetch-depth: 0
       # composite action from this repo
-      - uses: './action.yml'
+      - uses: '.'
         id: local-action
       - run: |
           echo "local-action outputs:"
