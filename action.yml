@@ -1,5 +1,5 @@
 name: release-train
-description: release
+description: hop on the release train
 inputs:
   checkout_dir:
     description: |
