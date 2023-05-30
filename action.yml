@@ -1,4 +1,4 @@
-name: releaser
+name: release-train
 description: release
 inputs:
   checkout_dir:
