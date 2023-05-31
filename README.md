@@ -25,6 +25,7 @@ default: `${{ github.token }}`
 
 The GitHub token to use for authentication. Must have `contents: write` permission if creating a release or tag.
 
+
 ### create_tag
 
 Whether to create a tag for the release. Any non-empty value will be treated as true.
@@ -35,11 +36,13 @@ Whether to create a release. Any non-empty value will be treated as true.
 
 Implies `create_tag`.
 
+
 ### tag_prefix
 
 default: `v`
 
 The prefix to use for the tag. Defaults to `v`.
+
 
 ### default_previous_version
 
@@ -49,12 +52,15 @@ The default previous version to use if no previous version can be found. This is
 
 Set to empty string to disable cause it to error if no previous version can be found.
 
+
 ### pre_release_hook
 
 Command to run before creating the release. You may abort the release by exiting with a non-zero exit code.
 
-You may provide custom release notes by writing to the file at `$RELEASE_NOTES_FILE`:
+Exit code 0 will continue the release. Exit code 10 will skip the release without error. Any other exit code will
+abort the release with an error.
 
+You may provide custom release notes by writing to the file at `$RELEASE_NOTES_FILE`:
 ```
 echo "my release notes" > "$RELEASE_NOTES_FILE"
 ```
@@ -62,12 +68,14 @@ echo "my release notes" > "$RELEASE_NOTES_FILE"
 The environment variables `RELEASE_VERSION`, `RELEASE_TAG`, `PREVIOUS_VERSION`, `FIRST_RELEASE`, `GITHUB_TOKEN`,
 and `RELEASE_NOTES_FILE` will be set.
 
+
 ### post_release_hook
 
 Command to run after the release is complete. This is useful for adding artifacts to your release.
 
-The environment variables `RELEASE_VERSION`, `RELEASE_TAG`, `PREVIOUS_VERSION`, `FIRST_RELEASE` and `GITHUB_TOKEN`
+The environment variables `RELEASE_VERSION`, `RELEASE_TAG`, `PREVIOUS_VERSION`, `FIRST_RELEASE` and `GITHUB_TOKEN` 
 will be set.
+
 
 ### release_notes
 
@@ -77,6 +85,7 @@ The release notes to use for the release. If not provided, release notes will be
 notes generator.
 
 Ignored unless create_release is set.
+
 
 ### validate_version
 
@@ -90,17 +99,21 @@ Alias for `pre_release_hook`.
 
 A git ref pointing to the previous release, or the current ref if no previous release can be found.
 
+
 ### previous_version
 
 The previous version on the release branch.
+
 
 ### first_release
 
 Whether this is the first release on the release branch. Either "true" or "false".
 
+
 ### release_version
 
 The version of the new release. Empty if no release is called for.
+
 
 ### release_tag
 
