@@ -24,7 +24,7 @@ jobs:
           mode: minimum
           count: 1
           labels: |
-            breaking, breaking change, bug, enhancement, patch semver:patch, semver:minor, minor, major, semver:major, no change, semver:none, semver:no change, semver:nochange, semver:skip
+            breaking, breaking change, bug, enhancement, patch, semver:patch, semver:minor, minor, major, semver:major, no change, semver:none, semver:no change, semver:nochange, semver:skip
           message: |
             This PR cannot be merged until it has at least one label indicating the type of change it is.
           add_comment: true
