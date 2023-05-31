@@ -6,10 +6,6 @@ REPO_DIR="$(CDPATH="" cd -- "$(dirname -- "$0")/.." && pwd -P)"
 
 "$REPO_DIR"/script/bindown -q install gh
 
-if [ -n "$RELEASE_NOTES" ] && [ -z "$CREATE_RELEASE" ]; then
-  CREATE_RELEASE=1
-fi
-
 if [ -n "$CREATE_RELEASE" ] && [ -z "$CREATE_TAG" ]; then
   CREATE_TAG=1
 fi

@@ -42,12 +42,14 @@ inputs:
       Command to run to validate the version. If the command exits with a non-zero exit code, the release will be
       aborted.
       
-      The environment variables `RELEASE_VERSION`, 'RELEASE_TAG', `PREVIOUS_VERSION`, `FIRST_RELEASE` and `GITHUB_TOKEN` 
+      The environment variables `RELEASE_VERSION`, `RELEASE_TAG`, `PREVIOUS_VERSION`, `FIRST_RELEASE` and `GITHUB_TOKEN` 
       will be set.
   post_release_hook:
     description: |
-      Command to run after the release is complete. The environment variables `RELEASE_VERSION`, 'RELEASE_TAG`, 
-      `PREVIOUS_VERSION`, `FIRST_RELEASE` and `GITHUB_TOKEN` will be set.
+      Command to run after the release is complete. 
+      
+      The environment variables `RELEASE_VERSION`, `RELEASE_TAG`, `PREVIOUS_VERSION`, `FIRST_RELEASE` and `GITHUB_TOKEN` 
+      will be set.
 outputs:
   previous_ref:
     value: ${{ steps.prev.outputs.ref }}

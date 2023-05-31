@@ -1,0 +1,34 @@
+#!/bin/sh
+#/ script/generate runs all generators for this repo.
+#/ `script/generate --check` checks that the generated files are up to date.
+
+set -e
+
+CDPATH="" cd -- "$(dirname -- "$0")/.."
+
+if [ "$1" = "--check" ]; then
+  GENTEMP="$(mktemp -d)"
+  git worktree add -q --detach "$GENTEMP"
+  trap 'git worktree remove -f "$GENTEMP"; rm -rf "$GENTEMP"' EXIT
+  for f in $(git ls-files -com --exclude-standard); do
+    target="$GENTEMP/$f"
+    mkdir -p "$(dirname -- "$target")"
+    cp "$f" "$target"
+  done
+  (
+    cd "$GENTEMP"
+    git add .
+    git -c user.name='bot' -c user.email='bot@localhost' commit -m "generate" -q --allow-empty
+    script/generate
+    [ -z "$(git status --porcelain)" ] || {
+      echo "script/generate resulted in changes." 1>&2
+      git diff
+      exit 1
+    }
+  )
+  exit 0
+fi
+
+if [ -f script/update-docs ]; then
+  ./script/update-docs
+fi
