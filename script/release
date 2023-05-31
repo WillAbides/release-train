@@ -21,6 +21,10 @@ if [ -z "$CREATE_RELEASE" ]; then
   exit 0
 fi
 
+if [ -f "$RELEASE_NOTES_FILE" ]; then
+  RELEASE_NOTES="$(cat "$RELEASE_NOTES_FILE")"
+fi
+
 if [ -n "$RELEASE_NOTES" ]; then
   "$REPO_DIR"/bin/gh release create "$RELEASE_TAG" --notes "$RELEASE_NOTES"
   exit 0
