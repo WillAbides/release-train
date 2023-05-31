@@ -9,7 +9,7 @@ CDPATH="" cd -- "$(dirname -- "$0")/.."
 if [ "$1" = "--check" ]; then
   GENTEMP="$(mktemp -d)"
   git worktree add -q --detach "$GENTEMP"
-  trap 'git worktree remove -f "$GENTEMP"' EXIT
+  trap 'git worktree remove -f "$GENTEMP"; rm -rf "$GENTEMP"' EXIT
   for f in $(git ls-files -com --exclude-standard); do
     target="$GENTEMP/$f"
     mkdir -p "$(dirname -- "$target")"
@@ -18,7 +18,7 @@ if [ "$1" = "--check" ]; then
   (
     cd "$GENTEMP"
     git add .
-    git -c user.name='bot' -c user.email='bot@localhost' commit -m "generate" -q
+    git -c user.name='bot' -c user.email='bot@localhost' commit -m "generate" -q --allow-empty
     script/generate
     [ -z "$(git status --porcelain)" ] || {
       echo "script/generate resulted in changes." 1>&2
