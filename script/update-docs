@@ -1,0 +1,26 @@
+#!/bin/bash
+#/ script/update-docs updates README.md with a description of the action.
+
+set -e
+
+CDPATH="" cd -- "$(dirname -- "$0")/.."
+
+update_file_section() {
+  file="$1"
+  start_comment="$2"
+  end_comment="$3"
+  replacement="$4"
+
+  pattern="${start_comment}*${end_comment}"
+  data="$(cat "$file")"
+  replacement="$start_comment
+$replacement
+$end_comment"
+  echo "${data//$pattern/$replacement}" >"$file"
+}
+
+script/bindown -q install action-doc
+
+ACTION_DOC="$(bin/action-doc action.yml --header-prefix='#' --skip-action-name )"
+
+update_file_section README.md '<!--- start action doc --->' '<!--- end action doc --->' "$ACTION_DOC"
