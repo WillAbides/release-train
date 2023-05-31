@@ -15,7 +15,7 @@ jobs:
         id: local-action
         with:
           create_release: true
-          validate_version: |
+          pre_release_hook: |
             echo LGTM
             exit 0
           post_release_hook: |
