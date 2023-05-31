@@ -1,5 +1,8 @@
 name: release-train
 description: hop on the release train
+branding:
+  icon: send
+  color: yellow
 inputs:
   checkout_dir:
     description: |
