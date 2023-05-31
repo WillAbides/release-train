@@ -15,7 +15,6 @@ if [ "$1" = "--check" ]; then
     mkdir -p "$(dirname -- "$target")"
     cp "$f" "$target"
   done
-  ln -s "$(pwd)"/bin "$GENTEMP"/bin
   (
     cd "$GENTEMP"
     git add .
