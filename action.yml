@@ -134,7 +134,7 @@ runs:
         TAG_PREFIX: ${{ inputs.tag_prefix }}
         DEFAULT_PREVIOUS_VERSION: ${{ inputs.default_previous_version }}
       run: |
-        "${{ github.action_path }}"/script/prev > $GITHUB_OUTPUT
+        "${{ github.action_path }}"/src/prev > $GITHUB_OUTPUT
 
     - id: next
       shell: sh
@@ -148,7 +148,7 @@ runs:
         TAG_PREFIX: ${{ inputs.tag_prefix }}
         GITHUB_TOKEN: ${{ inputs.github_token }}
       run: |
-        "${{ github.action_path }}"/script/next > $GITHUB_OUTPUT
+        "${{ github.action_path }}"/srx/next > $GITHUB_OUTPUT
 
     - name: pre release hook
       if: ${{ steps.next.outputs.release_version != '' && steps.next.outputs.release_tag != '' }}
@@ -180,7 +180,7 @@ runs:
         GH_TOKEN: ${{ inputs.github_token }}
         FIRST_RELEASE: ${{ steps.prev.outputs.first_release }}
       run: |
-        "${{ github.action_path }}"/script/release
+        "${{ github.action_path }}"/src/release
 
     - name: post release hook
       shell: sh

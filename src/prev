@@ -4,7 +4,7 @@ set -e
 
 REPO_DIR="$(CDPATH="" cd -- "$(dirname -- "$0")/.." && pwd -P)"
 
-"$REPO_DIR"/script/bindown -q install semver-prev
+"$REPO_DIR"/src/bindown -q install semver-prev
 
 set -- --ref="$REF"
 [ -z "$TAG_PREFIX" ] || set -- "$@" --prefix="$TAG_PREFIX"

@@ -4,7 +4,7 @@ set -e
 
 REPO_DIR="$(CDPATH="" cd -- "$(dirname -- "$0")/.." && pwd -P)"
 
-"$REPO_DIR"/script/bindown -q install gh
+"$REPO_DIR"/src/bindown -q install gh
 
 if [ -n "$CREATE_RELEASE" ] && [ -z "$CREATE_TAG" ]; then
   CREATE_TAG=1
