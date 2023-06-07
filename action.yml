@@ -148,7 +148,7 @@ runs:
         TAG_PREFIX: ${{ inputs.tag_prefix }}
         GITHUB_TOKEN: ${{ inputs.github_token }}
       run: |
-        "${{ github.action_path }}"/srx/next > $GITHUB_OUTPUT
+        "${{ github.action_path }}"/src/next > $GITHUB_OUTPUT
 
     - name: pre release hook
       if: ${{ steps.next.outputs.release_version != '' && steps.next.outputs.release_tag != '' }}
