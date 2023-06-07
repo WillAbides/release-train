@@ -19,7 +19,7 @@ $end_comment"
   echo "${data//$pattern/$replacement}" >"$file"
 }
 
-script/bindown -q install action-doc
+src/bindown -q install action-doc
 
 ACTION_DOC="$(bin/action-doc action.yml --header-prefix='#' --skip-action-name )"
 

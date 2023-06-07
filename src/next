@@ -10,7 +10,7 @@ if [ "$FIRST_RELEASE" = "true" ]; then
   exit 0
 fi
 
-"$REPO_DIR"/script/bindown -q install semver-next jq
+"$REPO_DIR"/src/bindown -q install semver-next jq
 
 GOT="$("$REPO_DIR"/bin/semver-next "$REPO" --ref="$REF" --prev-ref="$PREVIOUS_TAG" --prev-version="$PREVIOUS_VERSION" --json)"
 
