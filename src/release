@@ -75,14 +75,14 @@ chmod +x "$PRE_RELEASE_HOOK_FILE"
 (
   [ -n "$RELEASE_VERSION" ] || exit 0
 
-  if [ -z "$CREATE_RELEASE" ] && [ -z "$CREATE_TAG" ]; then
+  if [ "$CREATE_RELEASE" != "true" ] && [ "$CREATE_TAG" != "true" ]; then
     exit 0
   fi
 
   git tag "$RELEASE_TAG" "$REF"
   git push origin "$RELEASE_TAG"
 
-  if [ -z "$CREATE_RELEASE" ]; then
+  if [ "$CREATE_RELEASE" != "true" ]; then
     exit 0
   fi
 
