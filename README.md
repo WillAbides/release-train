@@ -9,7 +9,7 @@ hop on the release train
 
 ### check_pr_labels
 
-default: `${{ github.event_name == 'pull_request' }}`
+default: `${{ github.event.name == 'pull_request' }}`
 
 Instead of releasing, check that the PR has a label indicating the type of change. Any non-empty value will be 
 treated as true.
