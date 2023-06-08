@@ -102,6 +102,15 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: validate labels
+      if: ${{ github.event_name == 'pull_request' }}
+      shell: sh
+      working-directory: ${{ inputs.checkout_dir }}
+      env:
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+      run: |
+        "${{ github.action_path }}"/src/bindown -q install semver-next
+        echo TODO implement this
     - id: release
       shell: sh
       working-directory: ${{ inputs.checkout_dir }}

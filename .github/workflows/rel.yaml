@@ -1,5 +1,13 @@
 name: rel test
-on: push
+on:
+  push:
+  pull_request:
+    types:
+      - synchronize
+      - opened
+      - reopened
+      - labeled
+      - unlabeled
 jobs:
   rel:
     name: rel
