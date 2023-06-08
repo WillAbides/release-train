@@ -4,35 +4,96 @@ set -e
 
 REPO_DIR="$(CDPATH="" cd -- "$(dirname -- "$0")/.." && pwd -P)"
 
-"$REPO_DIR"/src/bindown -q install gh
+"$REPO_DIR"/src/bindown -q install semver-prev semver-next jq gh
+PATH="$REPO_DIR/bin:$PATH"
+export PATH
 
-if [ -n "$CREATE_RELEASE" ] && [ -z "$CREATE_TAG" ]; then
-  CREATE_TAG=1
+if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+  echo "fatal: shallow clones are not supported" >&2
+  exit 1
 fi
 
-if [ -z "$CREATE_TAG" ]; then
-  exit 0
+if [ -n "$VALIDATE_VERSION" ] && [ -n "$PRE_RELEASE_HOOK" ]; then
+  echo "fatal: cannot specify both validate_version and pre_release_hook" >&2
+  exit 1
 fi
 
-git tag "$RELEASE_TAG" "$REF"
-git push origin "$RELEASE_TAG"
+PREVIOUS_TAG="$(
+  set -- --ref="$REF" --prefix="$TAG_PREFIX"
+  if [ -n "$DEFAULT_PREVIOUS_VERSION" ]; then
+    set -- "$@" --fallback="${TAG_PREFIX}${DEFAULT_PREVIOUS_VERSION}"
+  fi
+  semver-prev "$@"
+)"
 
-if [ -z "$CREATE_RELEASE" ]; then
-  exit 0
+# trim TAG_PREFIX from PREVIOUS_TAG
+export PREVIOUS_VERSION="${PREVIOUS_TAG#"$TAG_PREFIX"}"
+
+FIRST_RELEASE=false
+if ! git rev-parse --quiet --verify "$PREVIOUS_TAG" >/dev/null; then
+  FIRST_RELEASE="true"
+  PREVIOUS_TAG="$(git rev-parse "$REF")"
 fi
+export FIRST_RELEASE
 
-if [ -f "$RELEASE_NOTES_FILE" ]; then
-  RELEASE_NOTES="$(cat "$RELEASE_NOTES_FILE")"
-fi
+RELEASE_VERSION="$(
+  if [ "$FIRST_RELEASE" = "true" ]; then
+    echo "$PREVIOUS_VERSION"
+    exit 0
+  fi
+  GOT="$(
+    semver-next "$GITHUB_REPOSITORY" --ref="$REF" --prev-ref="$PREVIOUS_TAG" --prev-version="$PREVIOUS_VERSION" --json
+  )"
+  if [ "$(echo "$GOT" | jq -r '.change_level')" = "no change" ]; then
+    echo "No changes since last release" >&2
+    exit 0
+  fi
+  echo "$GOT" | jq -r '.next_version'
+)"
 
-if [ -n "$RELEASE_NOTES" ]; then
-  "$REPO_DIR"/bin/gh release create "$RELEASE_TAG" --notes "$RELEASE_NOTES"
-  exit 0
-fi
+export RELEASE_VERSION
+export RELEASE_TAG="${TAG_PREFIX}${RELEASE_VERSION}"
 
-if [ -n "$FIRST_RELEASE" ]; then
-  "$REPO_DIR"/bin/gh release create "$RELEASE_TAG" --generate-notes
-  exit 0
-fi
+export RELEASE_NOTES_FILE="${RUNNER_TEMP}/release_notes-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+echo "$RELEASE_NOTES" >"$RELEASE_NOTES_FILE"
 
-"$REPO_DIR"/bin/gh release create "$RELEASE_TAG" --generate-notes --notes-start-tag "$PREVIOUS_TAG"
+PRE_RELEASE_HOOK_FILE="${RUNNER_TEMP}/pre_release_hook-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+echo "${PRE_RELEASE_HOOK}${VALIDATE_VERSION}" >"$PRE_RELEASE_HOOK_FILE"
+chmod +x "$PRE_RELEASE_HOOK_FILE"
+
+"$PRE_RELEASE_HOOK_FILE"
+
+(
+  [ -n "$RELEASE_VERSION" ] || exit 0
+
+  if [ -z "$CREATE_RELEASE" ] && [ -z "$CREATE_TAG" ]; then
+    exit 0
+  fi
+
+  git tag "$RELEASE_TAG" "$REF"
+  git push origin "$RELEASE_TAG"
+
+  if [ -z "$CREATE_RELEASE" ]; then
+    exit 0
+  fi
+
+  if [ -f "$RELEASE_NOTES_FILE" ]; then
+    RELEASE_NOTES="$(cat "$RELEASE_NOTES_FILE")"
+  fi
+
+  set -- release create "$RELEASE_TAG"
+  if [ -n "$RELEASE_NOTES" ]; then
+    set -- "$@" --notes="$RELEASE_NOTES"
+  elif [ -n "$FIRST_RELEASE" ]; then
+    set -- "$@" --generate-notes
+  else
+    set -- "$@" --generate-notes --notes-start-tag "$PREVIOUS_TAG"
+  fi
+  gh "$@"
+)
+
+POST_RELEASE_HOOK_FILE="${RUNNER_TEMP}/post_release_hook-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+echo "${POST_RELEASE_HOOK}" >"$POST_RELEASE_HOOK_FILE"
+chmod +x "$POST_RELEASE_HOOK_FILE"
+
+"$POST_RELEASE_HOOK_FILE"
