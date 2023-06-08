@@ -36,6 +36,12 @@ if ! git rev-parse --quiet --verify "$PREVIOUS_TAG" >/dev/null; then
 fi
 export FIRST_RELEASE
 
+echo "
+previous_ref='$PREVIOUS_TAG'
+previous_version='$PREVIOUS_VERSION'
+first_release='$FIRST_RELEASE'
+" >>"$GITHUB_OUTPUT"
+
 RELEASE_VERSION="$(
   if [ "$FIRST_RELEASE" = "true" ]; then
     echo "$PREVIOUS_VERSION"

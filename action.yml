@@ -75,17 +75,17 @@ inputs:
 
 outputs:
   previous_ref:
-    value: ${{ steps.prev.outputs.ref }}
+    value: ${{ steps.release.outputs.previous_ref }}
     description: |
       A git ref pointing to the previous release, or the current ref if no previous release can be found.
 
   previous_version:
-    value: ${{ steps.prev.outputs.version }}
+    value: ${{ steps.release.outputs.previous_version }}
     description: |
       The previous version on the release branch.
 
   first_release:
-    value: ${{ steps.prev.outputs.first_release }}
+    value: ${{ steps.release.outputs.first_release }}
     description: |
       Whether this is the first release on the release branch. Either "true" or "false".
 
