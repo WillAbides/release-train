@@ -5,6 +5,13 @@ branding:
   color: yellow
 
 inputs:
+  check_pr_labels:
+    description: |
+      Instead of releasing, check that the PR has a label indicating the type of change. Any non-empty value will be 
+      treated as true.
+
+    default: ${{ github.event_name == 'pull_request' }}
+
   checkout_dir:
     description: The directory where the repository is checked out.
     default: ${{ github.workspace }}
@@ -102,8 +109,8 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: validate labels
-      if: ${{ github.event_name == 'pull_request' }}
+    - id: check_pr_labels
+      if: ${{ inputs.check_pr_labels }}
       shell: sh
       working-directory: ${{ inputs.checkout_dir }}
       env:
@@ -112,6 +119,7 @@ runs:
         "${{ github.action_path }}"/src/bindown -q install semver-next
         echo TODO implement this
     - id: release
+      if: ${{ !inputs.check_pr_labels }}
       shell: sh
       working-directory: ${{ inputs.checkout_dir }}
       env:
