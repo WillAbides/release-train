@@ -7,7 +7,7 @@ branding:
 inputs:
   check_pr_labels:
     description: |
-      Instead of releasing, check that the PR has a label indicating the type of change.
+      Instead of releasing, check that the PR has a label indicating the type of change.  Only literal 'true' will be treated as true.
 
     default: ${{ github.event_name == 'pull_request' }}
 
@@ -25,11 +25,11 @@ inputs:
     default: ${{ github.token }}
 
   create_tag:
-    description: Whether to create a tag for the release. Any non-empty value will be treated as true.
+    description: Whether to create a tag for the release. Only literal 'true' will be treated as true.
 
   create_release:
     description: |
-      Whether to create a release. Any non-empty value will be treated as true.
+      Whether to create a release. Only literal 'true' will be treated as true.
       
       Implies `create_tag`.
 

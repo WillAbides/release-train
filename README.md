@@ -11,7 +11,7 @@ hop on the release train
 
 default: `${{ github.event_name == 'pull_request' }}`
 
-Instead of releasing, check that the PR has a label indicating the type of change.
+Instead of releasing, check that the PR has a label indicating the type of change.  Only literal 'true' will be treated as true.
 
 
 ### checkout_dir
@@ -35,11 +35,11 @@ The GitHub token to use for authentication. Must have `contents: write` permissi
 
 ### create_tag
 
-Whether to create a tag for the release. Any non-empty value will be treated as true.
+Whether to create a tag for the release. Only literal 'true' will be treated as true.
 
 ### create_release
 
-Whether to create a release. Any non-empty value will be treated as true.
+Whether to create a release. Only literal 'true' will be treated as true.
 
 Implies `create_tag`.
 
