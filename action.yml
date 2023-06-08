@@ -111,7 +111,7 @@ runs:
   steps:
 
     - id: check_pr_labels
-      if: ${{ inputs.check_pr_labels }}
+      if: ${{ inputs.check_pr_labels == 'true' }}
       shell: sh
       working-directory: ${{ inputs.checkout_dir }}
       env:
