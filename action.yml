@@ -90,12 +90,12 @@ outputs:
       Whether this is the first release on the release branch. Either "true" or "false".
 
   release_version:
-    value: ${{ steps.next.outputs.release_version }}
+    value: ${{ steps.release.outputs.release_version }}
     description: |
       The version of the new release. Empty if no release is called for.
 
   release_tag:
-    value: ${{ steps.next.outputs.release_tag }}
+    value: ${{ steps.release.outputs.release_tag }}
     description: |
       The tag of the new release. Empty if no release is called for.
 
