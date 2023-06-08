@@ -120,7 +120,7 @@ runs:
         "${{ github.action_path }}"/src/check_pr_labels
 
     - id: release
-      if: ${{ !inputs.check_pr_labels }}
+      if: ${{ inputs.check_pr_labels != 'true' }}
       shell: sh
       working-directory: ${{ inputs.checkout_dir }}
       env:
