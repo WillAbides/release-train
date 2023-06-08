@@ -115,9 +115,8 @@ runs:
       working-directory: ${{ inputs.checkout_dir }}
       env:
         GITHUB_TOKEN: ${{ inputs.github_token }}
-      run: |
-        "${{ github.action_path }}"/src/bindown -q install semver-next
-        echo TODO implement this
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: "${{ github.action_path }}"/src/check_pr_labels
     - id: release
       if: ${{ !inputs.check_pr_labels }}
       shell: sh
@@ -125,6 +124,7 @@ runs:
       env:
         REF: ${{ inputs.ref }}
         GITHUB_TOKEN: ${{ inputs.github_token }}
+        GH_TOKEN: ${{ inputs.github_token }}
         CREATE_TAG: ${{ inputs.create_tag }}
         CREATE_RELEASE: ${{ inputs.create_release }}
         TAG_PREFIX: ${{ inputs.tag_prefix }}
@@ -134,4 +134,4 @@ runs:
         RELEASE_NOTES: ${{ inputs.release_notes }}
         VALIDATE_VERSION: ${{ inputs.validate_version }}
 
-      run: src/release
+      run: "${{ github.action_path }}"/src/release
