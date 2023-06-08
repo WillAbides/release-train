@@ -11,8 +11,7 @@ hop on the release train
 
 default: `${{ github.event_name == 'pull_request' }}`
 
-Instead of releasing, check that the PR has a label indicating the type of change. Any non-empty value will be 
-treated as true.
+Instead of releasing, check that the PR has a label indicating the type of change.
 
 
 ### checkout_dir

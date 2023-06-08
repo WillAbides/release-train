@@ -7,8 +7,7 @@ branding:
 inputs:
   check_pr_labels:
     description: |
-      Instead of releasing, check that the PR has a label indicating the type of change. Any non-empty value will be 
-      treated as true.
+      Instead of releasing, check that the PR has a label indicating the type of change.
 
     default: ${{ github.event_name == 'pull_request' }}
 
