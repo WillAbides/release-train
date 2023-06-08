@@ -5,8 +5,7 @@ set -e
 REPO_DIR="$(CDPATH="" cd -- "$(dirname -- "$0")/.." && pwd -P)"
 
 "$REPO_DIR"/src/bindown -q install semver-prev semver-next jq gh
-PATH="$REPO_DIR/bin:$PATH"
-export PATH
+export PATH="$REPO_DIR/bin:$PATH"
 
 if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
   echo "fatal: shallow clones are not supported" >&2
