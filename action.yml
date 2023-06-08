@@ -109,6 +109,7 @@ outputs:
 runs:
   using: composite
   steps:
+
     - id: check_pr_labels
       if: ${{ inputs.check_pr_labels }}
       shell: sh
@@ -116,7 +117,9 @@ runs:
       env:
         GITHUB_TOKEN: ${{ inputs.github_token }}
         GH_TOKEN: ${{ inputs.github_token }}
-      run: "${{ github.action_path }}"/src/check_pr_labels
+      run: |
+        "${{ github.action_path }}"/src/check_pr_labels
+
     - id: release
       if: ${{ !inputs.check_pr_labels }}
       shell: sh
@@ -133,5 +136,5 @@ runs:
         POST_RELEASE_HOOK: ${{ inputs.post_release_hook }}
         RELEASE_NOTES: ${{ inputs.release_notes }}
         VALIDATE_VERSION: ${{ inputs.validate_version }}
-
-      run: "${{ github.action_path }}"/src/release
+      run: |
+        "${{ github.action_path }}"/src/release
