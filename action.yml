@@ -75,121 +75,46 @@ inputs:
 
 outputs:
   previous_ref:
-    value: ${{ steps.prev.outputs.ref }}
+    value: ${{ steps.release.outputs.previous_ref }}
     description: |
       A git ref pointing to the previous release, or the current ref if no previous release can be found.
 
   previous_version:
-    value: ${{ steps.prev.outputs.version }}
+    value: ${{ steps.release.outputs.previous_version }}
     description: |
       The previous version on the release branch.
 
   first_release:
-    value: ${{ steps.prev.outputs.first_release }}
+    value: ${{ steps.release.outputs.first_release }}
     description: |
       Whether this is the first release on the release branch. Either "true" or "false".
 
   release_version:
-    value: ${{ steps.next.outputs.release_version }}
+    value: ${{ steps.release.outputs.release_version }}
     description: |
       The version of the new release. Empty if no release is called for.
 
   release_tag:
-    value: ${{ steps.next.outputs.release_tag }}
+    value: ${{ steps.release.outputs.release_tag }}
     description: |
       The tag of the new release. Empty if no release is called for.
 
 runs:
   using: composite
   steps:
-    - id: init
-      shell: sh
-      working-directory: ${{ inputs.checkout_dir }}
-      env:
-        VALIDATE_VERSION: ${{ inputs.validate_version }}
-        PRE_RELEASE_HOOK: ${{ inputs.pre_release_hook }}
-        RELEASE_NOTES: ${{ inputs.release_notes }}
-      run: |
-        if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
-          echo "fatal: shallow clones are not supported" >&2
-          exit 1
-        fi
-        if [ -n "$VALIDATE_VERSION" ] && [ -n "$PRE_RELEASE_HOOK" ]; then
-          echo "fatal: cannot specify both validate_version and pre_release_hook" >&2
-          exit 1
-        fi
-        PRE_RELEASE_HOOK_FILE="${{ runner.temp }}/pre_release_hook-${{ github.run_id }}-${{ github.run_attempt }}"
-        echo "${PRE_RELEASE_HOOK}${VALIDATE_VERSION}" > "$PRE_RELEASE_HOOK_FILE"
-        echo "pre_release_hook_file=$PRE_RELEASE_HOOK_FILE" > "$GITHUB_OUTPUT"
-        
-        RELEASE_NOTES_FILE="${{ runner.temp }}/release_notes-${{ github.run_id }}-${{ github.run_attempt }}"
-        echo "$RELEASE_NOTES" > "$RELEASE_NOTES_FILE"
-        echo "release_notes_file=$RELEASE_NOTES_FILE" >> "$GITHUB_OUTPUT"
-
-    - id: prev
+    - id: release
       shell: sh
       working-directory: ${{ inputs.checkout_dir }}
       env:
         REF: ${{ inputs.ref }}
-        TAG_PREFIX: ${{ inputs.tag_prefix }}
-        DEFAULT_PREVIOUS_VERSION: ${{ inputs.default_previous_version }}
-      run: |
-        "${{ github.action_path }}"/src/prev > $GITHUB_OUTPUT
-
-    - id: next
-      shell: sh
-      working-directory: ${{ inputs.checkout_dir }}
-      env:
-        PREVIOUS_VERSION: ${{ steps.prev.outputs.version }}
-        PREVIOUS_TAG: ${{ steps.prev.outputs.ref }}
-        FIRST_RELEASE: ${{ steps.prev.outputs.first_release }}
-        REF: ${{ inputs.ref }}
-        REPO: ${{ github.repository }}
-        TAG_PREFIX: ${{ inputs.tag_prefix }}
         GITHUB_TOKEN: ${{ inputs.github_token }}
-      run: |
-        "${{ github.action_path }}"/src/next > $GITHUB_OUTPUT
-
-    - name: pre release hook
-      if: ${{ steps.next.outputs.release_version != '' && steps.next.outputs.release_tag != '' }}
-      shell: sh
-      working-directory: ${{ inputs.checkout_dir }}
-      env:
-        RELEASE_VERSION: ${{ steps.next.outputs.release_version }}
-        RELEASE_TAG: ${{ steps.next.outputs.release_tag }}
-        PREVIOUS_VERSION: ${{ steps.prev.outputs.version }}
-        FIRST_RELEASE: ${{ steps.prev.outputs.first_release }}
-        GITHUB_TOKEN: ${{ inputs.github_token }}
-        RELEASE_NOTES_FILE: ${{ steps.init.outputs.release_notes_file }}
-        PRE_RELEASE_HOOK_FILE: ${{ steps.init.outputs.pre_release_hook_file }}
-      run: |
-        chmod +x "${{ steps.init.outputs.pre_release_hook_file }}"
-        "${{ steps.init.outputs.pre_release_hook_file }}"
-
-    - name: create release
-      shell: sh
-      if: ${{ steps.next.outputs.release_version != '' && steps.next.outputs.release_tag != '' }}
-      working-directory: ${{ inputs.checkout_dir }}
-      env:
         CREATE_TAG: ${{ inputs.create_tag }}
         CREATE_RELEASE: ${{ inputs.create_release }}
-        RELEASE_NOTES_FILE: ${{ steps.init.outputs.release_notes_file }}
-        RELEASE_TAG: ${{ steps.next.outputs.release_tag }}
-        PREVIOUS_TAG: ${{ steps.prev.outputs.ref }}
-        REF: ${{ inputs.ref }}
-        GH_TOKEN: ${{ inputs.github_token }}
-        FIRST_RELEASE: ${{ steps.prev.outputs.first_release }}
-      run: |
-        "${{ github.action_path }}"/src/release
+        TAG_PREFIX: ${{ inputs.tag_prefix }}
+        DEFAULT_PREVIOUS_VERSION: ${{ inputs.default_previous_version }}
+        PRE_RELEASE_HOOK: ${{ inputs.pre_release_hook }}
+        POST_RELEASE_HOOK: ${{ inputs.post_release_hook }}
+        RELEASE_NOTES: ${{ inputs.release_notes }}
+        VALIDATE_VERSION: ${{ inputs.validate_version }}
 
-    - name: post release hook
-      shell: sh
-      if: ${{ steps.next.outputs.release_version != '' && steps.next.outputs.release_tag != '' && inputs.post_release_hook != '' }}
-      working-directory: ${{ inputs.checkout_dir }}
-      env:
-        RELEASE_VERSION: ${{ steps.next.outputs.release_version }}
-        RELEASE_TAG: ${{ steps.next.outputs.release_tag }}
-        PREVIOUS_VERSION: ${{ steps.prev.outputs.version }}
-        FIRST_RELEASE: ${{ steps.prev.outputs.first_release }}
-        GITHUB_TOKEN: ${{ inputs.github_token }}
-      run: ${{ inputs.post_release_hook }}
+      run: src/release
