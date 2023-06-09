@@ -84,6 +84,17 @@ The environment variables `RELEASE_VERSION`, `RELEASE_TAG`, `PREVIOUS_VERSION`, 
 will be set.
 
 
+### validate_go_module
+
+Validates that the name of the go module at the given path matches the major version of the release. For example,
+validation will fail when releasing v3.0.0 when the module name is `my_go_module/v2`.
+
+The path provided must be relative to inputs.checkout_dir.
+
+Release train uses whatever version of go is in PATH. If you need to use a specific version of go, you can use
+`WillAbides/setup-go-faster` to install it.
+
+
 ### release_notes
 
 __Deprecated__ - Use `pre_release_hook` instead.
