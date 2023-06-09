@@ -4,11 +4,6 @@ set -e
 
 ACTION_DIR="$(CDPATH="" cd -- "$(dirname -- "$0")/.." && pwd -P)"
 
-if [ -n "$NO_RELEASE_FILE" ] && [ -f "$NO_RELEASE_FILE" ]; then
-  echo "$NO_RELEASE_FILE exists, exiting" >&2
-  exit 0
-fi
-
 "$ACTION_DIR"/src/bindown -q install semver-prev semver-next jq gh
 export PATH="$ACTION_DIR/bin:$PATH"
 
