@@ -95,6 +95,14 @@ Release train uses whatever version of go is in PATH. If you need to use a speci
 `WillAbides/setup-go-faster` to install it.
 
 
+### no_release
+
+If set to true, this will be a no-op. This is useful for creating a new repository or branch that isn't ready for
+release yet.
+
+Only literal 'true' will be treated as true.
+
+
 ### release_notes
 
 __Deprecated__ - Use `pre_release_hook` instead.
