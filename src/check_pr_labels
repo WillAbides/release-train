@@ -2,10 +2,15 @@
 
 set -e
 
-REPO_DIR="$(CDPATH="" cd -- "$(dirname -- "$0")/.." && pwd -P)"
+ACTION_DIR="$(CDPATH="" cd -- "$(dirname -- "$0")/.." && pwd -P)"
 
-"$REPO_DIR"/src/bindown -q install jq gh semver-next
-export PATH="$REPO_DIR/bin:$PATH"
+if [ -n "$NO_RELEASE_FILE" ] && [ -f "$NO_RELEASE_FILE" ]; then
+  echo "$NO_RELEASE_FILE exists, exiting" >&2
+  exit 0
+fi
+
+"$ACTION_DIR"/src/bindown -q install jq gh semver-next
+export PATH="$ACTION_DIR/bin:$PATH"
 
 if [ "$GITHUB_EVENT_NAME" != "pull_request" ]; then
   echo "check_pr_labels is only valid on pull_request events" >&2

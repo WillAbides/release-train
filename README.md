@@ -95,6 +95,18 @@ Release train uses whatever version of go is in PATH. If you need to use a speci
 `WillAbides/setup-go-faster` to install it.
 
 
+### no_release_file
+
+default: `.no_release`
+
+When this file is present, no release will be created. This is useful for preventing the initial release from
+a new repository or release branch.
+
+PR Labels are not checked when .no_release is present.
+
+The path provided must be relative to inputs.checkout_dir.
+
+
 ### release_notes
 
 __Deprecated__ - Use `pre_release_hook` instead.
