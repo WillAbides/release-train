@@ -145,5 +145,6 @@ runs:
         POST_RELEASE_HOOK: ${{ inputs.post_release_hook }}
         RELEASE_NOTES: ${{ inputs.release_notes }}
         VALIDATE_VERSION: ${{ inputs.validate_version }}
+        VALIDATE_GO_MODULE: ${{ inputs.validate_go_module }}
       run: |
         "${{ github.action_path }}"/src/release
