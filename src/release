@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -ex
+set -e
 
 REPO_DIR="$(CDPATH="" cd -- "$(dirname -- "$0")/.." && pwd -P)"
 
@@ -98,6 +98,7 @@ chmod +x "$POST_RELEASE_HOOK_FILE"
   else
     set -- "$@" --generate-notes --notes-start-tag "$PREVIOUS_TAG"
   fi
+  gh "$@"
 )
 
 "$POST_RELEASE_HOOK_FILE"
