@@ -40,4 +40,5 @@ build() {
 
 build
 
-exec "$ACTION_DIR"/bin/release-train "$@"
+echo "$ACTION_DIR"/bin/release-train "$@"
+"$ACTION_DIR"/bin/release-train "$@"
