@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -ex
+set -e
 
 ACTION_DIR="$(CDPATH="" cd -- "$(dirname -- "$0")/.." && pwd -P)"
 
@@ -15,10 +15,10 @@ set -- release "$GITHUB_REPOSITORY" \
   --pre-release-hook "$PRE_RELEASE_HOOK" \
   --post-release-hook "$POST_RELEASE_HOOK"
 
-[ "$CREATE_TAG" != "true" ] || set -- "$@" --create-tag
+[ "$CREATE_TAG" != "true" ]     || set -- "$@" --create-tag
 [ "$CREATE_RELEASE" != "true" ] || set -- "$@" --create-release
-[ -z "$TAG_PREFIX" ] || set -- "$@" --tag-prefix "$TAG_PREFIX"
-[ -z "$VALIDATE_GO_MODULE" ] || set -- "$@" --go-mod-file "$VALIDATE_GO_MODULE"
-[ -z "$RUNNER_TEMP" ] || set -- "$@" --tempdir "$RUNNER_TEMP"
+[ -z "$TAG_PREFIX" ]            || set -- "$@" --tag-prefix "$TAG_PREFIX"
+[ -z "$VALIDATE_GO_MODULE" ]    || set -- "$@" --go-mod-file "$VALIDATE_GO_MODULE"
+[ -z "$RUNNER_TEMP" ]           || set -- "$@" --tempdir "$RUNNER_TEMP"
 
 "$ACTION_DIR"/src/release-train "$@"

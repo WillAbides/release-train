@@ -4,7 +4,7 @@ set -e
 
 REPO_DIR="$(cd -- "$(dirname -- "$0")/.." && pwd)"
 
-(
+( 
   cd "$REPO_DIR"
   go build -o bin/release-train .
 )

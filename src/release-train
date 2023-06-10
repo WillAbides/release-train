@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -ex
+set -e
 
 ACTION_DIR="$(cd -- "$(dirname -- "$0")/.." && pwd)"
 
@@ -40,5 +40,4 @@ build() {
 
 build
 
-echo "$ACTION_DIR"/bin/release-train "$@"
 "$ACTION_DIR"/bin/release-train "$@"
