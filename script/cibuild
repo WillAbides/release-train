@@ -1,0 +1,13 @@
+#!/bin/sh
+#/ script/cibuild is run by CI to test this project. It can also be run locally.
+
+set -e
+
+CDPATH="" cd -- "$(dirname -- "$0")/.."
+
+script/bindown -q install goreleaser
+
+script/test
+script/lint
+script/generate --check
+bin/goreleaser build --snapshot --clean
