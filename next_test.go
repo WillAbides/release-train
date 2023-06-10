@@ -99,7 +99,7 @@ func Test_next(t *testing.T) {
 		}
 		got, err := getNext(
 			ctx,
-			nextOptions{
+			&nextOptions{
 				repo: "willabides/semver-next",
 				base: "v0.15.0",
 				head: sha1,
@@ -157,7 +157,7 @@ func Test_next(t *testing.T) {
 		}
 		got, err := getNext(
 			ctx,
-			nextOptions{
+			&nextOptions{
 				repo: "willabides/semver-next",
 				base: "v0.15.0",
 				head: sha1,
@@ -215,7 +215,7 @@ func Test_next(t *testing.T) {
 		}
 		got, err := getNext(
 			ctx,
-			nextOptions{
+			&nextOptions{
 				repo: "willabides/semver-next",
 				base: "v0.15.0",
 				head: sha1,
@@ -273,7 +273,7 @@ func Test_next(t *testing.T) {
 		}
 		got, err := getNext(
 			ctx,
-			nextOptions{
+			&nextOptions{
 				repo: "willabides/semver-next",
 				base: "v0.15.0",
 				head: sha1,
@@ -329,7 +329,7 @@ func Test_next(t *testing.T) {
 				},
 			}),
 		}
-		_, err := getNext(ctx, nextOptions{
+		_, err := getNext(ctx, &nextOptions{
 			repo: "willabides/semver-next",
 			base: "v0.15.0",
 			head: sha1,
@@ -348,7 +348,7 @@ func Test_next(t *testing.T) {
 				return []string{}, nil
 			},
 		}
-		got, err := getNext(ctx, nextOptions{
+		got, err := getNext(ctx, &nextOptions{
 			repo: "willabides/semver-next",
 			base: "v0.15.0",
 			head: sha1,
@@ -373,7 +373,7 @@ func Test_next(t *testing.T) {
 				return []string{}, nil
 			},
 		}
-		got, err := getNext(ctx, nextOptions{
+		got, err := getNext(ctx, &nextOptions{
 			repo:    "willabides/semver-next",
 			base:    "v0.15.0",
 			head:    sha1,
@@ -416,7 +416,7 @@ func Test_next(t *testing.T) {
 		}
 		got, err := getNext(
 			ctx,
-			nextOptions{
+			&nextOptions{
 				repo:    "willabides/semver-next",
 				base:    "v0.15.0",
 				head:    sha1,
@@ -458,7 +458,7 @@ func Test_next(t *testing.T) {
 				return nil, assert.AnError
 			},
 		}
-		_, err := getNext(ctx, nextOptions{
+		_, err := getNext(ctx, &nextOptions{
 			repo: "willabides/semver-next",
 			base: "v0.15.0",
 			head: sha1,
@@ -481,7 +481,7 @@ func Test_next(t *testing.T) {
 				{owner: "willabides", repo: "semver-next", sha: sha3, err: assert.AnError},
 			}),
 		}
-		_, err := getNext(ctx, nextOptions{
+		_, err := getNext(ctx, &nextOptions{
 			repo: "willabides/semver-next",
 			base: "v0.15.0",
 			head: sha1,
@@ -491,27 +491,27 @@ func Test_next(t *testing.T) {
 	})
 
 	t.Run("invalid minBump", func(t *testing.T) {
-		_, err := getNext(ctx, nextOptions{minBump: "foo"})
+		_, err := getNext(ctx, &nextOptions{minBump: "foo"})
 		require.EqualError(t, err, "invalid change level: foo")
 	})
 
 	t.Run("invalid maxBump", func(t *testing.T) {
-		_, err := getNext(ctx, nextOptions{maxBump: "foo"})
+		_, err := getNext(ctx, &nextOptions{maxBump: "foo"})
 		require.EqualError(t, err, "invalid change level: foo")
 	})
 
 	t.Run("prev version not valid semver", func(t *testing.T) {
-		_, err := getNext(ctx, nextOptions{prevVersion: "foo"})
+		_, err := getNext(ctx, &nextOptions{prevVersion: "foo"})
 		require.EqualError(t, err, `invalid previous version "foo": Invalid Semantic Version`)
 	})
 
 	t.Run("invalid repo", func(t *testing.T) {
-		_, err := getNext(ctx, nextOptions{repo: "foo", prevVersion: "1.2.3"})
+		_, err := getNext(ctx, &nextOptions{repo: "foo", prevVersion: "1.2.3"})
 		require.EqualError(t, err, `repo must be in the form owner/name`)
 	})
 
 	t.Run("minBump > maxBump", func(t *testing.T) {
-		_, err := getNext(ctx, nextOptions{minBump: "major", maxBump: "minor"})
+		_, err := getNext(ctx, &nextOptions{minBump: "major", maxBump: "minor"})
 		require.EqualError(t, err, "minBump must be less than or equal to maxBump")
 	})
 }

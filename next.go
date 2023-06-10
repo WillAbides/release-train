@@ -182,7 +182,10 @@ type nextOptions struct {
 	maxBump     string
 }
 
-func getNext(ctx context.Context, opts nextOptions) (*nextResult, error) {
+func getNext(ctx context.Context, opts *nextOptions) (*nextResult, error) {
+	if opts == nil {
+		opts = &nextOptions{}
+	}
 	minBump := opts.minBump
 	if minBump == "" {
 		minBump = "no change"

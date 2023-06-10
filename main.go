@@ -23,9 +23,8 @@ type rootCmd struct {
 }
 
 type githubClientConfig struct {
-	GithubToken   string `kong:"hidden,required,env=GITHUB_TOKEN,help='Credentials for Github API.'"`
-	GithubApiUrl  string `kong:"default=https://api.github.com,help='Github API URL.'"`
-	GithubUploads string `kong:"default=https://uploads.github.com,help='Github uploads URL.'"`
+	GithubToken  string `kong:"hidden,required,env=GITHUB_TOKEN,help='Credentials for Github API.'"`
+	GithubApiUrl string `kong:"default=https://api.github.com,help='Github API URL.'"`
 }
 
 func (c *githubClientConfig) Client(ctx context.Context) (*github.Client, error) {
@@ -89,6 +88,13 @@ func (cmd *releaseCmd) Run(ctx context.Context, root *rootCmd) (errOut error) {
 		createTag = true
 	}
 
+	var goModFiles []string
+	for _, goModFile := range cmd.GoModFile {
+		if goModFile != "" {
+			goModFiles = append(goModFiles, goModFile)
+		}
+	}
+
 	runner := &releaseRunner{
 		checkoutDir:     root.CheckoutDir,
 		ref:             cmd.Ref,
@@ -99,7 +105,7 @@ func (cmd *releaseCmd) Run(ctx context.Context, root *rootCmd) (errOut error) {
 		initialTag:      cmd.InitialTag,
 		prereleaseHook:  cmd.PreReleaseHook,
 		postreleaseHook: cmd.PostReleaseHook,
-		goModFiles:      cmd.GoModFile,
+		goModFiles:      goModFiles,
 		pushRemote:      cmd.PushRemote,
 		repo:            cmd.Repo,
 

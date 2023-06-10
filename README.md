@@ -51,11 +51,11 @@ default: `v`
 The prefix to use for the tag. Defaults to `v`.
 
 
-### default_previous_version
+### initial_release_tag
 
-default: `0.0.0`
+default: `v0.0.0`
 
-The default previous version to use if no previous version can be found. This is used to for the first release.
+The tag to use if no previous version can be found.
 
 Set to empty string to disable cause it to error if no previous version can be found.
 

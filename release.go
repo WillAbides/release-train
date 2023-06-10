@@ -75,7 +75,7 @@ func (o *releaseRunner) next(ctx context.Context) (*releaseResult, error) {
 		PreviousVersion: prevVersion,
 	}
 	var nextRes *nextResult
-	nextRes, err = getNext(ctx, nextOptions{
+	nextRes, err = getNext(ctx, &nextOptions{
 		repo:        o.repo,
 		gh:          o.githubClient,
 		prevVersion: prevVersion,
@@ -241,7 +241,7 @@ func runCmd(dir string, env map[string]string, command string, args ...string) (
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
-			err = errors.Join(err, fmt.Errorf(string(exitErr.Stderr)))
+			err = errors.Join(err, errors.New(string(exitErr.Stderr)))
 		}
 		return "", err
 	}
