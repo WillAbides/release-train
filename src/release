@@ -34,7 +34,7 @@ PREVIOUS_TAG="$(
 export PREVIOUS_VERSION="${PREVIOUS_TAG#"$TAG_PREFIX"}"
 
 FIRST_RELEASE=false
-if ! git rev-parse --quiet --verify "$PREVIOUS_TAG" >/dev/null; then
+if ! git rev-parse --quiet --verify "$PREVIOUS_TAG" > /dev/null; then
   FIRST_RELEASE="true"
   PREVIOUS_TAG="$(git rev-parse "$REF")"
 fi
@@ -44,7 +44,7 @@ echo "
 previous_ref=$PREVIOUS_TAG
 previous_version=$PREVIOUS_VERSION
 first_release=$FIRST_RELEASE
-" >>"$GITHUB_OUTPUT"
+" >> "$GITHUB_OUTPUT"
 
 RELEASE_VERSION="$(
   if [ "$FIRST_RELEASE" = "true" ]; then
@@ -66,17 +66,17 @@ export RELEASE_TAG="${TAG_PREFIX}${RELEASE_VERSION}"
 echo "
 release_version=$RELEASE_VERSION
 release_tag=$RELEASE_TAG
-" >>"$GITHUB_OUTPUT"
+" >> "$GITHUB_OUTPUT"
 
 export RELEASE_NOTES_FILE="${RUNNER_TEMP}/release_notes-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-echo "$RELEASE_NOTES" >"$RELEASE_NOTES_FILE"
+echo "$RELEASE_NOTES" > "$RELEASE_NOTES_FILE"
 
 [ -n "$RELEASE_VERSION" ] || exit 0
 [ "$CREATE_RELEASE" != "true" ] || CREATE_TAG="true"
 [ "$CREATE_TAG" = "true" ] || exit 0
 
 PRE_RELEASE_HOOK_FILE="${RUNNER_TEMP}/pre_release_hook-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-echo "${PRE_RELEASE_HOOK}${VALIDATE_VERSION}" >"$PRE_RELEASE_HOOK_FILE"
+echo "${PRE_RELEASE_HOOK}${VALIDATE_VERSION}" > "$PRE_RELEASE_HOOK_FILE"
 chmod +x "$PRE_RELEASE_HOOK_FILE"
 
 export VALIDATE_GO_MODULE
@@ -94,7 +94,7 @@ if [ -f "$RELEASE_NOTES_FILE" ]; then
 fi
 
 POST_RELEASE_HOOK_FILE="${RUNNER_TEMP}/post_release_hook-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-echo "${POST_RELEASE_HOOK}" >"$POST_RELEASE_HOOK_FILE"
+echo "${POST_RELEASE_HOOK}" > "$POST_RELEASE_HOOK_FILE"
 chmod +x "$POST_RELEASE_HOOK_FILE"
 
 (

@@ -1,0 +1,15 @@
+#!/bin/sh
+
+set -e
+
+REPO_DIR="$(cd -- "$(dirname -- "$0")/.." && pwd)"
+
+(
+  cd "$REPO_DIR"
+  unset GOROOT GOPATH GOENV GOCACHE GOMODCACHE GOPROXY GO111MODULE GOFLAGS GOSUMDB GOPRIVATE GONOPROXY GONOSUMDB
+  export CGO_ENABLED="0"
+  src/bindown -q install go
+  go build -o bin/release-train .
+)
+
+exec "$REPO_DIR"/bin/release-train "$@"

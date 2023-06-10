@@ -16,11 +16,11 @@ update_file_section() {
   replacement="$start_comment
 $replacement
 $end_comment"
-  echo "${data//$pattern/$replacement}" >"$file"
+  echo "${data//$pattern/$replacement}" > "$file"
 }
 
-src/bindown -q install action-doc
+script/bindown -q install action-doc
 
-ACTION_DOC="$(bin/action-doc action.yml --header-prefix='#' --skip-action-name )"
+ACTION_DOC="$(bin/action-doc action.yml --header-prefix='#' --skip-action-name)"
 
 update_file_section README.md '<!--- start action doc --->' '<!--- end action doc --->' "$ACTION_DOC"

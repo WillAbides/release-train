@@ -29,6 +29,10 @@ if [ "$1" = "--check" ]; then
   exit 0
 fi
 
+go generate ./...
+go mod tidy
+script/fmt
+
 if [ -f script/update-docs ]; then
   ./script/update-docs
 fi
