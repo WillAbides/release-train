@@ -9,104 +9,18 @@ if [ "$NO_RELEASE" = "true" ]; then
   exit 0
 fi
 
-"$ACTION_DIR"/src/bindown -q install semver-prev semver-next jq gh
-export PATH="$ACTION_DIR/bin:$PATH"
+"$ACTION_DIR"/src/bindown -q install release-train
 
-if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
-  echo "fatal: shallow clones are not supported" >&2
-  exit 1
-fi
+set -- release "$GITHUB_REPOSITORY" \
+  --ref "$REF" \
+  --initial-tag "$INITIAL_RELEASE_TAG" \
+  --pre-release-hook "$PRE_RELEASE_HOOK" \
+  --post-release-hook "$POST_RELEASE_HOOK"
 
-if [ -n "$VALIDATE_VERSION" ] && [ -n "$PRE_RELEASE_HOOK" ]; then
-  echo "fatal: cannot specify both validate_version and pre_release_hook" >&2
-  exit 1
-fi
+[ "$CREATE_TAG" != "true" ]     || set -- "$@" --create-tag
+[ "$CREATE_RELEASE" != "true" ] || set -- "$@" --create-release
+[ -z "$TAG_PREFIX" ]            || set -- "$@" --tag-prefix "$TAG_PREFIX"
+[ -z "$VALIDATE_GO_MODULE" ]    || set -- "$@" --go-mod-file "$VALIDATE_GO_MODULE"
+[ -z "$RUNNER_TEMP" ]           || set -- "$@" --tempdir "$RUNNER_TEMP"
 
-PREVIOUS_TAG="$(
-  set -- --ref="$REF" --prefix="$TAG_PREFIX"
-  if [ -n "$DEFAULT_PREVIOUS_VERSION" ]; then
-    set -- "$@" --fallback="${TAG_PREFIX}${DEFAULT_PREVIOUS_VERSION}"
-  fi
-  semver-prev "$@"
-)"
-
-# trim TAG_PREFIX from PREVIOUS_TAG
-export PREVIOUS_VERSION="${PREVIOUS_TAG#"$TAG_PREFIX"}"
-
-FIRST_RELEASE=false
-if ! git rev-parse --quiet --verify "$PREVIOUS_TAG" >/dev/null; then
-  FIRST_RELEASE="true"
-  PREVIOUS_TAG="$(git rev-parse "$REF")"
-fi
-export FIRST_RELEASE
-
-echo "
-previous_ref=$PREVIOUS_TAG
-previous_version=$PREVIOUS_VERSION
-first_release=$FIRST_RELEASE
-" >>"$GITHUB_OUTPUT"
-
-RELEASE_VERSION="$(
-  if [ "$FIRST_RELEASE" = "true" ]; then
-    echo "$PREVIOUS_VERSION"
-    exit 0
-  fi
-  GOT="$(
-    semver-next "$GITHUB_REPOSITORY" --ref="$REF" --prev-ref="$PREVIOUS_TAG" --prev-version="$PREVIOUS_VERSION" --json
-  )"
-  if [ "$(echo "$GOT" | jq -r '.change_level')" = "no change" ]; then
-    echo "No changes since last release" >&2
-    exit 0
-  fi
-  echo "$GOT" | jq -r '.next_version'
-)"
-
-export RELEASE_VERSION
-export RELEASE_TAG="${TAG_PREFIX}${RELEASE_VERSION}"
-echo "
-release_version=$RELEASE_VERSION
-release_tag=$RELEASE_TAG
-" >>"$GITHUB_OUTPUT"
-
-export RELEASE_NOTES_FILE="${RUNNER_TEMP}/release_notes-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-echo "$RELEASE_NOTES" >"$RELEASE_NOTES_FILE"
-
-[ -n "$RELEASE_VERSION" ] || exit 0
-[ "$CREATE_RELEASE" != "true" ] || CREATE_TAG="true"
-[ "$CREATE_TAG" = "true" ] || exit 0
-
-PRE_RELEASE_HOOK_FILE="${RUNNER_TEMP}/pre_release_hook-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-echo "${PRE_RELEASE_HOOK}${VALIDATE_VERSION}" >"$PRE_RELEASE_HOOK_FILE"
-chmod +x "$PRE_RELEASE_HOOK_FILE"
-
-export VALIDATE_GO_MODULE
-"$ACTION_DIR"/src/validate_go_module
-
-"$PRE_RELEASE_HOOK_FILE"
-
-git tag "$RELEASE_TAG" "$REF"
-git push origin "$RELEASE_TAG"
-
-[ "$CREATE_RELEASE" = "true" ] || exit 0
-
-if [ -f "$RELEASE_NOTES_FILE" ]; then
-  RELEASE_NOTES="$(cat "$RELEASE_NOTES_FILE")"
-fi
-
-POST_RELEASE_HOOK_FILE="${RUNNER_TEMP}/post_release_hook-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-echo "${POST_RELEASE_HOOK}" >"$POST_RELEASE_HOOK_FILE"
-chmod +x "$POST_RELEASE_HOOK_FILE"
-
-(
-  set -- release create "$RELEASE_TAG"
-  if [ -n "$RELEASE_NOTES" ]; then
-    set -- "$@" --notes="$RELEASE_NOTES"
-  elif [ -n "$FIRST_RELEASE" ]; then
-    set -- "$@" --generate-notes
-  else
-    set -- "$@" --generate-notes --notes-start-tag "$PREVIOUS_TAG"
-  fi
-  gh "$@"
-)
-
-"$POST_RELEASE_HOOK_FILE"
+"$ACTION_DIR"/bin/release-train "$@"

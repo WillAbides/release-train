@@ -16,18 +16,22 @@ dependencies:
     template: origin#jq
     vars:
       version: "1.6"
+  release-train:
+    template: release-train
+    vars:
+      version: 0.2.0
   semver-next:
     template: origin#semver-next
     vars:
       version: 2.2.0
-  semver-prev:
-    template: origin#semver-prev
-    vars:
-      version: 0.0.1
   shellcheck:
     template: origin#shellcheck
     vars:
       version: 0.9.0
+  shfmt:
+    template: origin#shfmt
+    vars:
+      version: 3.6.0
 templates:
   action-doc:
     homepage: https://github.com/WillAbides/action-doc
@@ -157,32 +161,6 @@ templates:
       - windows/arm64
     required_vars:
       - version
-  origin#semver-prev:
-    homepage: https://github.com/willabides/semver-prev
-    url: https://github.com/WillAbides/semver-prev/releases/download/v{{.version}}/semver-prev_{{.version}}_{{.os}}_{{.arch}}{{.urlSuffix}}
-    archive_path: semver-prev{{.archivePathSuffix}}
-    bin: semver-prev
-    vars:
-      archivePathSuffix: ""
-      urlSuffix: .tar.gz
-    overrides:
-      - matcher:
-          os:
-            - windows
-        dependency:
-          vars:
-            archivePathSuffix: .exe
-    systems:
-      - darwin/amd64
-      - darwin/arm64
-      - linux/386
-      - linux/amd64
-      - linux/arm64
-      - windows/386
-      - windows/amd64
-      - windows/arm64
-    required_vars:
-      - version
   origin#shellcheck:
     homepage: https://www.shellcheck.net
     description: ShellCheck, a static analysis tool for shell scripts
@@ -222,19 +200,68 @@ templates:
       - windows/amd64
     required_vars:
       - version
+  origin#shfmt:
+    homepage: https://github.com/mvdan/sh
+    description: A shell parser, formatter, and interpreter with bash support; includes shfmt
+    url: https://github.com/mvdan/sh/releases/download/v{{.version}}/shfmt_v{{.version}}_{{.os}}_{{.arch}}{{.urlSuffix}}
+    archive_path: shfmt_v{{.version}}_{{.os}}_{{.arch}}{{.urlSuffix}}
+    bin: shfmt
+    vars:
+      archivePathSuffix: ""
+      urlSuffix: ""
+    overrides:
+      - matcher:
+          os:
+            - windows
+        dependency:
+          vars:
+            urlSuffix: .exe
+    systems:
+      - darwin/amd64
+      - darwin/arm64
+      - linux/386
+      - linux/amd64
+      - linux/arm
+      - linux/arm64
+      - windows/386
+      - windows/amd64
+    required_vars:
+      - version
+  release-train:
+    homepage: https://github.com/WillAbides/release-train
+    url: https://github.com/WillAbides/release-train/releases/download/v{{.version}}/release-train_{{.version}}_{{.os}}_{{.arch}}{{.urlSuffix}}
+    archive_path: release-train{{.archivePathSuffix}}
+    bin: release-train
+    vars:
+      archivePathSuffix: ""
+      urlSuffix: .tar.gz
+    overrides:
+      - matcher:
+          os:
+            - windows
+        dependency:
+          vars:
+            archivePathSuffix: .exe
+    systems:
+      - darwin/amd64
+      - darwin/arm64
+      - linux/amd64
+      - windows/amd64
+    required_vars:
+      - version
 template_sources:
   origin: https://raw.githubusercontent.com/WillAbides/bindown-templates/master/bindown.yml
 url_checksums:
   https://github.com/WillAbides/action-doc/releases/download/v0.4.0/action-doc_0.4.0_darwin_amd64.tar.gz: 6fcdd45d6a30bf5d17c27b09725fbd4cea5fef96e635abc82c894156207bf9b8
   https://github.com/WillAbides/action-doc/releases/download/v0.4.0/action-doc_0.4.0_linux_amd64.tar.gz: 7c09a3b9270b4589e11a4f5248e0eb5eb9f5a0126625b5a0675c36554efb76d2
+  https://github.com/WillAbides/release-train/releases/download/v0.2.0/release-train_0.2.0_darwin_amd64.tar.gz: dbff38e5ffd906b024272efe68719102841b26e84f961bd16ebcb396fa522601
+  https://github.com/WillAbides/release-train/releases/download/v0.2.0/release-train_0.2.0_darwin_arm64.tar.gz: 56c96ee2790fdc3589843bc4bbae68ba8d68ba70c4c6a9e25e783cb0bee01a4b
+  https://github.com/WillAbides/release-train/releases/download/v0.2.0/release-train_0.2.0_linux_amd64.tar.gz: 8eaea72c42f53ed989196146ab5632814605ce43a83c5b500d85a7e0e6bf1a65
+  https://github.com/WillAbides/release-train/releases/download/v0.2.0/release-train_0.2.0_windows_amd64.tar.gz: b69b5e6d5c9de435b7415a10b1f050f0670916e531137c4319c54512e744fb6b
   https://github.com/WillAbides/semver-next/releases/download/v2.2.0/semver-next_2.2.0_darwin_amd64.tar.gz: 171e33768dbe1a8a729e48d57418075d20640edb18936e918f9ba23c02cb9122
   https://github.com/WillAbides/semver-next/releases/download/v2.2.0/semver-next_2.2.0_darwin_arm64.tar.gz: d9f3f199f89c91a2e97603677ac40ae77f0adc06d0b3db9b6f77f9587297088d
   https://github.com/WillAbides/semver-next/releases/download/v2.2.0/semver-next_2.2.0_linux_amd64.tar.gz: 16dbee5dc70a3bba3d9e0afae3efdfb58df2bed8169cc1695543006343ad55ea
   https://github.com/WillAbides/semver-next/releases/download/v2.2.0/semver-next_2.2.0_windows_amd64.tar.gz: 57e52daec4357d5fe53a37ee0133f823ee8e099cc33ea4dc31398c80234986bd
-  https://github.com/WillAbides/semver-prev/releases/download/v0.0.1/semver-prev_0.0.1_darwin_amd64.tar.gz: de2902df5f99e6db91b143199446ccf9c7bdacd37980fca55f71e2da35211d0f
-  https://github.com/WillAbides/semver-prev/releases/download/v0.0.1/semver-prev_0.0.1_darwin_arm64.tar.gz: 367eaccc368bec6119d47cc78d0ad743cc8709dc1900e8f170c5314418c3a14e
-  https://github.com/WillAbides/semver-prev/releases/download/v0.0.1/semver-prev_0.0.1_linux_amd64.tar.gz: 1c1ab5926e9548659bdc1786cf1da9f62f80ae5314c5ccdf71123767e4f4da1d
-  https://github.com/WillAbides/semver-prev/releases/download/v0.0.1/semver-prev_0.0.1_windows_amd64.tar.gz: 31bc3527ad74cdfda9d5868287141f44e72e8fbd1709c4f6af05205f9eb8bb8b
   https://github.com/cli/cli/releases/download/v2.29.0/gh_2.29.0_linux_amd64.tar.gz: 9fe05f43a11a7bf8eacf731422452d1997e6708d4160ef0efcb13c103320390e
   https://github.com/cli/cli/releases/download/v2.29.0/gh_2.29.0_macOS_amd64.zip: e116d0f9c310450482cdcd7f4d2d1c7c4cab8d4f025a340260ce3f15329c5145
   https://github.com/cli/cli/releases/download/v2.29.0/gh_2.29.0_macOS_arm64.zip: 38ca9a355376abd1475362cf8b3cacf2a757198fe5fe70349cb1767666abacc6
@@ -242,6 +269,10 @@ url_checksums:
   https://github.com/koalaman/shellcheck/releases/download/v0.9.0/shellcheck-v0.9.0.darwin.x86_64.tar.xz: 7d3730694707605d6e60cec4efcb79a0632d61babc035aa16cda1b897536acf5
   https://github.com/koalaman/shellcheck/releases/download/v0.9.0/shellcheck-v0.9.0.linux.x86_64.tar.xz: 700324c6dd0ebea0117591c6cc9d7350d9c7c5c287acbad7630fa17b1d4d9e2f
   https://github.com/koalaman/shellcheck/releases/download/v0.9.0/shellcheck-v0.9.0.zip: ae58191b1ea4ffd9e5b15da9134146e636440302ce3e2f46863e8d71c8be1bbb
+  https://github.com/mvdan/sh/releases/download/v3.6.0/shfmt_v3.6.0_darwin_amd64: b8c9c025b498e2816b62f0b717f6032e9ab49e725a45b8205f52f66318f17185
+  https://github.com/mvdan/sh/releases/download/v3.6.0/shfmt_v3.6.0_darwin_arm64: 633f242246ee0a866c5f5df25cbf61b6af0d5e143555aca32950059cf13d91e0
+  https://github.com/mvdan/sh/releases/download/v3.6.0/shfmt_v3.6.0_linux_amd64: 5741a02a641de7e56b8da170e71a97e58050d66a3cf485fb268d6a5a8bb74afb
+  https://github.com/mvdan/sh/releases/download/v3.6.0/shfmt_v3.6.0_windows_amd64.exe: 18122d910ba434be366588f37c302c309cde4ca5403f93285254a3cf96839d01
   https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64: af986793a515d500ab2d35f8d2aecd656e764504b789b66d7e1a0b727a124c44
   https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64: 5c0a0a3ea600f302ee458b30317425dd9632d1ad8882259fcaf4e9b868b2b1ef
   https://github.com/stedolan/jq/releases/download/jq-1.6/jq-win64.exe: a51d36968dcbdeabb3142c6f5cf9b401a65dc3a095f3144bd0c118d5bb192753

@@ -15,7 +15,7 @@ if [ "$1" = "--check" ]; then
     mkdir -p "$(dirname -- "$target")"
     cp "$f" "$target"
   done
-  (
+  ( 
     cd "$GENTEMP"
     git add .
     git -c user.name='bot' -c user.email='bot@localhost' commit -m "generate" -q --allow-empty
@@ -29,6 +29,5 @@ if [ "$1" = "--check" ]; then
   exit 0
 fi
 
-if [ -f script/update-docs ]; then
-  ./script/update-docs
-fi
+script/fmt
+./script/update-docs

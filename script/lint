@@ -4,6 +4,6 @@ set -e
 
 CDPATH="" cd -- "$(dirname -- "$0")/.."
 
-src/bindown -q install shellcheck
+script/bindown -q install shellcheck
 
-exec bin/shellcheck script/* src/*
+bin/shellcheck script/* src/*

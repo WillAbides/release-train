@@ -1,0 +1,9 @@
+#!/bin/sh
+
+set -e
+
+CDPATH="" cd -- "$(dirname -- "$0")/.."
+
+script/bindown -q install shfmt
+
+bin/shfmt -ci -i 2 -ci -sr -w -s -kp ./script ./src
