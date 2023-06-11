@@ -20,6 +20,10 @@ dependencies:
     template: release-train
     vars:
       version: 0.1.0
+  semver-next:
+    template: origin#semver-next
+    vars:
+      version: 2.2.0
   shellcheck:
     template: origin#shellcheck
     vars:
@@ -131,6 +135,32 @@ templates:
       - windows/amd64
     required_vars:
       - version
+  origin#semver-next:
+    homepage: https://github.com/WillAbides/semver-next
+    url: https://github.com/WillAbides/semver-next/releases/download/v{{.version}}/semver-next_{{.version}}_{{.os}}_{{.arch}}{{.urlSuffix}}
+    archive_path: semver-next{{.archivePathSuffix}}
+    bin: semver-next
+    vars:
+      archivePathSuffix: ""
+      urlSuffix: .tar.gz
+    overrides:
+      - matcher:
+          os:
+            - windows
+        dependency:
+          vars:
+            archivePathSuffix: .exe
+    systems:
+      - darwin/amd64
+      - darwin/arm64
+      - linux/386
+      - linux/amd64
+      - linux/arm64
+      - windows/386
+      - windows/amd64
+      - windows/arm64
+    required_vars:
+      - version
   origin#shellcheck:
     homepage: https://www.shellcheck.net
     description: ShellCheck, a static analysis tool for shell scripts
@@ -228,6 +258,10 @@ url_checksums:
   https://github.com/WillAbides/release-train/releases/download/v0.1.0/release-train_0.1.0_darwin_arm64.tar.gz: 6c95a4b330117127e2a9aad4d035ed202216ce8fdde83833e24e47908c7d5c7c
   https://github.com/WillAbides/release-train/releases/download/v0.1.0/release-train_0.1.0_linux_amd64.tar.gz: f567d55930761828f54e6c193887d9934e9ee43b892c503fc15035076d8ca652
   https://github.com/WillAbides/release-train/releases/download/v0.1.0/release-train_0.1.0_windows_amd64.tar.gz: 45d669b83988349f593d32fd35b9d9b686d1f2d5e78f03c0d08c37f6cbca3b6f
+  https://github.com/WillAbides/semver-next/releases/download/v2.2.0/semver-next_2.2.0_darwin_amd64.tar.gz: 171e33768dbe1a8a729e48d57418075d20640edb18936e918f9ba23c02cb9122
+  https://github.com/WillAbides/semver-next/releases/download/v2.2.0/semver-next_2.2.0_darwin_arm64.tar.gz: d9f3f199f89c91a2e97603677ac40ae77f0adc06d0b3db9b6f77f9587297088d
+  https://github.com/WillAbides/semver-next/releases/download/v2.2.0/semver-next_2.2.0_linux_amd64.tar.gz: 16dbee5dc70a3bba3d9e0afae3efdfb58df2bed8169cc1695543006343ad55ea
+  https://github.com/WillAbides/semver-next/releases/download/v2.2.0/semver-next_2.2.0_windows_amd64.tar.gz: 57e52daec4357d5fe53a37ee0133f823ee8e099cc33ea4dc31398c80234986bd
   https://github.com/cli/cli/releases/download/v2.29.0/gh_2.29.0_linux_amd64.tar.gz: 9fe05f43a11a7bf8eacf731422452d1997e6708d4160ef0efcb13c103320390e
   https://github.com/cli/cli/releases/download/v2.29.0/gh_2.29.0_macOS_amd64.zip: e116d0f9c310450482cdcd7f4d2d1c7c4cab8d4f025a340260ce3f15329c5145
   https://github.com/cli/cli/releases/download/v2.29.0/gh_2.29.0_macOS_arm64.zip: 38ca9a355376abd1475362cf8b3cacf2a757198fe5fe70349cb1767666abacc6
