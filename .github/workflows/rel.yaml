@@ -29,7 +29,7 @@ jobs:
             ${{ steps.setup-go.outputs.GOMODCACHE }}
           key: ${{ runner.os }}-rel-${{ github.event_name }}-${{ hashFiles('go.*', '.github/workflows/ci.yaml', 'script/*', '.bindown.yaml', '.goreleaser.yaml') }}
           restore-keys: ${{ runner.os }}-go-rel-${{ github.event_name }}-
-      - run: echo "RELEASE_TRAIN_BIN="$(pwd)"/script/release-train >> $GITHUB_ENV
+      - run: echo RELEASE_TRAIN_BIN="$(pwd)"/script/release-train >> $GITHUB_ENV
       - uses: './'
         id: local-action
         with:
