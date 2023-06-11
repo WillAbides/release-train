@@ -27,8 +27,8 @@ jobs:
           path: |
             ${{ steps.setup-go.outputs.GOCACHE }}
             ${{ steps.setup-go.outputs.GOMODCACHE }}
-          key: ${{ runner.os }}-go-${{ hashFiles('go.*', '.github/workflows/ci.yaml', 'script/*', '.bindown.yaml', '.goreleaser.yaml') }}
-          restore-keys: ${{ runner.os }}-go-
+          key: ${{ runner.os }}-rel-${{ github.event_name }}-${{ hashFiles('go.*', '.github/workflows/ci.yaml', 'script/*', '.bindown.yaml', '.goreleaser.yaml') }}
+          restore-keys: ${{ runner.os }}-rel-${{ github.event_name }}-
       - uses: './'
         id: local-action
         with:
