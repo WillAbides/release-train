@@ -4,10 +4,6 @@ set -e
 
 CDPATH="" cd -- "$(dirname -- "$0")/.."
 
-script/bindown -q install gofumpt shfmt handcrafted
-
-git ls-files -o -c --exclude-standard '*.go' |
-  bin/handcrafted |
-  xargs bin/gofumpt -w -extra
+script/bindown -q install shfmt
 
 bin/shfmt -ci -i 2 -ci -sr -w -s -kp ./script ./src
