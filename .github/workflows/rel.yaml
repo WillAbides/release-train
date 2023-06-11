@@ -37,4 +37,4 @@ jobs:
           echo "  release_version: ${{ steps.local-action.outputs.release_version }}"
           echo "  release_tag: ${{ steps.local-action.outputs.release_tag }}"
           echo "all outputs:"
-          echo '${{ steps.local-action.outputs }}'
+          echo '${{ toJSON(steps.local-action.outputs) }}'
