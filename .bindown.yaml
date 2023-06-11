@@ -19,7 +19,7 @@ dependencies:
   release-train:
     template: release-train
     vars:
-      version: 0.1.0
+      version: 0.2.0
   semver-next:
     template: origin#semver-next
     vars:
@@ -254,10 +254,10 @@ template_sources:
 url_checksums:
   https://github.com/WillAbides/action-doc/releases/download/v0.4.0/action-doc_0.4.0_darwin_amd64.tar.gz: 6fcdd45d6a30bf5d17c27b09725fbd4cea5fef96e635abc82c894156207bf9b8
   https://github.com/WillAbides/action-doc/releases/download/v0.4.0/action-doc_0.4.0_linux_amd64.tar.gz: 7c09a3b9270b4589e11a4f5248e0eb5eb9f5a0126625b5a0675c36554efb76d2
-  https://github.com/WillAbides/release-train/releases/download/v0.1.0/release-train_0.1.0_darwin_amd64.tar.gz: 1c231d13c2468d5ab935b16ed162d706ab17c9520546e8c560c249586818c331
-  https://github.com/WillAbides/release-train/releases/download/v0.1.0/release-train_0.1.0_darwin_arm64.tar.gz: 6c95a4b330117127e2a9aad4d035ed202216ce8fdde83833e24e47908c7d5c7c
-  https://github.com/WillAbides/release-train/releases/download/v0.1.0/release-train_0.1.0_linux_amd64.tar.gz: f567d55930761828f54e6c193887d9934e9ee43b892c503fc15035076d8ca652
-  https://github.com/WillAbides/release-train/releases/download/v0.1.0/release-train_0.1.0_windows_amd64.tar.gz: 45d669b83988349f593d32fd35b9d9b686d1f2d5e78f03c0d08c37f6cbca3b6f
+  https://github.com/WillAbides/release-train/releases/download/v0.2.0/release-train_0.2.0_darwin_amd64.tar.gz: dbff38e5ffd906b024272efe68719102841b26e84f961bd16ebcb396fa522601
+  https://github.com/WillAbides/release-train/releases/download/v0.2.0/release-train_0.2.0_darwin_arm64.tar.gz: 56c96ee2790fdc3589843bc4bbae68ba8d68ba70c4c6a9e25e783cb0bee01a4b
+  https://github.com/WillAbides/release-train/releases/download/v0.2.0/release-train_0.2.0_linux_amd64.tar.gz: 8eaea72c42f53ed989196146ab5632814605ce43a83c5b500d85a7e0e6bf1a65
+  https://github.com/WillAbides/release-train/releases/download/v0.2.0/release-train_0.2.0_windows_amd64.tar.gz: b69b5e6d5c9de435b7415a10b1f050f0670916e531137c4319c54512e744fb6b
   https://github.com/WillAbides/semver-next/releases/download/v2.2.0/semver-next_2.2.0_darwin_amd64.tar.gz: 171e33768dbe1a8a729e48d57418075d20640edb18936e918f9ba23c02cb9122
   https://github.com/WillAbides/semver-next/releases/download/v2.2.0/semver-next_2.2.0_darwin_arm64.tar.gz: d9f3f199f89c91a2e97603677ac40ae77f0adc06d0b3db9b6f77f9587297088d
   https://github.com/WillAbides/semver-next/releases/download/v2.2.0/semver-next_2.2.0_linux_amd64.tar.gz: 16dbee5dc70a3bba3d9e0afae3efdfb58df2bed8169cc1695543006343ad55ea
