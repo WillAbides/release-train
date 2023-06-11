@@ -35,14 +35,6 @@ jobs:
           echo RELEASE_TRAIN_BIN="$(pwd)"/bin/release-train >> $GITHUB_ENV
       - uses: './'
         id: local-action
-        with:
-          create_release: true
-          pre_release_hook: |
-            echo LGTM
-            exit 0
-          post_release_hook: |
-            echo all done
-            exit 0
       - run: |
           echo "local-action outputs:"
           echo '${{ toJSON(steps.local-action.outputs) }}'

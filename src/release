@@ -10,7 +10,7 @@ if [ "$NO_RELEASE" = "true" ]; then
 fi
 
 if [ -z "$RELEASE_TRAIN_BIN" ]; then
-  "$ACTION_DIR"/src/bindown -q install release-train
+  "$ACTION_DIR"/src/bindown -q install release-train --allow-missing-checksum
   RELEASE_TRAIN_BIN="$ACTION_DIR"/bin/release-train
 fi
 
