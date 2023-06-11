@@ -128,4 +128,19 @@ The version of the new release. Empty if no release is called for.
 ### release_tag
 
 The tag of the new release. Empty if no release is called for.
+
+
+### change_level
+
+The level of change in the release. Either "major", "minor", "patch" or "no change".
+
+
+### created_tag
+
+Whether a tag was created. Either "true" or "false".
+
+
+### created_release
+
+Whether a release was created. Either "true" or "false".
 <!--- end action doc --->
