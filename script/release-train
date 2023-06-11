@@ -1,0 +1,10 @@
+#!/bin/sh
+#/ script/release-train builds and runs release-train.
+
+set -e
+
+CDPATH="" cd -- "$(dirname -- "$0")/.."
+
+go build -o bin/release-train .
+
+exec bin/release-train "$@"

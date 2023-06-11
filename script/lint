@@ -1,9 +1,11 @@
 #!/bin/sh
+#/ script/lint runs linters.
 
 set -e
 
 CDPATH="" cd -- "$(dirname -- "$0")/.."
 
-script/bindown -q install shellcheck
+script/bindown -q install shellcheck golangci-lint
 
+bin/golangci-lint run ./...
 bin/shellcheck script/* src/*

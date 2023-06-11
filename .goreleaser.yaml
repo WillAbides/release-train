@@ -1,0 +1,20 @@
+project_name: release-train
+builds:
+  - goos:
+      - linux
+      - darwin
+      - windows
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+    main: .
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+publishers:
+  - name: gh
+    env:
+      - GITHUB_TOKEN="{{ .Env.GITHUB_TOKEN }}"
+    cmd: env && bin/gh release upload --clobber {{ .Tag }} dist/{{ .ArtifactName }}
