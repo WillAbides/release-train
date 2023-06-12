@@ -24,3 +24,14 @@ script/bindown -q install action-doc
 ACTION_DOC="$(bin/action-doc action.yml --header-prefix='#' --skip-action-name)"
 
 update_file_section README.md '<!--- start action doc --->' '<!--- end action doc --->' "$ACTION_DOC"
+
+for f in script/*; do
+  [ -f "$f" ] || continue
+  SCRIPT_DESCRIPTIONS="$SCRIPT_DESCRIPTIONS
+### $(basename "$f")
+
+$(grep '^#/' "$f" | cut -c 4-)
+"
+done
+
+update_file_section CONTRIBUTING.md '<!--- start script descriptions --->' '<!--- end script descriptions --->' "$SCRIPT_DESCRIPTIONS"

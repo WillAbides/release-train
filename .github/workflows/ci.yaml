@@ -26,10 +26,142 @@ jobs:
           path: |
             ${{ steps.setup-go.outputs.GOCACHE }}
             ${{ steps.setup-go.outputs.GOMODCACHE }}
-          key: ${{ runner.os }}-go-${{ hashFiles('go.*', '.github/workflows/ci.yaml', 'script/*', '.bindown.yaml', '.goreleaser.yaml') }}
-          restore-keys: ${{ runner.os }}-go-
+          key: go-${{ runner.os }}-${{ hashFiles('go.*', '*.go', '.github/workflows/ci.yaml', 'script/*', 'src/*' ,'.bindown.yaml', '.goreleaser.yaml') }}
+          restore-keys: go-${{ runner.os }}-
       - name: script/cibuild
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           script/cibuild
+      - name: build release-train
+        run: |
+          go build -o bin/release-train .
+          echo RELEASE_TRAIN_BIN="$(pwd)"/bin/release-train >> "$GITHUB_ENV"
+      - id: release-train
+        uses: './'
+      - if: |
+          github.event_name == 'push' && 
+          github.ref == 'refs/heads/main' &&
+          (
+            steps.release-train.outputs.first_release == 'true' || 
+            steps.release-train.outputs.change_level != 'no change'
+          )
+        id: pre-release
+        name: pre-release
+        env:
+          RELEASE_VERSION: "${{ steps.release-train.outputs.release_version }}"
+        run: |
+          script/bindown -q install jq
+          CONFIGURED_VERSION="$(script/bindown dependency show-config release-train --json | jq -r 'vars.version')"
+          if [ "$RELEASE_VERSION" != "$CONFIGURED_VERSION" ]; then
+            echo "create_release_pr=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "do_release=true" >> "$GITHUB_OUTPUT"
+          fi
+    outputs:
+      previous_ref: ${{ steps.release-train.outputs.previous_ref }}
+      previous_version: ${{ steps.release-train.outputs.previous_tag }}
+      first_release: ${{ steps.release-train.outputs.first_release }}
+      release_version: ${{ steps.release-train.outputs.release_version }}
+      release_tag: ${{ steps.release-train.outputs.release_tag }}
+      change_level: ${{ steps.release-train.outputs.change_level }}
+      created_release_pr: ${{ steps.pre-release.outputs.create_release_pr }}
+      do_release: ${{ steps.pre-release.outputs.do_release }}
+
+  create_release_pr:
+    runs-on: ubuntu-22.04
+    name: create_release_pr
+    needs: [ cibuild ]
+    if: needs.cibuild.outputs.created_release_pr == 'true'
+    concurrency:
+      group: create_release_pr-${{ needs.cibuild.outputs.release_tag }}
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      RELEASE_VERSION: "${{ needs.cibuild.outputs.release_version }}"
+      RELEASE_TAG: "${{ needs.cibuild.outputs.release_tag }}"
+      PR_BRANCH_NAME: "release-${{ needs.cibuild.outputs.release_tag }}"
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: git config
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+      - name: create release branch
+        run: |
+          if git ls-remote --exit-code origin "$PR_BRANCH_NAME"; then
+              git switch "$PR_BRANCH_NAME"
+              echo "Branch $PR_BRANCH_NAME already exists on origin"
+              exit 0
+          fi
+          
+          git switch -c "$PR_BRANCH_NAME"
+          
+          script/bindown dependency update-vars release-train \
+            --set version="$RELEASE_VERSION" \
+            --skipchecksums
+          
+          git add .bindown.yaml
+          git commit -m "update release-train version to $RELEASE_VERSION"
+          git push origin "$PR_BRANCH_NAME"
+      - name: create release pr
+        run: |
+          script/bindown -q install gh
+          
+          PR_EXISTS="$(
+            bin/gh pr list \
+              --state open \
+              --base main \
+              --head "$PR_BRANCH_NAME" \
+              --json number \
+              --jq 'length > 0'
+          )"
+          if [ "$PR_EXISTS" = "true" ]; then
+            echo "PR already exists for $PR_BRANCH_NAME"
+            exit 0
+          fi
+          
+          bin/gh pr create \
+            --title "Release $RELEASE_TAG" \
+            --body "Release $RELEASE_TAG" \
+            --base main \
+            --head "$PR_BRANCH_NAME" \
+            --label "semver:no-change"
+
+  release:
+    name: release
+    needs: [ cibuild ]
+    if: needs.cibuild.outputs.do_release == 'true'
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: WillAbides/setup-go-faster@v1
+        id: setup-go
+        with:
+          go-version: '1.20.x'
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ${{ steps.setup-go.outputs.GOCACHE }}
+            ${{ steps.setup-go.outputs.GOMODCACHE }}
+          key: go-${{ runner.os }}-${{ hashFiles('go.*', '*.go', '.github/workflows/ci.yaml', 'script/*', 'src/*' ,'.bindown.yaml', '.goreleaser.yaml') }}
+          restore-keys: go-${{ runner.os }}-
+      - name: RELEASE_TRAIN_BIN
+        run: |
+          go build -o bin/release-train .
+          echo RELEASE_TRAIN_BIN="$(pwd)"/bin/release-train >> $GITHUB_ENV
+      - uses: './'
+        with:
+          create_release: true
+          validate_go_module: go.mod
+      - name: goreleaser
+        run: |
+          script/bindown -q install goreleaser
+          bin/goreleaser release --clean

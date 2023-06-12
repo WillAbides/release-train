@@ -9,7 +9,10 @@ if [ "$NO_RELEASE" = "true" ]; then
   exit 0
 fi
 
-"$ACTION_DIR"/src/bindown -q install release-train
+if [ -z "$RELEASE_TRAIN_BIN" ]; then
+  "$ACTION_DIR"/src/bindown -q install release-train --allow-missing-checksum
+  RELEASE_TRAIN_BIN="$ACTION_DIR"/bin/release-train
+fi
 
 set -- release "$GITHUB_REPOSITORY" \
   --ref "$REF" \
