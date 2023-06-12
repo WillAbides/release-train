@@ -82,6 +82,7 @@ jobs:
       RELEASE_VERSION: "${{ needs.cibuild.outputs.release_version }}"
       RELEASE_TAG: "${{ needs.cibuild.outputs.release_tag }}"
       PR_BRANCH_NAME: "release-${{ needs.cibuild.outputs.release_tag }}"
+      GH_TOKEN: "${{ github.token }}"
     steps:
       - uses: actions/checkout@v3
         with:
