@@ -174,13 +174,6 @@ func (o *releaseRunner) run(ctx context.Context) (*releaseResult, error) {
 		return result, nil
 	}
 
-	for _, mf := range o.goModFiles {
-		err = o.runGoValidation(mf, result)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	runEnv := map[string]string{
 		"RELEASE_VERSION":    result.ReleaseVersion,
 		"RELEASE_TAG":        result.ReleaseTag,
@@ -192,6 +185,13 @@ func (o *releaseRunner) run(ctx context.Context) (*releaseResult, error) {
 
 	if o.prereleaseHook != "" {
 		_, err = runCmd(o.checkoutDir, runEnv, "sh", "-c", o.prereleaseHook)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	for _, mf := range o.goModFiles {
+		err = o.runGoValidation(mf, result)
 		if err != nil {
 			return nil, err
 		}
