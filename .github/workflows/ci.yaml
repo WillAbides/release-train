@@ -55,6 +55,8 @@ jobs:
             echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
       - if: steps.release-train.outputs.created_release == 'true'
         name: goreleaser
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           script/bindown -q install goreleaser
           bin/goreleaser release --clean
