@@ -262,6 +262,8 @@ assertVar() {
   fi
 }
 
+git config user.name 'tester'
+git config user.email 'tester'
 echo foo > foo.txt
 git add foo.txt
 git commit -m "add foo.txt"
