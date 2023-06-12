@@ -217,6 +217,83 @@ echo "I got your release notes right here buddy" >> "$RELEASE_NOTES_FILE"
 		}, got)
 	})
 
+	t.Run("tags $RELEASE_TARGET", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		repos := setupGit(t)
+
+		githubClient := wrapperStub{
+			compareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
+				t.Helper()
+				assert.Equal(t, "orgName", owner)
+				assert.Equal(t, "repoName", repo)
+				assert.Equal(t, "v2.0.0", base)
+				assert.Equal(t, repos.taggedCommits["head"], head)
+				return []string{repos.taggedCommits["fourth"], repos.taggedCommits["head"]}, nil
+			},
+			listPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]nextResultPull, error) {
+				t.Helper()
+				assert.Equal(t, "orgName", owner)
+				assert.Equal(t, "repoName", repo)
+				switch sha {
+				case repos.taggedCommits["fourth"]:
+					return []nextResultPull{{Number: 1, Labels: []string{"semver:minor"}}}, nil
+				case repos.taggedCommits["head"]:
+					return []nextResultPull{}, nil
+				default:
+					e := fmt.Errorf("unexpected sha %s", sha)
+					t.Error(e)
+					return nil, e
+				}
+			},
+		}
+		preHook := `
+#!/bin/sh
+set -e
+
+assertVar() {
+  name="$1"
+  want="$2"
+  got="$3"
+  if [ "$want" != "$got" ]; then
+    echo "$name was '$got' wanted '$want'" >&2
+    exit 1
+  fi
+}
+
+echo foo > foo.txt
+git add foo.txt
+git commit -m "add foo.txt"
+echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
+`
+		runner := releaseRunner{
+			checkoutDir:    repos.clone,
+			ref:            repos.taggedCommits["head"],
+			tagPrefix:      "v",
+			repo:           "orgName/repoName",
+			pushRemote:     "origin",
+			githubClient:   &githubClient,
+			createTag:      true,
+			prereleaseHook: preHook,
+			githubToken:    "token",
+		}
+		got, err := runner.run(ctx)
+		require.NoError(t, err)
+		require.Equal(t, &releaseResult{
+			FirstRelease:    false,
+			ReleaseTag:      "v2.1.0",
+			ReleaseVersion:  "2.1.0",
+			PreviousVersion: "2.0.0",
+			PreviousRef:     "v2.0.0",
+			ChangeLevel:     changeLevelMinor,
+			CreatedTag:      true,
+			CreatedRelease:  false,
+		}, got)
+		target := mustRunCmd(t, repos.origin, nil, "git", "rev-parse", "v2.1.0")
+		// We don't know what the commit sha will be, but it should be different from head.
+		require.NotEqual(t, repos.taggedCommits["head"], target)
+	})
+
 	t.Run("generates release notes from API", func(t *testing.T) {
 		t.Parallel()
 		ctx := context.Background()
