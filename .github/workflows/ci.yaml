@@ -133,6 +133,15 @@ jobs:
             --label "semver:nochange"
           
           bin/gh pr merge "$RELEASE_TAG" --auto --merge
+          
+          PR_HEAD="$(git rev-parse "$PR_BRANCH_NAME")"
+          bin/gh api -X POST "/repos/$GITHUB_REPOSITORY/statuses/$PR_HEAD" \
+            -F state=success \
+            -F context=cibuild
+          
+          bin/gh api -X POST "/repos/$GITHUB_REPOSITORY/statuses/$PR_HEAD" \
+            -F state=success \
+            -F context=rel
 
   release:
     name: release
