@@ -131,6 +131,8 @@ jobs:
             --base main \
             --head "$PR_BRANCH_NAME" \
             --label "semver:nochange"
+          
+          bin/gh pr merge "$RELEASE_TAG" --auto --merge
 
   release:
     name: release
