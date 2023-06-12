@@ -28,15 +28,16 @@ type releaseRunner struct {
 	goModFiles      []string
 	repo            string
 	pushRemote      string
+	tempDir         string
 	githubClient    wrapper
 }
 
 func (o *releaseRunner) releaseNotesFile() string {
-	return filepath.Join(o.checkoutDir, "release-notes")
+	return filepath.Join(o.tempDir, "release-notes")
 }
 
 func (o *releaseRunner) releaseTargetFile() string {
-	return filepath.Join(o.checkoutDir, "release-target")
+	return filepath.Join(o.tempDir, "release-target")
 }
 
 var modVersionRe = regexp.MustCompile(`v\d+$`)
@@ -134,7 +135,8 @@ func (o *releaseRunner) repoName() string {
 }
 
 func (o *releaseRunner) getReleaseTarget() (string, error) {
-	targetInfo, err := os.Stat(o.releaseTargetFile())
+	targetFile := o.releaseTargetFile()
+	targetInfo, err := os.Stat(targetFile)
 	if err != nil && !os.IsNotExist(err) {
 		return "", err
 	}

@@ -64,7 +64,7 @@ func (cmd *releaseCmd) Run(ctx context.Context, root *rootCmd) (errOut error) {
 	if err != nil {
 		return err
 	}
-	tmpdir, err := os.MkdirTemp(cmd.Tempdir, "release-train-*")
+	tempDir, err := os.MkdirTemp(cmd.Tempdir, "release-train-*")
 	if err != nil {
 		return err
 	}
@@ -74,8 +74,8 @@ func (cmd *releaseCmd) Run(ctx context.Context, root *rootCmd) (errOut error) {
 		return err
 	}
 	defer func() {
-		e := os.RemoveAll(tmpdir)
-		// It's normal to not be able to remove the tempdir in GitHub Actions when tmpdir is in RUNNER_TEMP and
+		e := os.RemoveAll(tempDir)
+		// It's normal to not be able to remove the tempdir in GitHub Actions when tempDir is in RUNNER_TEMP and
 		// the action doesn't have the correct permissions.
 		if actionCtx.Actions {
 			return
@@ -108,6 +108,7 @@ func (cmd *releaseCmd) Run(ctx context.Context, root *rootCmd) (errOut error) {
 		goModFiles:      goModFiles,
 		pushRemote:      cmd.PushRemote,
 		repo:            cmd.Repo,
+		tempDir:         tempDir,
 
 		githubClient: &ghWrapper{client: ghClient},
 	}

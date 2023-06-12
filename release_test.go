@@ -149,6 +149,7 @@ echo "I got your release notes right here buddy" >> "$RELEASE_NOTES_FILE"
 			postreleaseHook: postHook,
 			githubToken:     "token",
 			goModFiles:      []string{"src/go/go.mod"},
+			tempDir:         t.TempDir(),
 		}
 		got, err := runner.run(ctx)
 		require.NoError(t, err)
@@ -276,6 +277,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			createTag:      true,
 			prereleaseHook: preHook,
 			githubToken:    "token",
+			tempDir:        t.TempDir(),
 		}
 		got, err := runner.run(ctx)
 		require.NoError(t, err)
