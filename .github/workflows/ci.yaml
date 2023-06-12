@@ -13,6 +13,11 @@ jobs:
   cibuild:
     name: cibuild
     runs-on: ubuntu-22.04
+    env:
+      GIT_COMMITTER_NAME: "${{ github.actor }}"
+      GIT_COMMITTER_EMAIL: "${{ github.actor }}@users.noreply.github.com"
+      GIT_AUTHOR_NAME: "${{ github.actor }}"
+      GIT_AUTHOR_EMAIL: "${{ github.actor }}@users.noreply.github.com"
     steps:
       - uses: actions/checkout@v3
         with:
@@ -28,11 +33,7 @@ jobs:
             ${{ steps.setup-go.outputs.GOMODCACHE }}
           key: go-${{ runner.os }}-${{ hashFiles('go.*', '*.go', '.github/workflows/ci.yaml', 'script/*', 'src/*' ,'.bindown.yaml', '.goreleaser.yaml') }}
           restore-keys: go-${{ runner.os }}-
-      - name: script/cibuild
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          script/cibuild
+      - run: script/cibuild
       - name: build release-train
         run: |
           go build -o bin/release-train .
