@@ -9,15 +9,16 @@ on:
       - synchronize
       - opened
       - reopened
+#env:
+#  GIT_COMMITTER_NAME: "${{ github.actor }}"
+#  GIT_COMMITTER_EMAIL: "${{ github.actor }}@users.noreply.github.com"
+#  GIT_AUTHOR_NAME: "${{ github.actor }}"
+#  GIT_AUTHOR_EMAIL: "${{ github.actor }}@users.noreply.github.com"
+
 jobs:
   cibuild:
     name: cibuild
     runs-on: ubuntu-22.04
-    env:
-      GIT_COMMITTER_NAME: "${{ github.actor }}"
-      GIT_COMMITTER_EMAIL: "${{ github.actor }}@users.noreply.github.com"
-      GIT_AUTHOR_NAME: "${{ github.actor }}"
-      GIT_AUTHOR_EMAIL: "${{ github.actor }}@users.noreply.github.com"
     steps:
       - uses: actions/checkout@v3
         with:
