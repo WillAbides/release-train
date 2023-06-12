@@ -69,11 +69,18 @@ abort the release with an error.
 
 You may provide custom release notes by writing to the file at `$RELEASE_NOTES_FILE`:
 ```
-echo "my release notes" > "$RELEASE_NOTES_FILE"
+  echo "my release notes" > "$RELEASE_NOTES_FILE"
+```
+
+You can update the git ref to be released by writing it to the file at `$RELEASE_TARGET`:
+```
+  # ... update some files ...
+  git commit -am "prepare release $RELEASE_TAG"
+  echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 ```
 
 The environment variables `RELEASE_VERSION`, `RELEASE_TAG`, `PREVIOUS_VERSION`, `FIRST_RELEASE`, `GITHUB_TOKEN`,
-and `RELEASE_NOTES_FILE` will be set.
+`RELEASE_NOTES_FILE` and `RELEASE_TARGET` will be set.
 
 
 ### post_release_hook

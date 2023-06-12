@@ -35,6 +35,10 @@ func (o *releaseRunner) releaseNotesFile() string {
 	return filepath.Join(o.checkoutDir, "release-notes")
 }
 
+func (o *releaseRunner) releaseTargetFile() string {
+	return filepath.Join(o.checkoutDir, "release-target")
+}
+
 var modVersionRe = regexp.MustCompile(`v\d+$`)
 
 type releaseResult struct {
@@ -129,6 +133,25 @@ func (o *releaseRunner) repoName() string {
 	return strings.SplitN(o.repo, "/", 2)[1]
 }
 
+func (o *releaseRunner) getReleaseTarget() (string, error) {
+	targetInfo, err := os.Stat(o.releaseTargetFile())
+	if err != nil && !os.IsNotExist(err) {
+		return "", err
+	}
+	target := ""
+	if err == nil && !targetInfo.IsDir() {
+		content, e := os.ReadFile(o.releaseTargetFile())
+		if e != nil {
+			return "", e
+		}
+		target = strings.TrimSpace(string(content))
+	}
+	if target == "" {
+		return o.ref, nil
+	}
+	return target, nil
+}
+
 func (o *releaseRunner) getReleaseNotes(ctx context.Context, result *releaseResult) (string, error) {
 	notesInfo, err := os.Stat(o.releaseNotesFile())
 	if err != nil && !os.IsNotExist(err) {
@@ -174,13 +197,6 @@ func (o *releaseRunner) run(ctx context.Context) (*releaseResult, error) {
 		return result, nil
 	}
 
-	for _, mf := range o.goModFiles {
-		err = o.runGoValidation(mf, result)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	runEnv := map[string]string{
 		"RELEASE_VERSION":    result.ReleaseVersion,
 		"RELEASE_TAG":        result.ReleaseTag,
@@ -188,6 +204,7 @@ func (o *releaseRunner) run(ctx context.Context) (*releaseResult, error) {
 		"FIRST_RELEASE":      fmt.Sprintf("%t", result.FirstRelease),
 		"GITHUB_TOKEN":       o.githubToken,
 		"RELEASE_NOTES_FILE": o.releaseNotesFile(),
+		"RELEASE_TARGET":     o.releaseTargetFile(),
 	}
 
 	if o.prereleaseHook != "" {
@@ -197,7 +214,19 @@ func (o *releaseRunner) run(ctx context.Context) (*releaseResult, error) {
 		}
 	}
 
-	_, err = runCmd(o.checkoutDir, nil, "git", "tag", result.ReleaseTag, o.ref)
+	for _, mf := range o.goModFiles {
+		err = o.runGoValidation(mf, result)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	target, err := o.getReleaseTarget()
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = runCmd(o.checkoutDir, nil, "git", "tag", result.ReleaseTag, target)
 	if err != nil {
 		return nil, err
 	}
