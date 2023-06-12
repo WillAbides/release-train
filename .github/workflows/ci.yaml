@@ -13,6 +13,8 @@ jobs:
   cibuild:
     name: cibuild
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v3
         with:
