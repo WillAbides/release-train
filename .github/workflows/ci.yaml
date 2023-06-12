@@ -133,8 +133,6 @@ jobs:
             --head "$PR_BRANCH_NAME" \
             --label "semver:nochange"
           
-          bin/gh pr merge "$PR_BRANCH_NAME" --auto --merge
-          
           PR_HEAD="$(git rev-parse "$PR_BRANCH_NAME")"
           bin/gh api -X POST "/repos/$GITHUB_REPOSITORY/statuses/$PR_HEAD" \
             -F state=success \
