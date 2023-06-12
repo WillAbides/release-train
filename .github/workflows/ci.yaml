@@ -74,4 +74,4 @@ jobs:
         name: update release-train
         run: |
           TOKEN="${{ steps.generate-token.outputs.token }}"
-          git push "https://x-access-token:${TOKEN}@${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" main
+          git push "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}" main
