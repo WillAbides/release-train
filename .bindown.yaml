@@ -369,8 +369,8 @@ templates:
     required_vars:
       - version
   release-train:
-    homepage: https://github.com/WillAbides/release-train
-    url: https://github.com/WillAbides/release-train/releases/download/v{{.version}}/release-train_{{.version}}_{{.os}}_{{.arch}}{{.urlSuffix}}
+    homepage: https://github.com/WillAbides/release-train-action
+    url: https://github.com/WillAbides/release-train-action/releases/download/v{{.version}}/release-train_{{.version}}_{{.os}}_{{.arch}}{{.urlSuffix}}
     archive_path: release-train{{.archivePathSuffix}}
     bin: release-train
     vars:
@@ -399,10 +399,10 @@ url_checksums:
   https://github.com/WillAbides/handcrafted/releases/download/v0.0.0/handcrafted_0.0.0_darwin_arm64.tar.gz: c03133084f87e064f9801d4b2a9739be755fcee5875382f4da0fc10cd8306dfb
   https://github.com/WillAbides/handcrafted/releases/download/v0.0.0/handcrafted_0.0.0_linux_amd64.tar.gz: 1a7885a9854d2455dce1be3bc19f2d61a61ebdc99e2a98e4969ab1965c2a64ad
   https://github.com/WillAbides/handcrafted/releases/download/v0.0.0/handcrafted_0.0.0_windows_amd64.tar.gz: 5ce8cddc9bdbd19adde3104397d698ecca7eb8ad2ac540cc709a15821f9b2609
-  https://github.com/WillAbides/release-train/releases/download/v0.3.0/release-train_0.3.0_darwin_amd64.tar.gz: 43f0ef1bf19fd7e73c146a5305455669537b5ff216bf16acbad70f72153783e7
-  https://github.com/WillAbides/release-train/releases/download/v0.3.0/release-train_0.3.0_darwin_arm64.tar.gz: a5faf90aba62f60e74d20c3e52ab0540cb25f72de2fd01b80590e0e476047e49
-  https://github.com/WillAbides/release-train/releases/download/v0.3.0/release-train_0.3.0_linux_amd64.tar.gz: bf654ea152b84154e0e6313163787f9a3ab1224a803f65584041116290c731d1
-  https://github.com/WillAbides/release-train/releases/download/v0.3.0/release-train_0.3.0_windows_amd64.tar.gz: 05e7bd87aa20c99a241b8d3191edf38fd93cab510a851d1c2b4476eb010092ab
+  https://github.com/WillAbides/release-train-action/releases/download/v2.2.1/release-train_2.2.1_darwin_amd64.tar.gz: 1d86d20332eca253960f277a8899a76635c0c0e1d8d558d3fc2b50b94e5a4c19
+  https://github.com/WillAbides/release-train-action/releases/download/v2.2.1/release-train_2.2.1_darwin_arm64.tar.gz: 7026fef3e1d6d5fc1ae686a5679107763439e5040b67a4abcce947ef1b205f49
+  https://github.com/WillAbides/release-train-action/releases/download/v2.2.1/release-train_2.2.1_linux_amd64.tar.gz: d27fdfc200aa173aba846879384fd1072a0387ea8cb849910304ea0f68ab6f26
+  https://github.com/WillAbides/release-train-action/releases/download/v2.2.1/release-train_2.2.1_windows_amd64.tar.gz: 6bf04747772432bff24fe1d5bb17c0e7cf7c60a44d8cdf00345815640de498cc
   https://github.com/WillAbides/semver-next/releases/download/v2.2.0/semver-next_2.2.0_darwin_amd64.tar.gz: 171e33768dbe1a8a729e48d57418075d20640edb18936e918f9ba23c02cb9122
   https://github.com/WillAbides/semver-next/releases/download/v2.2.0/semver-next_2.2.0_darwin_arm64.tar.gz: d9f3f199f89c91a2e97603677ac40ae77f0adc06d0b3db9b6f77f9587297088d
   https://github.com/WillAbides/semver-next/releases/download/v2.2.0/semver-next_2.2.0_linux_amd64.tar.gz: 16dbee5dc70a3bba3d9e0afae3efdfb58df2bed8169cc1695543006343ad55ea
