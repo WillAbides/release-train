@@ -15,6 +15,10 @@ jobs:
     runs-on: ubuntu-22.04
     permissions:
       contents: write
+      pull-requests: write
+      statuses: write
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -30,6 +34,11 @@ jobs:
             ${{ steps.setup-go.outputs.GOMODCACHE }}
           key: go-${{ runner.os }}-${{ hashFiles('go.*', '*.go', '.github/workflows/ci.yaml', 'script/*', 'src/*' ,'.bindown.yaml', '.goreleaser.yaml') }}
           restore-keys: go-${{ runner.os }}-
+      - uses: tibdex/github-app-token@v1.8.0
+        id: generate-token
+        with:
+          app_id: ${{ secrets.RELEASER_APP_ID }}
+          private_key: ${{ secrets.RELEASER_APP_KEY }}
       - name: config
         run: |
           git config --local user.name '${{ github.actor }}'
@@ -64,4 +73,5 @@ jobs:
       - if: steps.release-train.outputs.created_release == 'true'
         name: update release-train
         run: |
-          git push origin main
+          TOKEN="${{ steps.generate-token.outputs.token }}"
+          git push "https://x-access-token:${TOKEN}@${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" main
