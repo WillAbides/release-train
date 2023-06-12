@@ -130,7 +130,7 @@ jobs:
             --body "Release $RELEASE_TAG" \
             --base main \
             --head "$PR_BRANCH_NAME" \
-            --label "semver:no-change"
+            --label "semver:nochange"
 
   release:
     name: release
@@ -139,6 +139,8 @@ jobs:
     runs-on: ubuntu-22.04
     permissions:
       contents: write
+    env:
+      GITHUB_TOKEN: "${{ github.token }}"
     steps:
       - uses: actions/checkout@v3
         with:
