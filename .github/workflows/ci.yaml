@@ -78,6 +78,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      statuses: write
     env:
       RELEASE_VERSION: "${{ needs.cibuild.outputs.release_version }}"
       RELEASE_TAG: "${{ needs.cibuild.outputs.release_tag }}"
