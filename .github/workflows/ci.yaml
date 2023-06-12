@@ -52,7 +52,7 @@ jobs:
           RELEASE_VERSION: "${{ steps.release-train.outputs.release_version }}"
         run: |
           script/bindown -q install jq
-          CONFIGURED_VERSION="$(script/bindown dependency show-config release-train --json | jq -r 'vars.version')"
+          CONFIGURED_VERSION="$(script/bindown dependency show-config release-train --json | jq -r '.vars.version')"
           if [ "$RELEASE_VERSION" != "$CONFIGURED_VERSION" ]; then
             echo "create_release_pr=true" >> "$GITHUB_OUTPUT"
           else
