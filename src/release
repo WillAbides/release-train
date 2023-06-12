@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -ex
+set -e
 
 ACTION_DIR="$(CDPATH="" cd -- "$(dirname -- "$0")/.." && pwd -P)"
 
