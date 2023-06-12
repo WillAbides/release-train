@@ -61,3 +61,7 @@ jobs:
           git status
           script/bindown -q install goreleaser
           bin/goreleaser release --clean
+      - if: steps.release-train.outputs.created_release == 'true'
+        name: update release-train
+        run: |
+          git push origin main
