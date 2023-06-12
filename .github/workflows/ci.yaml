@@ -58,5 +58,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
+          git status
           script/bindown -q install goreleaser
           bin/goreleaser release --clean
