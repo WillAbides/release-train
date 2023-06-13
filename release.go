@@ -44,15 +44,16 @@ func (o *releaseRunner) releaseTargetFile() string {
 var modVersionRe = regexp.MustCompile(`v\d+$`)
 
 type releaseResult struct {
-	PreviousRef          string      `json:"previous-ref"`
-	PreviousVersion      string      `json:"previous-version"`
-	FirstRelease         bool        `json:"first-release"`
-	ReleaseVersion       string      `json:"release-version,omitempty"`
-	ReleaseTag           string      `json:"release-tag,omitempty"`
-	ChangeLevel          changeLevel `json:"change-level"`
-	CreatedTag           bool        `json:"created-tag,omitempty"`
-	CreatedRelease       bool        `json:"created-release,omitempty"`
-	PrereleaseHookOutput string      `json:"prerelease-hook-output"`
+	PreviousRef           string      `json:"previous-ref"`
+	PreviousVersion       string      `json:"previous-version"`
+	FirstRelease          bool        `json:"first-release"`
+	ReleaseVersion        string      `json:"release-version,omitempty"`
+	ReleaseTag            string      `json:"release-tag,omitempty"`
+	ChangeLevel           changeLevel `json:"change-level"`
+	CreatedTag            bool        `json:"created-tag,omitempty"`
+	CreatedRelease        bool        `json:"created-release,omitempty"`
+	PrereleaseHookOutput  string      `json:"prerelease-hook-output"`
+	PrereleaseHookAborted bool        `json:"prerelease-hook-aborted"`
 }
 
 func (o *releaseRunner) next(ctx context.Context) (*releaseResult, error) {
@@ -211,12 +212,11 @@ func (o *releaseRunner) run(ctx context.Context) (*releaseResult, error) {
 		"RELEASE_TARGET":     o.releaseTargetFile(),
 	}
 
-	prereleaseOut, abort, err := runPrereleaseHook(o.checkoutDir, runEnv, o.prereleaseHook)
+	result.PrereleaseHookOutput, result.PrereleaseHookAborted, err = runPrereleaseHook(o.checkoutDir, runEnv, o.prereleaseHook)
 	if err != nil {
 		return nil, err
 	}
-	result.PrereleaseHookOutput = prereleaseOut
-	if abort {
+	if result.PrereleaseHookAborted {
 		return result, nil
 	}
 

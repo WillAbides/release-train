@@ -134,6 +134,7 @@ func (cmd *releaseCmd) Run(ctx context.Context, root *rootCmd) (errOut error) {
 	action.SetOutput("created_tag", fmt.Sprintf("%t", result.CreatedTag))
 	action.SetOutput("created_release", fmt.Sprintf("%t", result.CreatedRelease))
 	action.SetOutput("pre_release_hook_output", result.PrereleaseHookOutput)
+	action.SetOutput("pre_release_hook_aborted", fmt.Sprintf("%t", result.PrereleaseHookAborted))
 
 	return nil
 }
