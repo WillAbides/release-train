@@ -132,6 +132,12 @@ outputs:
     description: |
       Whether a release was created. Either "true" or "false".
 
+  pre_release_hook_output:
+    value: ${{ steps.release.outputs.pre_release_hook_output }}
+    description: |
+      The stdout of the pre_release_hook. Empty if pre_release_hook is not set or if the hook returned an exit other
+      than 0 or 10.
+
 runs:
   using: composite
   steps:

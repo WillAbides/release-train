@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -43,14 +44,15 @@ func (o *releaseRunner) releaseTargetFile() string {
 var modVersionRe = regexp.MustCompile(`v\d+$`)
 
 type releaseResult struct {
-	PreviousRef     string      `json:"previous-ref"`
-	PreviousVersion string      `json:"previous-version"`
-	FirstRelease    bool        `json:"first-release"`
-	ReleaseVersion  string      `json:"release-version,omitempty"`
-	ReleaseTag      string      `json:"release-tag,omitempty"`
-	ChangeLevel     changeLevel `json:"change-level"`
-	CreatedTag      bool        `json:"created-tag,omitempty"`
-	CreatedRelease  bool        `json:"created-release,omitempty"`
+	PreviousRef          string      `json:"previous-ref"`
+	PreviousVersion      string      `json:"previous-version"`
+	FirstRelease         bool        `json:"first-release"`
+	ReleaseVersion       string      `json:"release-version,omitempty"`
+	ReleaseTag           string      `json:"release-tag,omitempty"`
+	ChangeLevel          changeLevel `json:"change-level"`
+	CreatedTag           bool        `json:"created-tag,omitempty"`
+	CreatedRelease       bool        `json:"created-release,omitempty"`
+	PrereleaseHookOutput string      `json:"prerelease-hook-output"`
 }
 
 func (o *releaseRunner) next(ctx context.Context) (*releaseResult, error) {
@@ -209,16 +211,13 @@ func (o *releaseRunner) run(ctx context.Context) (*releaseResult, error) {
 		"RELEASE_TARGET":     o.releaseTargetFile(),
 	}
 
-	if o.prereleaseHook != "" {
-		_, err = runCmd(o.checkoutDir, runEnv, "sh", "-c", o.prereleaseHook)
-		if err != nil {
-			// if hook returns 10, it means that we should abort
-			exitErr := asExitErr(err)
-			if exitErr != nil && exitErr.ExitCode() == 10 {
-				return result, nil
-			}
-			return nil, err
-		}
+	prereleaseOut, abort, err := runPrereleaseHook(o.checkoutDir, runEnv, o.prereleaseHook)
+	if err != nil {
+		return nil, err
+	}
+	result.PrereleaseHookOutput = prereleaseOut
+	if abort {
+		return result, nil
 	}
 
 	for _, mf := range o.goModFiles {
@@ -274,6 +273,32 @@ func (o *releaseRunner) run(ctx context.Context) (*releaseResult, error) {
 	}
 
 	return result, nil
+}
+
+func runPrereleaseHook(dir string, env map[string]string, hook string) (stdout string, abort bool, _ error) {
+	if hook == "" {
+		return "", false, nil
+	}
+	var stdoutBuf bytes.Buffer
+	cmd := exec.Command("sh", "-c", hook)
+	cmd.Dir = dir
+	cmd.Env = os.Environ()
+	for k, v := range env {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
+	}
+	cmd.Stdout = &stdoutBuf
+	err := cmd.Run()
+	if err != nil {
+		exitErr := asExitErr(err)
+		if exitErr != nil {
+			err = errors.Join(err, errors.New(string(exitErr.Stderr)))
+			if exitErr.ExitCode() == 10 {
+				return stdoutBuf.String(), true, nil
+			}
+		}
+		return "", false, err
+	}
+	return stdoutBuf.String(), false, nil
 }
 
 func runCmd(dir string, env map[string]string, command string, args ...string) (string, error) {
