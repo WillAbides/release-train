@@ -212,6 +212,11 @@ func (o *releaseRunner) run(ctx context.Context) (*releaseResult, error) {
 	if o.prereleaseHook != "" {
 		_, err = runCmd(o.checkoutDir, runEnv, "sh", "-c", o.prereleaseHook)
 		if err != nil {
+			// if hook returns 10, it means that we should abort
+			exitErr := asExitErr(err)
+			if exitErr != nil && exitErr.ExitCode() == 10 {
+				return result, nil
+			}
 			return nil, err
 		}
 	}
@@ -280,12 +285,20 @@ func runCmd(dir string, env map[string]string, command string, args ...string) (
 	}
 	out, err := cmd.Output()
 	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
+		exitErr := asExitErr(err)
+		if exitErr != nil {
 			err = errors.Join(err, errors.New(string(exitErr.Stderr)))
 		}
 		return "", err
 	}
 
 	return strings.TrimSpace(string(out)), nil
+}
+
+func asExitErr(err error) *exec.ExitError {
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return exitErr
+	}
+	return nil
 }
