@@ -156,4 +156,9 @@ Whether a release was created. Either "true" or "false".
 
 The stdout of the pre_release_hook. Empty if pre_release_hook is not set or if the hook returned an exit other
 than 0 or 10.
+
+
+### pre_release_hook_aborted
+
+Whether pre_release_hook issued an abort by exiting 10. Either "true" or "false".
 <!--- end action doc --->
