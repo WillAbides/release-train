@@ -369,8 +369,8 @@ templates:
     required_vars:
       - version
   release-train:
-    homepage: https://github.com/WillAbides/release-train-action
-    url: https://github.com/WillAbides/release-train-action/releases/download/v{{.version}}/release-train_{{.version}}_{{.os}}_{{.arch}}{{.urlSuffix}}
+    homepage: https://github.com/WillAbides/release-train
+    url: https://github.com/WillAbides/release-train/releases/download/v{{.version}}/release-train_{{.version}}_{{.os}}_{{.arch}}{{.urlSuffix}}
     archive_path: release-train{{.archivePathSuffix}}
     bin: release-train
     vars:
