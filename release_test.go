@@ -330,7 +330,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 				}
 			},
 		}
-		preHook := `exit 10`
+		preHook := `echo aborting; exit 10`
 		runner := releaseRunner{
 			checkoutDir:    repos.clone,
 			ref:            repos.taggedCommits["head"],
@@ -344,14 +344,16 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		got, err := runner.run(ctx)
 		require.NoError(t, err)
 		require.Equal(t, &releaseResult{
-			FirstRelease:    false,
-			ReleaseTag:      "v2.1.0",
-			ReleaseVersion:  "2.1.0",
-			PreviousVersion: "2.0.0",
-			PreviousRef:     "v2.0.0",
-			ChangeLevel:     changeLevelMinor,
-			CreatedTag:      false,
-			CreatedRelease:  false,
+			FirstRelease:          false,
+			ReleaseTag:            "v2.1.0",
+			ReleaseVersion:        "2.1.0",
+			PreviousVersion:       "2.0.0",
+			PreviousRef:           "v2.0.0",
+			ChangeLevel:           changeLevelMinor,
+			CreatedTag:            false,
+			CreatedRelease:        false,
+			PrereleaseHookOutput:  "aborting\n",
+			PrereleaseHookAborted: true,
 		}, got)
 	})
 
