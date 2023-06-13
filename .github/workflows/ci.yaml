@@ -55,13 +55,9 @@ jobs:
             script/bindown dependency update-vars release-train \
               --set version="$RELEASE_VERSION" \
               --skipchecksums
-            if git diff --quiet .bindown.yaml; then
-              echo "no changes to .bindown.yaml"
-              exit 0
+            if ! git diff --quiet .bindown.yaml; then
+              exit 10
             fi
-            git add .bindown.yaml
-            git commit -m "prepare to release $RELEASE_TAG"
-            echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
       - if: steps.release-train.outputs.created_release == 'true'
         name: goreleaser
         env:
@@ -70,8 +66,15 @@ jobs:
           git status
           script/bindown -q install goreleaser
           bin/goreleaser release --clean
-      - if: steps.release-train.outputs.created_release == 'true'
-        name: update release-train
-        run: |
-          TOKEN="${{ steps.generate-token.outputs.token }}"
-          git push "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}" main
+      - if: steps.release-train.outputs.pre_release_hook_aborted == 'true'
+        name: create release pr
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: "${{ steps.generate-token.outputs.token }}"
+          add-paths: ".bindown.yaml"
+          commit-message: "prepare to release ${{ steps.release-train.outputs.release_tag }}"
+          branch: "prepare-release"
+          delete-branch: true
+          title: "prepare to release ${{ steps.release-train.outputs.release_tag }}"
+          body: "prepare to release ${{ steps.release-train.outputs.release_tag }}"
+          labels: "semver:nochange"
