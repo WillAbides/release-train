@@ -150,4 +150,10 @@ Whether a tag was created. Either "true" or "false".
 ### created_release
 
 Whether a release was created. Either "true" or "false".
+
+
+### pre_release_hook_output
+
+The stdout of the pre_release_hook. Empty if pre_release_hook is not set or if the hook returned an exit other
+than 0 or 10.
 <!--- end action doc --->

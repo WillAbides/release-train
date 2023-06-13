@@ -136,6 +136,7 @@ assertVar GITHUB_TOKEN token "$GITHUB_TOKEN"
 `
 		preHook := postHook + `
 echo "I got your release notes right here buddy" >> "$RELEASE_NOTES_FILE"
+echo "hello to my friends reading stdout"
 `
 		runner := releaseRunner{
 			checkoutDir:     repos.clone,
@@ -154,14 +155,15 @@ echo "I got your release notes right here buddy" >> "$RELEASE_NOTES_FILE"
 		got, err := runner.run(ctx)
 		require.NoError(t, err)
 		require.Equal(t, &releaseResult{
-			PreviousRef:     "v2.0.0",
-			PreviousVersion: "2.0.0",
-			FirstRelease:    false,
-			ReleaseVersion:  "2.1.0",
-			ReleaseTag:      "v2.1.0",
-			ChangeLevel:     changeLevelMinor,
-			CreatedTag:      true,
-			CreatedRelease:  true,
+			PreviousRef:          "v2.0.0",
+			PreviousVersion:      "2.0.0",
+			FirstRelease:         false,
+			ReleaseVersion:       "2.1.0",
+			ReleaseTag:           "v2.1.0",
+			ChangeLevel:          changeLevelMinor,
+			CreatedTag:           true,
+			CreatedRelease:       true,
+			PrereleaseHookOutput: "hello to my friends reading stdout\n",
 		}, got)
 		taggedSha, err := runCmd(repos.origin, nil, "git", "rev-parse", "v2.1.0")
 		require.NoError(t, err)
@@ -265,8 +267,8 @@ assertVar() {
 git config user.name 'tester'
 git config user.email 'tester'
 echo foo > foo.txt
-git add foo.txt
-git commit -m "add foo.txt"
+git add foo.txt > /dev/null
+git commit -m "add foo.txt" > /dev/null
 echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 `
 		runner := releaseRunner{
