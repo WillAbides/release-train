@@ -298,6 +298,61 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		require.NotEqual(t, repos.taggedCommits["head"], target)
 	})
 
+	t.Run("prerelease hook exits 10 to skip release", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		repos := setupGit(t)
+
+		githubClient := wrapperStub{
+			compareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
+				t.Helper()
+				assert.Equal(t, "orgName", owner)
+				assert.Equal(t, "repoName", repo)
+				assert.Equal(t, "v2.0.0", base)
+				assert.Equal(t, repos.taggedCommits["head"], head)
+				return []string{repos.taggedCommits["fourth"], repos.taggedCommits["head"]}, nil
+			},
+			listPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]nextResultPull, error) {
+				t.Helper()
+				assert.Equal(t, "orgName", owner)
+				assert.Equal(t, "repoName", repo)
+				switch sha {
+				case repos.taggedCommits["fourth"]:
+					return []nextResultPull{{Number: 1, Labels: []string{"semver:minor"}}}, nil
+				case repos.taggedCommits["head"]:
+					return []nextResultPull{}, nil
+				default:
+					e := fmt.Errorf("unexpected sha %s", sha)
+					t.Error(e)
+					return nil, e
+				}
+			},
+		}
+		preHook := `exit 10`
+		runner := releaseRunner{
+			checkoutDir:    repos.clone,
+			ref:            repos.taggedCommits["head"],
+			tagPrefix:      "v",
+			repo:           "orgName/repoName",
+			pushRemote:     "origin",
+			githubClient:   &githubClient,
+			createTag:      true,
+			prereleaseHook: preHook,
+		}
+		got, err := runner.run(ctx)
+		require.NoError(t, err)
+		require.Equal(t, &releaseResult{
+			FirstRelease:    false,
+			ReleaseTag:      "v2.1.0",
+			ReleaseVersion:  "2.1.0",
+			PreviousVersion: "2.0.0",
+			PreviousRef:     "v2.0.0",
+			ChangeLevel:     changeLevelMinor,
+			CreatedTag:      false,
+			CreatedRelease:  false,
+		}, got)
+	})
+
 	t.Run("generates release notes from API", func(t *testing.T) {
 		t.Parallel()
 		ctx := context.Background()
