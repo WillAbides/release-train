@@ -32,4 +32,5 @@ fi
 go generate ./...
 go mod tidy
 script/fmt
+script/release-train action > action.yml
 ./script/update-docs

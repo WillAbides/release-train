@@ -12,13 +12,26 @@ import (
 	"github.com/google/go-github/v53/github"
 	"github.com/sethvargo/go-githubactions"
 	"golang.org/x/oauth2"
+	"gopkg.in/yaml.v3"
 )
 
 var version = "dev"
 
+var helpVars = kong.Vars{
+	"checkout_dir_help":     thisAction.Inputs.Get("checkout_dir").Description,
+	"ref_help":              thisAction.Inputs.Get("ref").Description,
+	"create_tag_help":       createTagHelp,
+	"create_release_help":   createReleaseHelp,
+	"go_mod_file_help":      validateGoModHelp,
+	"initial_tag_help":      "The tag to use if no previous version can be found.",
+	"pre_release_hook_help": thisAction.Inputs.Get("pre_release_hook").Description,
+	"tag_prefix_help":       thisAction.Inputs.Get("tag_prefix").Description,
+}
+
 type rootCmd struct {
-	CheckoutDir string     `kong:"short=C,default='.'"`
+	CheckoutDir string     `kong:"short=C,default='.',help=${checkout_dir_help}"`
 	Release     releaseCmd `kong:"cmd,help='Release a new version.'"`
+	Action      actionCmd  `kong:"cmd,hidden,help='Create a composite action.'"`
 	Version     kong.VersionFlag
 }
 
@@ -46,16 +59,16 @@ func (c *githubClientConfig) Client(ctx context.Context) (*github.Client, error)
 
 type releaseCmd struct {
 	Repo               string   `kong:"arg,help='Github repository in the form of owner/repo.'"`
-	Ref                string   `kong:"default=HEAD"`
-	CreateTag          bool     `kong:""`
-	CreateRelease      bool     `kong:""`
-	GoModFile          []string `kong:"placeholder=<filepath>"`
-	InitialTag         string   `kong:"placeholder=<tag>"`
-	PreReleaseHook     string   `kong:"placeholder=<command>"`
+	Ref                string   `kong:"default=HEAD,help=${ref_help}"`
+	CreateTag          bool     `kong:"help=${create_tag_help}"`
+	CreateRelease      bool     `kong:"help=${create_release_help}"`
+	GoModFile          []string `kong:"placeholder=<filepath>,help=${go_mod_file_help}"`
+	InitialTag         string   `kong:"placeholder=<tag>,help=${initial_tag_help}"`
+	PreReleaseHook     string   `kong:"placeholder=<command>,help=${pre_release_hook_help}"`
 	PostReleaseHook    string   `kong:"placeholder=<command>"`
-	TagPrefix          string   `kong:"default=v"`
-	PushRemote         string   `kong:"default=origin"`
-	Tempdir            string   `kong:""`
+	TagPrefix          string   `kong:"default=v,help=${tag_prefix_help}"`
+	PushRemote         string   `kong:"default=origin,help='The git remote to push to.'"`
+	Tempdir            string   `kong:"help='The prefix to use with mktemp to create a temporary directory.'"`
 	githubClientConfig `kong:",embed"`
 }
 
@@ -139,6 +152,14 @@ func (cmd *releaseCmd) Run(ctx context.Context, root *rootCmd) (errOut error) {
 	return nil
 }
 
+type actionCmd struct{}
+
+func (cmd *actionCmd) Run() error {
+	enc := yaml.NewEncoder(os.Stdout)
+	enc.SetIndent(2)
+	return enc.Encode(thisAction)
+}
+
 func main() {
 	ctx := context.Background()
 	var root rootCmd
@@ -147,6 +168,7 @@ func main() {
 		kong.Vars{
 			"version": version,
 		},
+		helpVars,
 		kong.BindTo(ctx, (*context.Context)(nil)),
 	)
 	k.FatalIfErrorf(k.Run(&root))

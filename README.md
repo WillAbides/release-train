@@ -11,7 +11,10 @@ hop on the release train
 
 default: `${{ github.event_name == 'pull_request' }}`
 
-Instead of releasing, check that the PR has a label indicating the type of change.  Only literal 'true' will be treated as true.
+
+Instead of releasing, check that the PR has a label indicating the type of change.  
+
+Only literal 'true' will be treated as true.
 
 
 ### checkout_dir
@@ -20,11 +23,13 @@ default: `${{ github.workspace }}`
 
 The directory where the repository is checked out.
 
+
 ### ref
 
 default: `${{ github.ref }}`
 
 The branch or tag to release.
+
 
 ### github_token
 
@@ -35,21 +40,17 @@ The GitHub token to use for authentication. Must have `contents: write` permissi
 
 ### create_tag
 
-Whether to create a tag for the release. Only literal 'true' will be treated as true.
+Whether to create a tag for the release.  Only literal 'true' will be treated as true.
 
 ### create_release
 
-Whether to create a release. Only literal 'true' will be treated as true.
-
-Implies `create_tag`.
-
+Whether to create a release.  Only literal 'true' will be treated as true.  Implies create_tag.
 
 ### tag_prefix
 
 default: `v`
 
-The prefix to use for the tag. Defaults to `v`.
-
+The prefix to use for the tag.
 
 ### initial_release_tag
 
@@ -68,11 +69,13 @@ Exit code 0 will continue the release. Exit code 10 will skip the release withou
 abort the release with an error.
 
 You may provide custom release notes by writing to the file at `$RELEASE_NOTES_FILE`:
+
 ```
   echo "my release notes" > "$RELEASE_NOTES_FILE"
 ```
 
 You can update the git ref to be released by writing it to the file at `$RELEASE_TARGET`:
+
 ```
   # ... update some files ...
   git commit -am "prepare release $RELEASE_TAG"
@@ -87,7 +90,7 @@ The environment variables `RELEASE_VERSION`, `RELEASE_TAG`, `PREVIOUS_VERSION`, 
 
 Command to run after the release is complete. This is useful for adding artifacts to your release.
 
-The environment variables `RELEASE_VERSION`, `RELEASE_TAG`, `PREVIOUS_VERSION`, `FIRST_RELEASE` and `GITHUB_TOKEN` 
+The environment variables `RELEASE_VERSION`, `RELEASE_TAG`, `PREVIOUS_VERSION`, `FIRST_RELEASE` and `GITHUB_TOKEN`
 will be set.
 
 
@@ -95,12 +98,6 @@ will be set.
 
 Validates that the name of the go module at the given path matches the major version of the release. For example,
 validation will fail when releasing v3.0.0 when the module name is `my_go_module/v2`.
-
-The path provided must be relative to inputs.checkout_dir.
-
-Release train uses whatever version of go is in PATH. If you need to use a specific version of go, you can use
-`WillAbides/setup-go-faster` to install it.
-
 
 ### no_release
 
@@ -116,47 +113,37 @@ Only literal 'true' will be treated as true.
 
 A git ref pointing to the previous release, or the current ref if no previous release can be found.
 
-
 ### previous_version
 
 The previous version on the release branch.
-
 
 ### first_release
 
 Whether this is the first release on the release branch. Either "true" or "false".
 
-
 ### release_version
 
 The version of the new release. Empty if no release is called for.
-
 
 ### release_tag
 
 The tag of the new release. Empty if no release is called for.
 
-
 ### change_level
 
 The level of change in the release. Either "major", "minor", "patch" or "no change".
-
 
 ### created_tag
 
 Whether a tag was created. Either "true" or "false".
 
-
 ### created_release
 
 Whether a release was created. Either "true" or "false".
 
-
 ### pre_release_hook_output
 
-The stdout of the pre_release_hook. Empty if pre_release_hook is not set or if the hook returned an exit other
-than 0 or 10.
-
+The stdout of the pre_release_hook. Empty if pre_release_hook is not set or if the hook returned an exit other than 0 or 10.
 
 ### pre_release_hook_aborted
 
