@@ -63,6 +63,10 @@ func getAction(k *kong.Context) *action.CompositeAction {
 				Default:     vars["tag_prefix_default"],
 			}),
 
+			action.MapEntry("v0", action.Input{
+				Description: vars["v0_help"] + "\n\n" + actionBoolSuffix,
+			}),
+
 			action.MapEntry("initial_release_tag", action.Input{
 				Description: vars["initial_tag_help"],
 				Default:     vars["initial_tag_default"],

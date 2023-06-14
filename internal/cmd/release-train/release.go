@@ -21,6 +21,7 @@ type releaseCmd struct {
 	PreReleaseHook     string   `kong:"placeholder=<command>,help=${pre_release_hook_help}"`
 	PostReleaseHook    string   `kong:"placeholder=<command>"`
 	TagPrefix          string   `kong:"default=v,help=${tag_prefix_help}"`
+	V0                 bool     `kong:"name=v0,help=${v0_help}"`
 	PushRemote         string   `kong:"default=origin,help='The git remote to push to.'"`
 	Tempdir            string   `kong:"help='The prefix to use with mktemp to create a temporary directory.'"`
 	githubClientConfig `kong:",embed"`
