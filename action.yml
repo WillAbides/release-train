@@ -119,7 +119,7 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github_token }}
         GH_TOKEN: ${{ inputs.github_token }}
         NO_RELEASE: ${{ inputs.no_release }}
-      run: '"${{ github.action_path }}"/src/check_pr_labels'
+      run: '"${{ github.action_path }}"/action/check_pr_labels'
     - id: release
       if: ${{ inputs.check_pr_labels != 'true' }}
       shell: sh
@@ -136,4 +136,4 @@ runs:
         VALIDATE_GO_MODULE: ${{ inputs.validate_go_module }}
         NO_RELEASE: ${{ inputs.no_release }}
         GITHUB_REPOSITORY: ${{ github.repository }}
-      run: '"${{ github.action_path }}"/src/release'
+      run: '"${{ github.action_path }}"/action/release'
