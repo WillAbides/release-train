@@ -13,5 +13,5 @@ type githubClientConfig struct {
 }
 
 func (c *githubClientConfig) Client(ctx context.Context) (internal.GithubClient, error) {
-	return internal.NewGithubClient(ctx, c.GithubToken, c.GithubApiUrl, fmt.Sprintf("release-train/%s", getVersion(ctx)))
+	return internal.NewGithubClient(ctx, c.GithubApiUrl, c.GithubToken, fmt.Sprintf("release-train/%s", getVersion(ctx)))
 }
