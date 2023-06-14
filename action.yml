@@ -5,33 +5,35 @@ branding:
   color: yellow
 inputs:
   check_pr_labels:
-    description: "\nInstead of releasing, check that the PR has a label indicating the type of change.  \n\nOnly literal 'true' will be treated as true.\n"
+    description: |-
+      Instead of releasing, check that the PR has a label indicating the type of change.
+
+      Only literal 'true' will be treated as true.
     default: ${{ github.event_name == 'pull_request' }}
   checkout_dir:
-    description: |
-      The directory where the repository is checked out.
+    description: The directory where the repository is checked out.
     default: ${{ github.workspace }}
   ref:
-    description: |
-      The branch or tag to release.
+    description: The branch or tag to release.
     default: ${{ github.ref }}
   github_token:
-    description: |
-      The GitHub token to use for authentication. Must have `contents: write` permission if creating a release or tag.
+    description: 'The GitHub token to use for authentication. Must have `contents: write` permission if creating a release or tag.'
     default: ${{ github.token }}
   create_tag:
-    description: Whether to create a tag for the release.  Only literal 'true' will be treated as true.
-  create_release:
-    description: Whether to create a release.  Only literal 'true' will be treated as true.  Implies create_tag.
-  tag_prefix:
     description: |-
-      The prefix to use for the tag.
+      Whether to create a tag for the release. Implies create-tag.
+
+      Only literal 'true' will be treated as true.
+  create_release:
+    description: |-
+      Whether to create a release. Implies create-tag.
+
+      Only literal 'true' will be treated as true.
+  tag_prefix:
+    description: The prefix to use for the tag.
     default: v
   initial_release_tag:
-    description: |
-      The tag to use if no previous version can be found.
-
-      Set to empty string to disable cause it to error if no previous version can be found.
+    description: The tag to use if no previous version can be found. Set to "" to cause an error instead.
     default: v0.0.0
   pre_release_hook:
     description: |
@@ -54,24 +56,25 @@ inputs:
         echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
       ```
 
-      The environment variables `RELEASE_VERSION`, `RELEASE_TAG`, `PREVIOUS_VERSION`, `FIRST_RELEASE`, `GITHUB_TOKEN`,
-      `RELEASE_NOTES_FILE` and `RELEASE_TARGET` will be set.
+      The environment variables RELEASE_VERSION, RELEASE_TAG, PREVIOUS_VERSION, FIRST_RELEASE, GITHUB_TOKEN,
+      RELEASE_NOTES_FILE and RELEASE_TARGET will be set.
+  validate_go_module:
+    description: |
+      Validates that the name of the go module at the given path matches the major version of the release. For example,
+      validation will fail when releasing v3.0.0 when the module name is "my_go_module/v2".
+  no_release:
+    description: |-
+      If set to true, this will be a no-op. This is useful for creating a new repository or branch that isn't ready for
+      release yet.
+
+      Only literal 'true' will be treated as true.
   post_release_hook:
+    deprecationMessage: This will be removed in a future version. Use a subsequent step instead.
     description: |
       Command to run after the release is complete. This is useful for adding artifacts to your release.
 
       The environment variables `RELEASE_VERSION`, `RELEASE_TAG`, `PREVIOUS_VERSION`, `FIRST_RELEASE` and `GITHUB_TOKEN`
       will be set.
-  validate_go_module:
-    description: |-
-      Validates that the name of the go module at the given path matches the major version of the release. For example,
-      validation will fail when releasing v3.0.0 when the module name is `my_go_module/v2`.
-  no_release:
-    description: |
-      If set to true, this will be a no-op. This is useful for creating a new repository or branch that isn't ready for
-      release yet.
-
-      Only literal 'true' will be treated as true.
 outputs:
   previous_ref:
     value: ${{ steps.release.outputs.previous_ref }}

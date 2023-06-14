@@ -1,4 +1,4 @@
-package main
+package release
 
 import (
 	"context"
@@ -10,11 +10,13 @@ import (
 	"github.com/google/go-github/v53/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/willabides/release-train-action/v2/internal"
+	"github.com/willabides/release-train-action/v2/internal/testutil"
 )
 
 func mustRunCmd(t *testing.T, dir string, env map[string]string, name string, args ...string) string {
 	t.Helper()
-	out, err := runCmd(dir, env, name, args...)
+	out, err := RunCmd(dir, env, name, args...)
 	require.NoError(t, err)
 	return out
 }
@@ -78,8 +80,8 @@ git tag head
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := wrapperStub{
-			compareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
+		githubClient := testutil.GithubStub{
+			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
@@ -87,22 +89,22 @@ git tag head
 				assert.Equal(t, repos.taggedCommits["head"], head)
 				return []string{repos.taggedCommits["fourth"], repos.taggedCommits["head"]}, nil
 			},
-			listPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]nextResultPull, error) {
+			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.Pull, error) {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
 				switch sha {
 				case repos.taggedCommits["fourth"]:
-					return []nextResultPull{{Number: 1, Labels: []string{"semver:minor"}}}, nil
+					return []internal.Pull{{Number: 1, Labels: []string{"semver:minor"}}}, nil
 				case repos.taggedCommits["head"]:
-					return []nextResultPull{}, nil
+					return []internal.Pull{}, nil
 				default:
 					e := fmt.Errorf("unexpected sha %s", sha)
 					t.Error(e)
 					return nil, e
 				}
 			},
-			createRelease: func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) error {
+			StubCreateRelease: func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) error {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
@@ -138,34 +140,34 @@ assertVar GITHUB_TOKEN token "$GITHUB_TOKEN"
 echo "I got your release notes right here buddy" >> "$RELEASE_NOTES_FILE"
 echo "hello to my friends reading stdout"
 `
-		runner := releaseRunner{
-			checkoutDir:     repos.clone,
-			ref:             repos.taggedCommits["head"],
-			tagPrefix:       "v",
-			repo:            "orgName/repoName",
-			pushRemote:      "origin",
-			githubClient:    &githubClient,
-			createRelease:   true,
-			prereleaseHook:  preHook,
-			postreleaseHook: postHook,
-			githubToken:     "token",
-			goModFiles:      []string{"src/go/go.mod"},
-			tempDir:         t.TempDir(),
+		runner := Runner{
+			CheckoutDir:     repos.clone,
+			Ref:             repos.taggedCommits["head"],
+			TagPrefix:       "v",
+			Repo:            "orgName/repoName",
+			PushRemote:      "origin",
+			GithubClient:    &githubClient,
+			CreateRelease:   true,
+			PrereleaseHook:  preHook,
+			PostreleaseHook: postHook,
+			GithubToken:     "token",
+			GoModFiles:      []string{"src/go/go.mod"},
+			TempDir:         t.TempDir(),
 		}
-		got, err := runner.run(ctx)
+		got, err := runner.Run(ctx)
 		require.NoError(t, err)
-		require.Equal(t, &releaseResult{
+		require.Equal(t, &Result{
 			PreviousRef:          "v2.0.0",
 			PreviousVersion:      "2.0.0",
 			FirstRelease:         false,
 			ReleaseVersion:       "2.1.0",
 			ReleaseTag:           "v2.1.0",
-			ChangeLevel:          changeLevelMinor,
+			ChangeLevel:          internal.ChangeLevelMinor,
 			CreatedTag:           true,
 			CreatedRelease:       true,
 			PrereleaseHookOutput: "hello to my friends reading stdout\n",
 		}, got)
-		taggedSha, err := runCmd(repos.origin, nil, "git", "rev-parse", "v2.1.0")
+		taggedSha, err := RunCmd(repos.origin, nil, "git", "rev-parse", "v2.1.0")
 		require.NoError(t, err)
 		require.Equal(t, repos.taggedCommits["head"], taggedSha)
 	})
@@ -175,8 +177,8 @@ echo "hello to my friends reading stdout"
 		ctx := context.Background()
 		repos := setupGit(t)
 		mustRunCmd(t, repos.clone, nil, "git", "checkout", "second")
-		githubClient := wrapperStub{
-			compareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
+		githubClient := testutil.GithubStub{
+			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
@@ -184,10 +186,10 @@ echo "hello to my friends reading stdout"
 				assert.Equal(t, repos.taggedCommits["second"], head)
 				return []string{repos.taggedCommits["first"], repos.taggedCommits["second"]}, nil
 			},
-			generateReleaseNotes: func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error) {
+			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error) {
 				panic("GenerateReleaseNotes should not be called")
 			},
-			createRelease: func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) error {
+			StubCreateRelease: func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) error {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
@@ -197,24 +199,24 @@ echo "hello to my friends reading stdout"
 				return nil
 			},
 		}
-		runner := releaseRunner{
-			checkoutDir:   repos.clone,
-			ref:           repos.taggedCommits["second"],
-			tagPrefix:     "x",
-			repo:          "orgName/repoName",
-			pushRemote:    "origin",
-			githubClient:  &githubClient,
-			createRelease: true,
-			initialTag:    "x1.0.0",
-			goModFiles:    []string{"src/go/go.mod"},
+		runner := Runner{
+			CheckoutDir:   repos.clone,
+			Ref:           repos.taggedCommits["second"],
+			TagPrefix:     "x",
+			Repo:          "orgName/repoName",
+			PushRemote:    "origin",
+			GithubClient:  &githubClient,
+			CreateRelease: true,
+			InitialTag:    "x1.0.0",
+			GoModFiles:    []string{"src/go/go.mod"},
 		}
-		got, err := runner.run(ctx)
+		got, err := runner.Run(ctx)
 		require.NoError(t, err)
-		require.Equal(t, &releaseResult{
+		require.Equal(t, &Result{
 			FirstRelease:   true,
 			ReleaseTag:     "x1.0.0",
 			ReleaseVersion: "1.0.0",
-			ChangeLevel:    changeLevelNoChange,
+			ChangeLevel:    internal.ChangeLevelNoChange,
 			CreatedTag:     true,
 			CreatedRelease: true,
 		}, got)
@@ -225,8 +227,8 @@ echo "hello to my friends reading stdout"
 		ctx := context.Background()
 		repos := setupGit(t)
 
-		githubClient := wrapperStub{
-			compareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
+		githubClient := testutil.GithubStub{
+			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
@@ -234,15 +236,15 @@ echo "hello to my friends reading stdout"
 				assert.Equal(t, repos.taggedCommits["head"], head)
 				return []string{repos.taggedCommits["fourth"], repos.taggedCommits["head"]}, nil
 			},
-			listPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]nextResultPull, error) {
+			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.Pull, error) {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
 				switch sha {
 				case repos.taggedCommits["fourth"]:
-					return []nextResultPull{{Number: 1, Labels: []string{"semver:minor"}}}, nil
+					return []internal.Pull{{Number: 1, Labels: []string{"semver:minor"}}}, nil
 				case repos.taggedCommits["head"]:
-					return []nextResultPull{}, nil
+					return []internal.Pull{}, nil
 				default:
 					e := fmt.Errorf("unexpected sha %s", sha)
 					t.Error(e)
@@ -271,27 +273,27 @@ git add foo.txt > /dev/null
 git commit -m "add foo.txt" > /dev/null
 echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 `
-		runner := releaseRunner{
-			checkoutDir:    repos.clone,
-			ref:            repos.taggedCommits["head"],
-			tagPrefix:      "v",
-			repo:           "orgName/repoName",
-			pushRemote:     "origin",
-			githubClient:   &githubClient,
-			createTag:      true,
-			prereleaseHook: preHook,
-			githubToken:    "token",
-			tempDir:        t.TempDir(),
+		runner := Runner{
+			CheckoutDir:    repos.clone,
+			Ref:            repos.taggedCommits["head"],
+			TagPrefix:      "v",
+			Repo:           "orgName/repoName",
+			PushRemote:     "origin",
+			GithubClient:   &githubClient,
+			CreateTag:      true,
+			PrereleaseHook: preHook,
+			GithubToken:    "token",
+			TempDir:        t.TempDir(),
 		}
-		got, err := runner.run(ctx)
+		got, err := runner.Run(ctx)
 		require.NoError(t, err)
-		require.Equal(t, &releaseResult{
+		require.Equal(t, &Result{
 			FirstRelease:    false,
 			ReleaseTag:      "v2.1.0",
 			ReleaseVersion:  "2.1.0",
 			PreviousVersion: "2.0.0",
 			PreviousRef:     "v2.0.0",
-			ChangeLevel:     changeLevelMinor,
+			ChangeLevel:     internal.ChangeLevelMinor,
 			CreatedTag:      true,
 			CreatedRelease:  false,
 		}, got)
@@ -305,8 +307,8 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		ctx := context.Background()
 		repos := setupGit(t)
 
-		githubClient := wrapperStub{
-			compareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
+		githubClient := testutil.GithubStub{
+			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
@@ -314,15 +316,15 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 				assert.Equal(t, repos.taggedCommits["head"], head)
 				return []string{repos.taggedCommits["fourth"], repos.taggedCommits["head"]}, nil
 			},
-			listPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]nextResultPull, error) {
+			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.Pull, error) {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
 				switch sha {
 				case repos.taggedCommits["fourth"]:
-					return []nextResultPull{{Number: 1, Labels: []string{"semver:minor"}}}, nil
+					return []internal.Pull{{Number: 1, Labels: []string{"semver:minor"}}}, nil
 				case repos.taggedCommits["head"]:
-					return []nextResultPull{}, nil
+					return []internal.Pull{}, nil
 				default:
 					e := fmt.Errorf("unexpected sha %s", sha)
 					t.Error(e)
@@ -331,25 +333,25 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			},
 		}
 		preHook := `echo aborting; exit 10`
-		runner := releaseRunner{
-			checkoutDir:    repos.clone,
-			ref:            repos.taggedCommits["head"],
-			tagPrefix:      "v",
-			repo:           "orgName/repoName",
-			pushRemote:     "origin",
-			githubClient:   &githubClient,
-			createTag:      true,
-			prereleaseHook: preHook,
+		runner := Runner{
+			CheckoutDir:    repos.clone,
+			Ref:            repos.taggedCommits["head"],
+			TagPrefix:      "v",
+			Repo:           "orgName/repoName",
+			PushRemote:     "origin",
+			GithubClient:   &githubClient,
+			CreateTag:      true,
+			PrereleaseHook: preHook,
 		}
-		got, err := runner.run(ctx)
+		got, err := runner.Run(ctx)
 		require.NoError(t, err)
-		require.Equal(t, &releaseResult{
+		require.Equal(t, &Result{
 			FirstRelease:          false,
 			ReleaseTag:            "v2.1.0",
 			ReleaseVersion:        "2.1.0",
 			PreviousVersion:       "2.0.0",
 			PreviousRef:           "v2.0.0",
-			ChangeLevel:           changeLevelMinor,
+			ChangeLevel:           internal.ChangeLevelMinor,
 			CreatedTag:            false,
 			CreatedRelease:        false,
 			PrereleaseHookOutput:  "aborting\n",
@@ -361,8 +363,8 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := wrapperStub{
-			compareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
+		githubClient := testutil.GithubStub{
+			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
@@ -370,15 +372,15 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 				assert.Equal(t, repos.taggedCommits["head"], head)
 				return []string{repos.taggedCommits["v2.0.0"], repos.taggedCommits["head"]}, nil
 			},
-			listPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]nextResultPull, error) {
+			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.Pull, error) {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
-				return []nextResultPull{
+				return []internal.Pull{
 					{Number: 1, Labels: []string{"semver:minor"}},
 				}, nil
 			},
-			generateReleaseNotes: func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error) {
+			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error) {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
@@ -386,7 +388,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 				assert.Equal(t, "v2.0.0", *opts.PreviousTagName)
 				return "release notes", nil
 			},
-			createRelease: func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) error {
+			StubCreateRelease: func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) error {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
@@ -396,24 +398,24 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 				return nil
 			},
 		}
-		runner := releaseRunner{
-			checkoutDir:   repos.clone,
-			ref:           repos.taggedCommits["head"],
-			tagPrefix:     "v",
-			repo:          "orgName/repoName",
-			pushRemote:    "origin",
-			githubClient:  &githubClient,
-			createRelease: true,
+		runner := Runner{
+			CheckoutDir:   repos.clone,
+			Ref:           repos.taggedCommits["head"],
+			TagPrefix:     "v",
+			Repo:          "orgName/repoName",
+			PushRemote:    "origin",
+			GithubClient:  &githubClient,
+			CreateRelease: true,
 		}
-		got, err := runner.run(ctx)
+		got, err := runner.Run(ctx)
 		require.NoError(t, err)
-		require.Equal(t, &releaseResult{
+		require.Equal(t, &Result{
 			PreviousRef:     "v2.0.0",
 			PreviousVersion: "2.0.0",
 			FirstRelease:    false,
 			ReleaseTag:      "v2.1.0",
 			ReleaseVersion:  "2.1.0",
-			ChangeLevel:     changeLevelMinor,
+			ChangeLevel:     internal.ChangeLevelMinor,
 			CreatedTag:      true,
 			CreatedRelease:  true,
 		}, got)
@@ -424,10 +426,10 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		ctx := context.Background()
 		repos := setupGit(t)
 		mustRunCmd(t, repos.clone, nil, "git", "pull", "--depth=1")
-		runner := &releaseRunner{
-			checkoutDir: repos.clone,
+		runner := &Runner{
+			CheckoutDir: repos.clone,
 		}
-		_, err := runner.run(ctx)
+		_, err := runner.Run(ctx)
 		require.EqualError(t, err, "shallow clones are not supported")
 	})
 
@@ -436,10 +438,10 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		ctx := context.Background()
 		repos := setupGit(t)
 		mustRunCmd(t, repos.clone, nil, "rm", "-rf", ".git")
-		runner := &releaseRunner{
-			checkoutDir: repos.clone,
+		runner := &Runner{
+			CheckoutDir: repos.clone,
 		}
-		_, err := runner.run(ctx)
+		_, err := runner.Run(ctx)
 		require.ErrorContains(t, err, "not a git repository")
 	})
 
@@ -447,18 +449,18 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := wrapperStub{
-			compareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
+		githubClient := testutil.GithubStub{
+			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
 				return nil, errors.New("api error")
 			},
 		}
-		_, err := (&releaseRunner{
-			checkoutDir:  repos.clone,
-			ref:          repos.taggedCommits["head"],
-			tagPrefix:    "v",
-			repo:         "orgName/repoName",
-			githubClient: &githubClient,
-		}).run(ctx)
+		_, err := (&Runner{
+			CheckoutDir:  repos.clone,
+			Ref:          repos.taggedCommits["head"],
+			TagPrefix:    "v",
+			Repo:         "orgName/repoName",
+			GithubClient: &githubClient,
+		}).Run(ctx)
 		require.EqualError(t, err, "api error")
 	})
 
@@ -466,29 +468,29 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := wrapperStub{
-			compareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
+		githubClient := testutil.GithubStub{
+			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
 				return []string{repos.taggedCommits["head"]}, nil
 			},
-			listPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]nextResultPull, error) {
-				return []nextResultPull{{Number: 2, Labels: []string{"semver:major"}}}, nil
+			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.Pull, error) {
+				return []internal.Pull{{Number: 2, Labels: []string{"semver:major"}}}, nil
 			},
 		}
-		got, err := (&releaseRunner{
-			checkoutDir:  repos.clone,
-			ref:          repos.taggedCommits["head"],
-			tagPrefix:    "v",
-			repo:         "orgName/repoName",
-			githubClient: &githubClient,
-		}).run(ctx)
+		got, err := (&Runner{
+			CheckoutDir:  repos.clone,
+			Ref:          repos.taggedCommits["head"],
+			TagPrefix:    "v",
+			Repo:         "orgName/repoName",
+			GithubClient: &githubClient,
+		}).Run(ctx)
 		require.NoError(t, err)
-		require.Equal(t, &releaseResult{
+		require.Equal(t, &Result{
 			PreviousRef:     "v2.0.0",
 			PreviousVersion: "2.0.0",
 			FirstRelease:    false,
 			ReleaseVersion:  "3.0.0",
 			ReleaseTag:      "v3.0.0",
-			ChangeLevel:     changeLevelMajor,
+			ChangeLevel:     internal.ChangeLevelMajor,
 		}, got)
 	})
 }

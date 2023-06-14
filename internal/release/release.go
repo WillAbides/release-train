@@ -1,4 +1,4 @@
-package main
+package release
 
 import (
 	"bytes"
@@ -13,98 +13,101 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v53/github"
+	"github.com/willabides/release-train-action/v2/internal"
+	"github.com/willabides/release-train-action/v2/internal/next"
+	"github.com/willabides/release-train-action/v2/internal/prev"
 	"golang.org/x/mod/modfile"
 )
 
-type releaseRunner struct {
-	checkoutDir     string
-	ref             string
-	githubToken     string
-	createTag       bool
-	createRelease   bool
-	tagPrefix       string
-	initialTag      string
-	prereleaseHook  string
-	postreleaseHook string
-	goModFiles      []string
-	repo            string
-	pushRemote      string
-	tempDir         string
-	githubClient    wrapper
+type Runner struct {
+	CheckoutDir     string
+	Ref             string
+	GithubToken     string
+	CreateTag       bool
+	CreateRelease   bool
+	TagPrefix       string
+	InitialTag      string
+	PrereleaseHook  string
+	PostreleaseHook string
+	GoModFiles      []string
+	Repo            string
+	PushRemote      string
+	TempDir         string
+	GithubClient    internal.GithubClient
 }
 
-func (o *releaseRunner) releaseNotesFile() string {
-	return filepath.Join(o.tempDir, "release-notes")
+func (o *Runner) releaseNotesFile() string {
+	return filepath.Join(o.TempDir, "release-notes")
 }
 
-func (o *releaseRunner) releaseTargetFile() string {
-	return filepath.Join(o.tempDir, "release-target")
+func (o *Runner) releaseTargetFile() string {
+	return filepath.Join(o.TempDir, "release-target")
 }
 
 var modVersionRe = regexp.MustCompile(`v\d+$`)
 
-type releaseResult struct {
-	PreviousRef           string      `json:"previous-ref"`
-	PreviousVersion       string      `json:"previous-version"`
-	FirstRelease          bool        `json:"first-release"`
-	ReleaseVersion        string      `json:"release-version,omitempty"`
-	ReleaseTag            string      `json:"release-tag,omitempty"`
-	ChangeLevel           changeLevel `json:"change-level"`
-	CreatedTag            bool        `json:"created-tag,omitempty"`
-	CreatedRelease        bool        `json:"created-release,omitempty"`
-	PrereleaseHookOutput  string      `json:"prerelease-hook-output"`
-	PrereleaseHookAborted bool        `json:"prerelease-hook-aborted"`
+type Result struct {
+	PreviousRef           string               `json:"previous-ref"`
+	PreviousVersion       string               `json:"previous-version"`
+	FirstRelease          bool                 `json:"first-release"`
+	ReleaseVersion        string               `json:"release-version,omitempty"`
+	ReleaseTag            string               `json:"release-tag,omitempty"`
+	ChangeLevel           internal.ChangeLevel `json:"change-level"`
+	CreatedTag            bool                 `json:"created-tag,omitempty"`
+	CreatedRelease        bool                 `json:"created-release,omitempty"`
+	PrereleaseHookOutput  string               `json:"prerelease-hook-output"`
+	PrereleaseHookAborted bool                 `json:"prerelease-hook-aborted"`
 }
 
-func (o *releaseRunner) next(ctx context.Context) (*releaseResult, error) {
+func (o *Runner) Next(ctx context.Context) (*Result, error) {
 	// allows any semver that doesn't have a prerelease or build metadata
 	stableConstraint, err := semver.NewConstraint("*")
 	if err != nil {
 		return nil, err
 	}
-	prevOpts := prevVersionOptions{
-		head:        o.ref,
-		repoDir:     o.checkoutDir,
-		prefixes:    []string{o.tagPrefix},
-		constraints: stableConstraint,
+	prevOpts := prev.Options{
+		Head:        o.Ref,
+		RepoDir:     o.CheckoutDir,
+		Prefixes:    []string{o.TagPrefix},
+		Constraints: stableConstraint,
 	}
-	prevRef, err := getPrevTag(ctx, &prevOpts)
+	prevRef, err := prev.GetPrevTag(ctx, &prevOpts)
 	if err != nil {
 		return nil, err
 	}
 	firstRelease := prevRef == ""
 	if firstRelease {
-		return &releaseResult{
+		return &Result{
 			FirstRelease:   true,
-			ReleaseTag:     o.initialTag,
-			ReleaseVersion: strings.TrimPrefix(o.initialTag, o.tagPrefix),
-			ChangeLevel:    changeLevelNoChange,
+			ReleaseTag:     o.InitialTag,
+			ReleaseVersion: strings.TrimPrefix(o.InitialTag, o.TagPrefix),
+			ChangeLevel:    internal.ChangeLevelNoChange,
 		}, nil
 	}
-	prevVersion := strings.TrimPrefix(prevRef, o.tagPrefix)
-	result := releaseResult{
+	prevVersion := strings.TrimPrefix(prevRef, o.TagPrefix)
+	result := Result{
 		PreviousRef:     prevRef,
 		PreviousVersion: prevVersion,
 	}
-	var nextRes *nextResult
-	nextRes, err = getNext(ctx, &nextOptions{
-		repo:        o.repo,
-		gh:          o.githubClient,
-		prevVersion: prevVersion,
-		base:        prevRef,
-		head:        o.ref,
+	var nextRes *next.Result
+	nextRes, err = next.GetNext(ctx, &next.Options{
+		Repo:         o.Repo,
+		GithubClient: o.GithubClient,
+		PrevVersion:  prevVersion,
+		Base:         prevRef,
+		Head:         o.Ref,
 	})
 	if err != nil {
 		return nil, err
 	}
 	result.ReleaseVersion = nextRes.NextVersion
-	result.ReleaseTag = o.tagPrefix + nextRes.NextVersion
+	result.ReleaseTag = o.TagPrefix + nextRes.NextVersion
 	result.ChangeLevel = nextRes.ChangeLevel
 	return &result, nil
 }
 
-func (o *releaseRunner) runGoValidation(modFile string, result *releaseResult) error {
-	mfPath := filepath.Join(o.checkoutDir, filepath.FromSlash(modFile))
+func (o *Runner) runGoValidation(modFile string, result *Result) error {
+	mfPath := filepath.Join(o.CheckoutDir, filepath.FromSlash(modFile))
 	content, err := os.ReadFile(mfPath)
 	if err != nil {
 		return err
@@ -129,15 +132,15 @@ func (o *releaseRunner) runGoValidation(modFile string, result *releaseResult) e
 	return nil
 }
 
-func (o *releaseRunner) repoOwner() string {
-	return strings.SplitN(o.repo, "/", 2)[0]
+func (o *Runner) repoOwner() string {
+	return strings.SplitN(o.Repo, "/", 2)[0]
 }
 
-func (o *releaseRunner) repoName() string {
-	return strings.SplitN(o.repo, "/", 2)[1]
+func (o *Runner) repoName() string {
+	return strings.SplitN(o.Repo, "/", 2)[1]
 }
 
-func (o *releaseRunner) getReleaseTarget() (string, error) {
+func (o *Runner) getReleaseTarget() (string, error) {
 	targetFile := o.releaseTargetFile()
 	targetInfo, err := os.Stat(targetFile)
 	if err != nil && !os.IsNotExist(err) {
@@ -152,12 +155,12 @@ func (o *releaseRunner) getReleaseTarget() (string, error) {
 		target = strings.TrimSpace(string(content))
 	}
 	if target == "" {
-		return o.ref, nil
+		return o.Ref, nil
 	}
 	return target, nil
 }
 
-func (o *releaseRunner) getReleaseNotes(ctx context.Context, result *releaseResult) (string, error) {
+func (o *Runner) getReleaseNotes(ctx context.Context, result *Result) (string, error) {
 	notesInfo, err := os.Stat(o.releaseNotesFile())
 	if err != nil && !os.IsNotExist(err) {
 		return "", err
@@ -173,32 +176,32 @@ func (o *releaseRunner) getReleaseNotes(ctx context.Context, result *releaseResu
 	if result.FirstRelease {
 		return "", nil
 	}
-	return o.githubClient.GenerateReleaseNotes(ctx, o.repoOwner(), o.repoName(), &github.GenerateNotesOptions{
+	return o.GithubClient.GenerateReleaseNotes(ctx, o.repoOwner(), o.repoName(), &github.GenerateNotesOptions{
 		TagName:         result.ReleaseTag,
 		PreviousTagName: &result.PreviousRef,
 	})
 }
 
-func (o *releaseRunner) run(ctx context.Context) (*releaseResult, error) {
-	createTag := o.createTag
-	if o.createRelease {
+func (o *Runner) Run(ctx context.Context) (*Result, error) {
+	createTag := o.CreateTag
+	if o.CreateRelease {
 		createTag = true
 	}
-	shallow, err := runCmd(o.checkoutDir, nil, "git", "rev-parse", "--is-shallow-repository")
+	shallow, err := RunCmd(o.CheckoutDir, nil, "git", "rev-parse", "--is-shallow-repository")
 	if err != nil {
 		return nil, err
 	}
 	if shallow == "true" {
 		return nil, fmt.Errorf("shallow clones are not supported")
 	}
-	result, err := o.next(ctx)
+	result, err := o.Next(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if result.ReleaseVersion == "" || !createTag {
 		return result, nil
 	}
-	if !result.FirstRelease && result.ChangeLevel == changeLevelNoChange {
+	if !result.FirstRelease && result.ChangeLevel == internal.ChangeLevelNoChange {
 		return result, nil
 	}
 
@@ -207,12 +210,12 @@ func (o *releaseRunner) run(ctx context.Context) (*releaseResult, error) {
 		"RELEASE_TAG":        result.ReleaseTag,
 		"PREVIOUS_VERSION":   result.PreviousVersion,
 		"FIRST_RELEASE":      fmt.Sprintf("%t", result.FirstRelease),
-		"GITHUB_TOKEN":       o.githubToken,
+		"GITHUB_TOKEN":       o.GithubToken,
 		"RELEASE_NOTES_FILE": o.releaseNotesFile(),
 		"RELEASE_TARGET":     o.releaseTargetFile(),
 	}
 
-	result.PrereleaseHookOutput, result.PrereleaseHookAborted, err = runPrereleaseHook(o.checkoutDir, runEnv, o.prereleaseHook)
+	result.PrereleaseHookOutput, result.PrereleaseHookAborted, err = runPrereleaseHook(o.CheckoutDir, runEnv, o.PrereleaseHook)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +223,7 @@ func (o *releaseRunner) run(ctx context.Context) (*releaseResult, error) {
 		return result, nil
 	}
 
-	for _, mf := range o.goModFiles {
+	for _, mf := range o.GoModFiles {
 		err = o.runGoValidation(mf, result)
 		if err != nil {
 			return nil, err
@@ -232,19 +235,19 @@ func (o *releaseRunner) run(ctx context.Context) (*releaseResult, error) {
 		return nil, err
 	}
 
-	_, err = runCmd(o.checkoutDir, nil, "git", "tag", result.ReleaseTag, target)
+	_, err = RunCmd(o.CheckoutDir, nil, "git", "tag", result.ReleaseTag, target)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = runCmd(o.checkoutDir, nil, "git", "push", o.pushRemote, result.ReleaseTag)
+	_, err = RunCmd(o.CheckoutDir, nil, "git", "push", o.PushRemote, result.ReleaseTag)
 	if err != nil {
 		return nil, err
 	}
 
 	result.CreatedTag = true
 
-	if !o.createRelease {
+	if !o.CreateRelease {
 		return result, nil
 	}
 
@@ -253,7 +256,7 @@ func (o *releaseRunner) run(ctx context.Context) (*releaseResult, error) {
 		return nil, err
 	}
 
-	err = o.githubClient.CreateRelease(ctx, o.repoOwner(), o.repoName(), &github.RepositoryRelease{
+	err = o.GithubClient.CreateRelease(ctx, o.repoOwner(), o.repoName(), &github.RepositoryRelease{
 		TagName:    &result.ReleaseTag,
 		Name:       &result.ReleaseTag,
 		Body:       &releaseNotes,
@@ -265,8 +268,8 @@ func (o *releaseRunner) run(ctx context.Context) (*releaseResult, error) {
 
 	result.CreatedRelease = true
 
-	if o.postreleaseHook != "" {
-		_, err = runCmd(o.checkoutDir, runEnv, "sh", "-c", o.postreleaseHook)
+	if o.PostreleaseHook != "" {
+		_, err = RunCmd(o.CheckoutDir, runEnv, "sh", "-c", o.PostreleaseHook)
 		if err != nil {
 			return nil, err
 		}
@@ -289,7 +292,7 @@ func runPrereleaseHook(dir string, env map[string]string, hook string) (stdout s
 	cmd.Stdout = &stdoutBuf
 	err := cmd.Run()
 	if err != nil {
-		exitErr := asExitErr(err)
+		exitErr := AsExitErr(err)
 		if exitErr != nil {
 			err = errors.Join(err, errors.New(string(exitErr.Stderr)))
 			if exitErr.ExitCode() == 10 {
@@ -301,7 +304,7 @@ func runPrereleaseHook(dir string, env map[string]string, hook string) (stdout s
 	return stdoutBuf.String(), false, nil
 }
 
-func runCmd(dir string, env map[string]string, command string, args ...string) (string, error) {
+func RunCmd(dir string, env map[string]string, command string, args ...string) (string, error) {
 	cmd := exec.Command(command, args...)
 	cmd.Dir = dir
 	cmd.Env = os.Environ()
@@ -310,7 +313,7 @@ func runCmd(dir string, env map[string]string, command string, args ...string) (
 	}
 	out, err := cmd.Output()
 	if err != nil {
-		exitErr := asExitErr(err)
+		exitErr := AsExitErr(err)
 		if exitErr != nil {
 			err = errors.Join(err, errors.New(string(exitErr.Stderr)))
 		}
@@ -320,7 +323,7 @@ func runCmd(dir string, env map[string]string, command string, args ...string) (
 	return strings.TrimSpace(string(out)), nil
 }
 
-func asExitErr(err error) *exec.ExitError {
+func AsExitErr(err error) *exec.ExitError {
 	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) {
 		return exitErr

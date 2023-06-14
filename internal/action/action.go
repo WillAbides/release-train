@@ -1,3 +1,4 @@
+// Package action is just a struct to represent a github action.yml file.
 package action
 
 import (

@@ -1,4 +1,4 @@
-package main
+package prev
 
 import (
 	"bufio"
@@ -10,23 +10,23 @@ import (
 	"github.com/Masterminds/semver/v3"
 )
 
-type prevVersionOptions struct {
-	head        string
-	repoDir     string
-	prefixes    []string
-	fallback    string
-	constraints *semver.Constraints
+type Options struct {
+	Head        string
+	RepoDir     string
+	Prefixes    []string
+	Fallback    string
+	Constraints *semver.Constraints
 }
 
-func getPrevTag(ctx context.Context, options *prevVersionOptions) (string, error) {
+func GetPrevTag(ctx context.Context, options *Options) (string, error) {
 	if options == nil {
-		options = &prevVersionOptions{}
+		options = &Options{}
 	}
-	head := options.head
+	head := options.Head
 	if head == "" {
 		head = "HEAD"
 	}
-	prefixes := options.prefixes
+	prefixes := options.Prefixes
 	if len(prefixes) == 0 {
 		prefixes = []string{""}
 	}
@@ -37,7 +37,7 @@ func getPrevTag(ctx context.Context, options *prevVersionOptions) (string, error
 	}
 	var versions []prefixedVersion
 	done := false
-	err := runCommandHandleLines(ctx, options.repoDir, cmdLine, func(line string, cancel context.CancelFunc) {
+	err := runCommandHandleLines(ctx, options.RepoDir, cmdLine, func(line string, cancel context.CancelFunc) {
 		if done {
 			return
 		}
@@ -48,7 +48,7 @@ func getPrevTag(ctx context.Context, options *prevVersionOptions) (string, error
 			if !ok {
 				continue
 			}
-			for _, prefix := range options.prefixes {
+			for _, prefix := range options.Prefixes {
 				r, ok = strings.CutPrefix(r, prefix)
 				if !ok {
 					continue
@@ -57,7 +57,7 @@ func getPrevTag(ctx context.Context, options *prevVersionOptions) (string, error
 				if err != nil {
 					continue
 				}
-				if options.constraints != nil && !options.constraints.Check(ver) {
+				if options.Constraints != nil && !options.Constraints.Check(ver) {
 					continue
 				}
 				versions = append(versions, prefixedVersion{prefix, ver})
@@ -88,7 +88,7 @@ func getPrevTag(ctx context.Context, options *prevVersionOptions) (string, error
 		return false
 	})
 	if len(versions) == 0 {
-		return options.fallback, nil
+		return options.Fallback, nil
 	}
 	winner := versions[0]
 	return winner.prefix + winner.ver.Original(), nil

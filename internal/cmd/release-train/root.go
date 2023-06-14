@@ -1,0 +1,12 @@
+package releasetrain
+
+import (
+	"github.com/alecthomas/kong"
+)
+
+type rootCmd struct {
+	CheckoutDir string     `kong:"short=C,default='.',help=${checkout_dir_help}"`
+	Release     releaseCmd `kong:"cmd,help='Release a new version.'"`
+	Action      actionCmd  `kong:"cmd,hidden,help='Create a composite action.'"`
+	Version     kong.VersionFlag
+}

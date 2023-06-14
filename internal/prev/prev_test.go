@@ -1,4 +1,4 @@
-package main
+package prev
 
 import (
 	"context"
@@ -38,21 +38,21 @@ git tag bar
 	require.NoError(t, c.Run())
 
 	t.Run("", func(t *testing.T) {
-		opts := prevVersionOptions{
-			repoDir:  dir,
-			prefixes: []string{"v"},
+		opts := Options{
+			RepoDir:  dir,
+			Prefixes: []string{"v"},
 		}
-		got, err := getPrevTag(ctx, &opts)
+		got, err := GetPrevTag(ctx, &opts)
 		require.NoError(t, err)
 		require.Equal(t, "v2.0.0", got)
 	})
 
 	t.Run("", func(t *testing.T) {
-		opts := prevVersionOptions{
-			repoDir:  dir,
-			prefixes: []string{"v", "bar"},
+		opts := Options{
+			RepoDir:  dir,
+			Prefixes: []string{"v", "bar"},
 		}
-		got, err := getPrevTag(ctx, &opts)
+		got, err := GetPrevTag(ctx, &opts)
 		require.NoError(t, err)
 		require.Equal(t, "v2.0.0", got)
 	})
@@ -60,12 +60,12 @@ git tag bar
 	t.Run("", func(t *testing.T) {
 		versionZero, err := semver.NewConstraint("< 1.0.0")
 		require.NoError(t, err)
-		opts := prevVersionOptions{
-			repoDir:     dir,
-			prefixes:    []string{"v", "foo"},
-			constraints: versionZero,
+		opts := Options{
+			RepoDir:     dir,
+			Prefixes:    []string{"v", "foo"},
+			Constraints: versionZero,
 		}
-		got, err := getPrevTag(ctx, &opts)
+		got, err := GetPrevTag(ctx, &opts)
 		require.NoError(t, err)
 		require.Equal(t, "v0.2.0", got)
 	})
