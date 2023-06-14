@@ -38,3 +38,6 @@ github_token_help: 'The GitHub token to use for authentication. Must have `conte
 github_api_url_help: 'GitHub API URL.'
 github_api_url_default: https://api.github.com
 constraint_help: A semver constraint to filter tags by.
+v0_help: |
+  Assert that current major version is 0 and treat breaking changes as minor changes. 
+  Errors if the major version is not 0.

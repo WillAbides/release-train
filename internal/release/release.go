@@ -25,6 +25,7 @@ type Runner struct {
 	GithubToken     string
 	CreateTag       bool
 	CreateRelease   bool
+	V0              bool
 	TagPrefix       string
 	InitialTag      string
 	PrereleaseHook  string
@@ -84,18 +85,31 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 			ChangeLevel:    internal.ChangeLevelNoChange,
 		}, nil
 	}
-	prevVersion := strings.TrimPrefix(prevRef, o.TagPrefix)
+	prevVersion, err := semver.NewVersion(strings.TrimPrefix(prevRef, o.TagPrefix))
+	if err != nil {
+		return nil, err
+	}
+
+	maxBump := internal.ChangeLevelMajor
+	if o.V0 {
+		maxBump = internal.ChangeLevelMinor
+		if prevVersion.Major() != 0 {
+			return nil, fmt.Errorf("v0 flag is set, but previous version %q has major version > 0", prevVersion.String())
+		}
+	}
+
 	result := Result{
 		PreviousRef:     prevRef,
-		PreviousVersion: prevVersion,
+		PreviousVersion: prevVersion.String(),
 	}
 	var nextRes *next.Result
 	nextRes, err = next.GetNext(ctx, &next.Options{
 		Repo:         o.Repo,
 		GithubClient: o.GithubClient,
-		PrevVersion:  prevVersion,
+		PrevVersion:  prevVersion.String(),
 		Base:         prevRef,
 		Head:         o.Ref,
+		MaxBump:      maxBump.String(),
 	})
 	if err != nil {
 		return nil, err

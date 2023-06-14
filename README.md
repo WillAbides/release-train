@@ -51,6 +51,14 @@ default: `v`
 
 The prefix to use for the tag.
 
+### v0
+
+Assert that current major version is 0 and treat breaking changes as minor changes. 
+Errors if the major version is not 0.
+
+
+Only literal 'true' will be treated as true.
+
 ### initial_release_tag
 
 default: `v0.0.0`

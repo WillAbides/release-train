@@ -32,6 +32,8 @@ inputs:
   tag_prefix:
     description: The prefix to use for the tag.
     default: v
+  v0:
+    description: "Assert that current major version is 0 and treat breaking changes as minor changes. \nErrors if the major version is not 0.\n\n\nOnly literal 'true' will be treated as true."
   initial_release_tag:
     description: The tag to use if no previous version can be found. Set to "" to cause an error instead.
     default: v0.0.0

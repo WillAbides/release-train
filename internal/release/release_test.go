@@ -47,18 +47,20 @@ git tag v0.1.1
 git tag foo0.1.1
 git tag v0.2.0
 git tag foo0.2.0
-git tag v1.0.0
 git commit --allow-empty -m "second"
 git tag second
+git commit --allow-empty -m "third"
+git tag v1.0.0
+git tag third
 echo 'module example.com/foo/v2' > src/go/go.mod
 git add src/go/go.mod
-git commit -m "third"
+git commit -m "fourth"
 git tag v2.0.0
 git tag v2.0.1-rc1
 git tag foo
-git commit --allow-empty -m "fourth"
-git tag fourth
 git commit --allow-empty -m "fifth"
+git tag fifth
+git commit --allow-empty -m "sixth"
 git tag head
 `,
 		)
@@ -176,15 +178,15 @@ echo "hello to my friends reading stdout"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		mustRunCmd(t, repos.clone, nil, "git", "checkout", "second")
+		mustRunCmd(t, repos.clone, nil, "git", "checkout", "third")
 		githubClient := testutil.GithubStub{
 			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
 				assert.Equal(t, repos.taggedCommits["first"], base)
-				assert.Equal(t, repos.taggedCommits["second"], head)
-				return []string{repos.taggedCommits["first"], repos.taggedCommits["second"]}, nil
+				assert.Equal(t, repos.taggedCommits["third"], head)
+				return []string{repos.taggedCommits["first"], repos.taggedCommits["third"]}, nil
 			},
 			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error) {
 				panic("GenerateReleaseNotes should not be called")
@@ -201,7 +203,7 @@ echo "hello to my friends reading stdout"
 		}
 		runner := Runner{
 			CheckoutDir:   repos.clone,
-			Ref:           repos.taggedCommits["second"],
+			Ref:           repos.taggedCommits["third"],
 			TagPrefix:     "x",
 			Repo:          "orgName/repoName",
 			PushRemote:    "origin",
@@ -492,5 +494,59 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			ReleaseTag:      "v3.0.0",
 			ChangeLevel:     internal.ChangeLevelMajor,
 		}, got)
+	})
+
+	t.Run("V0 prevents bumping to v1", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		repos := setupGit(t)
+		githubClient := testutil.GithubStub{
+			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
+				return []string{repos.taggedCommits["second"]}, nil
+			},
+			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.Pull, error) {
+				return []internal.Pull{{Number: 2, Labels: []string{"semver:major"}}}, nil
+			},
+		}
+		got, err := (&Runner{
+			CheckoutDir:  repos.clone,
+			Ref:          repos.taggedCommits["second"],
+			TagPrefix:    "v",
+			Repo:         "orgName/repoName",
+			GithubClient: &githubClient,
+			V0:           true,
+		}).Run(ctx)
+		require.NoError(t, err)
+		require.Equal(t, &Result{
+			PreviousRef:     "v0.2.0",
+			PreviousVersion: "0.2.0",
+			FirstRelease:    false,
+			ReleaseVersion:  "0.3.0",
+			ReleaseTag:      "v0.3.0",
+			ChangeLevel:     internal.ChangeLevelMinor,
+		}, got)
+	})
+
+	t.Run("V0 errors when previous version is v1", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		repos := setupGit(t)
+		githubClient := testutil.GithubStub{
+			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
+				return []string{repos.taggedCommits["third"]}, nil
+			},
+			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.Pull, error) {
+				return []internal.Pull{{Number: 2, Labels: []string{"semver:minor"}}}, nil
+			},
+		}
+		_, err := (&Runner{
+			CheckoutDir:  repos.clone,
+			Ref:          repos.taggedCommits["third"],
+			TagPrefix:    "v",
+			Repo:         "orgName/repoName",
+			GithubClient: &githubClient,
+			V0:           true,
+		}).Run(ctx)
+		require.EqualError(t, err, `v0 flag is set, but previous version "1.0.0" has major version > 0`)
 	})
 }
