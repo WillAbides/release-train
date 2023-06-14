@@ -1,6 +1,6 @@
 # These are the vars used for the release-train command.
 
-ref_help: The branch or tag to release.
+ref_help: git ref.
 checkout_dir_help: The directory where the repository is checked out.
 create_tag_help: Whether to create a tag for the release. Implies create-tag.
 create_release_help: Whether to create a release. Implies create-tag.
@@ -37,3 +37,4 @@ pre_release_hook_help: |
 github_token_help: 'The GitHub token to use for authentication. Must have `contents: write` permission if creating a release or tag.'
 github_api_url_help: 'GitHub API URL.'
 github_api_url_default: https://api.github.com
+constraint_help: A semver constraint to filter tags by.

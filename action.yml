@@ -14,7 +14,7 @@ inputs:
     description: The directory where the repository is checked out.
     default: ${{ github.workspace }}
   ref:
-    description: The branch or tag to release.
+    description: git ref.
     default: ${{ github.ref }}
   github_token:
     description: 'The GitHub token to use for authentication. Must have `contents: write` permission if creating a release or tag.'
