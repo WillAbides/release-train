@@ -163,7 +163,7 @@ will be set.
 						action.MapEntry("GH_TOKEN", "${{ inputs.github_token }}"),
 						action.MapEntry("NO_RELEASE", "${{ inputs.no_release }}"),
 					),
-					Run: `"${{ github.action_path }}"/src/check_pr_labels`,
+					Run: `"${{ github.action_path }}"/action/check_pr_labels`,
 				},
 				{
 					Id:               "release",
@@ -183,7 +183,7 @@ will be set.
 						action.MapEntry("NO_RELEASE", "${{ inputs.no_release }}"),
 						action.MapEntry("GITHUB_REPOSITORY", "${{ github.repository }}"),
 					),
-					Run: `"${{ github.action_path }}"/src/release`,
+					Run: `"${{ github.action_path }}"/action/release`,
 				},
 			},
 		},

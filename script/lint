@@ -8,4 +8,4 @@ CDPATH="" cd -- "$(dirname -- "$0")/.."
 script/bindown -q install shellcheck golangci-lint
 
 bin/golangci-lint run ./...
-bin/shellcheck script/* src/*
+bin/shellcheck script/* action/*

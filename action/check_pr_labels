@@ -9,7 +9,7 @@ if [ "$NO_RELEASE" = "true" ]; then
   exit 0
 fi
 
-"$ACTION_DIR"/src/bindown -q install jq gh semver-next
+"$ACTION_DIR"/action/bindown -q install jq gh semver-next
 export PATH="$ACTION_DIR/bin:$PATH"
 
 if [ "$GITHUB_EVENT_NAME" != "pull_request" ]; then

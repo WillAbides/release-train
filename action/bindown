@@ -6,5 +6,5 @@ CDPATH="" cd -- "$(dirname -- "$0")/.."
 
 mkdir -p bin
 
-[ -f bin/bindown ] || src/bootstrap-bindown.sh 2> /dev/null
+[ -f bin/bindown ] || action/bootstrap-bindown.sh 2> /dev/null
 exec bin/bindown "$@"
