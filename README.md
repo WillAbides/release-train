@@ -25,7 +25,7 @@ The directory where the repository is checked out.
 
 default: `${{ github.ref }}`
 
-The branch or tag to release.
+git ref.
 
 ### github_token
 
