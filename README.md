@@ -11,11 +11,9 @@ hop on the release train
 
 default: `${{ github.event_name == 'pull_request' }}`
 
-
-Instead of releasing, check that the PR has a label indicating the type of change.  
+Instead of releasing, check that the PR has a label indicating the type of change.
 
 Only literal 'true' will be treated as true.
-
 
 ### checkout_dir
 
@@ -23,13 +21,11 @@ default: `${{ github.workspace }}`
 
 The directory where the repository is checked out.
 
-
 ### ref
 
 default: `${{ github.ref }}`
 
 The branch or tag to release.
-
 
 ### github_token
 
@@ -37,14 +33,17 @@ default: `${{ github.token }}`
 
 The GitHub token to use for authentication. Must have `contents: write` permission if creating a release or tag.
 
-
 ### create_tag
 
-Whether to create a tag for the release.  Only literal 'true' will be treated as true.
+Whether to create a tag for the release. Implies create-tag.
+
+Only literal 'true' will be treated as true.
 
 ### create_release
 
-Whether to create a release.  Only literal 'true' will be treated as true.  Implies create_tag.
+Whether to create a release. Implies create-tag.
+
+Only literal 'true' will be treated as true.
 
 ### tag_prefix
 
@@ -56,10 +55,7 @@ The prefix to use for the tag.
 
 default: `v0.0.0`
 
-The tag to use if no previous version can be found.
-
-Set to empty string to disable cause it to error if no previous version can be found.
-
+The tag to use if no previous version can be found. Set to "" to cause an error instead.
 
 ### pre_release_hook
 
@@ -82,22 +78,15 @@ You can update the git ref to be released by writing it to the file at `$RELEASE
   echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 ```
 
-The environment variables `RELEASE_VERSION`, `RELEASE_TAG`, `PREVIOUS_VERSION`, `FIRST_RELEASE`, `GITHUB_TOKEN`,
-`RELEASE_NOTES_FILE` and `RELEASE_TARGET` will be set.
-
-
-### post_release_hook
-
-Command to run after the release is complete. This is useful for adding artifacts to your release.
-
-The environment variables `RELEASE_VERSION`, `RELEASE_TAG`, `PREVIOUS_VERSION`, `FIRST_RELEASE` and `GITHUB_TOKEN`
-will be set.
+The environment variables RELEASE_VERSION, RELEASE_TAG, PREVIOUS_VERSION, FIRST_RELEASE, GITHUB_TOKEN,
+RELEASE_NOTES_FILE and RELEASE_TARGET will be set.
 
 
 ### validate_go_module
 
 Validates that the name of the go module at the given path matches the major version of the release. For example,
-validation will fail when releasing v3.0.0 when the module name is `my_go_module/v2`.
+validation will fail when releasing v3.0.0 when the module name is "my_go_module/v2".
+
 
 ### no_release
 
@@ -105,6 +94,15 @@ If set to true, this will be a no-op. This is useful for creating a new reposito
 release yet.
 
 Only literal 'true' will be treated as true.
+
+### post_release_hook
+
+__Deprecated__ - This will be removed in a future version. Use a subsequent step instead.
+
+Command to run after the release is complete. This is useful for adding artifacts to your release.
+
+The environment variables `RELEASE_VERSION`, `RELEASE_TAG`, `PREVIOUS_VERSION`, `FIRST_RELEASE` and `GITHUB_TOKEN`
+will be set.
 
 
 ## Outputs
