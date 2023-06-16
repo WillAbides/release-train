@@ -130,9 +130,6 @@ func GetNext(ctx context.Context, opts *Options) (*Result, error) {
 }
 
 func bumpVersion(prev semver.Version, minBump, maxBump internal.ChangeLevel, commits []Commit) (*Result, error) {
-	for _, commit := range commits {
-		fmt.Println("commit", commit.Sha, commit.Pulls)
-	}
 	if maxBump == 0 {
 		maxBump = internal.ChangeLevelMajor
 	}
