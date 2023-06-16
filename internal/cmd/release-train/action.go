@@ -26,7 +26,7 @@ func getAction(k *kong.Context) *action.CompositeAction {
 	vars := k.Model.Vars()
 	thisAction := &action.CompositeAction{
 		Name:        "release-train",
-		Description: "release-train keeps a-rolling' down to San Antone",
+		Description: "release-train keeps a-rollin' down to San Antone",
 		Branding: &action.Branding{
 			Icon:  "send",
 			Color: "yellow",
