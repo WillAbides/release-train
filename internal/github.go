@@ -8,8 +8,13 @@ import (
 	"golang.org/x/oauth2"
 )
 
+type BasePull struct {
+	Number int
+	Labels []string
+}
+
 type GithubClient interface {
-	ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string) ([]Pull, error)
+	ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string) ([]BasePull, error)
 	CompareCommits(ctx context.Context, owner, repo, base, head string) ([]string, error)
 	GenerateReleaseNotes(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error)
 	CreateRelease(ctx context.Context, owner, repo string, release *github.RepositoryRelease) error
@@ -40,8 +45,8 @@ type ghClient struct {
 
 var _ GithubClient = &ghClient{}
 
-func (g *ghClient) ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string) ([]Pull, error) {
-	var result []Pull
+func (g *ghClient) ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string) ([]BasePull, error) {
+	var result []BasePull
 	opts := &github.PullRequestListOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
@@ -54,7 +59,7 @@ func (g *ghClient) ListPullRequestsWithCommit(ctx context.Context, owner, repo, 
 			if apiPull.GetMergedAt().IsZero() {
 				continue
 			}
-			resultPull := Pull{
+			resultPull := BasePull{
 				Number: apiPull.GetNumber(),
 				Labels: make([]string, len(apiPull.Labels)),
 			}
@@ -101,10 +106,4 @@ func (g *ghClient) GenerateReleaseNotes(ctx context.Context, owner, repo string,
 func (g *ghClient) CreateRelease(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) error {
 	_, _, err := g.Client.Repositories.CreateRelease(ctx, owner, repo, opts)
 	return err
-}
-
-type Pull struct {
-	Number      int         `json:"number"`
-	Labels      []string    `json:"labels,omitempty"`
-	ChangeLevel ChangeLevel `json:"change_level"`
 }
