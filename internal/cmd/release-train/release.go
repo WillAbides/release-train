@@ -19,7 +19,6 @@ type releaseCmd struct {
 	GoModFile          []string `kong:"placeholder=<filepath>,help=${go_mod_file_help}"`
 	InitialTag         string   `kong:"help=${initial_tag_help},default=${initial_tag_default}"`
 	PreReleaseHook     string   `kong:"placeholder=<command>,help=${pre_release_hook_help}"`
-	PostReleaseHook    string   `kong:"placeholder=<command>"`
 	TagPrefix          string   `kong:"default=v,help=${tag_prefix_help}"`
 	V0                 bool     `kong:"name=v0,help=${v0_help}"`
 	PushRemote         string   `kong:"default=origin,help='The git remote to push to.'"`
@@ -64,19 +63,18 @@ func (cmd *releaseCmd) Run(ctx context.Context, root *rootCmd) (errOut error) {
 	}
 
 	runner := &release.Runner{
-		CheckoutDir:     root.CheckoutDir,
-		Ref:             cmd.Ref,
-		GithubToken:     cmd.GithubToken,
-		CreateTag:       createTag,
-		CreateRelease:   cmd.CreateRelease,
-		TagPrefix:       cmd.TagPrefix,
-		InitialTag:      cmd.InitialTag,
-		PrereleaseHook:  cmd.PreReleaseHook,
-		PostreleaseHook: cmd.PostReleaseHook,
-		GoModFiles:      goModFiles,
-		PushRemote:      cmd.PushRemote,
-		Repo:            cmd.Repo,
-		TempDir:         tempDir,
+		CheckoutDir:    root.CheckoutDir,
+		Ref:            cmd.Ref,
+		GithubToken:    cmd.GithubToken,
+		CreateTag:      createTag,
+		CreateRelease:  cmd.CreateRelease,
+		TagPrefix:      cmd.TagPrefix,
+		InitialTag:     cmd.InitialTag,
+		PrereleaseHook: cmd.PreReleaseHook,
+		GoModFiles:     goModFiles,
+		PushRemote:     cmd.PushRemote,
+		Repo:           cmd.Repo,
+		TempDir:        tempDir,
 
 		GithubClient: ghClient,
 	}

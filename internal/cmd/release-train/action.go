@@ -85,17 +85,6 @@ func getAction(k *kong.Context) *action.CompositeAction {
 If set to true, this will be a no-op. This is useful for creating a new repository or branch that isn't ready for
 release yet.` + "\n\n" + actionBoolSuffix,
 			}),
-
-			// TODO: remove post_release_hook in next major version
-			action.MapEntry("post_release_hook", action.Input{
-				DeprecationMessage: "This will be removed in a future version. Use a subsequent step instead.",
-				Description: `
-Command to run after the release is complete. This is useful for adding artifacts to your release.
-
-The environment variables ` + "`RELEASE_VERSION`" + `, ` + "`RELEASE_TAG`" + `, ` + "`PREVIOUS_VERSION`" + `, ` + "`FIRST_RELEASE`" + ` and ` + "`GITHUB_TOKEN`" + `
-will be set.
-`,
-			}),
 		),
 
 		Outputs: action.NewOrderedMap(

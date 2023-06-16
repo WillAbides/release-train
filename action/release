@@ -17,8 +17,7 @@ fi
 set -- release "$GITHUB_REPOSITORY" \
   --ref "$REF" \
   --initial-tag "$INITIAL_RELEASE_TAG" \
-  --pre-release-hook "$PRE_RELEASE_HOOK" \
-  --post-release-hook "$POST_RELEASE_HOOK"
+  --pre-release-hook "$PRE_RELEASE_HOOK"
 
 [ "$CREATE_TAG" != "true" ]     || set -- "$@" --create-tag
 [ "$CREATE_RELEASE" != "true" ] || set -- "$@" --create-release

@@ -107,16 +107,6 @@ release yet.
 
 Only literal 'true' will be treated as true.
 
-### post_release_hook
-
-__Deprecated__ - This will be removed in a future version. Use a subsequent step instead.
-
-Command to run after the release is complete. This is useful for adding artifacts to your release.
-
-The environment variables `RELEASE_VERSION`, `RELEASE_TAG`, `PREVIOUS_VERSION`, `FIRST_RELEASE` and `GITHUB_TOKEN`
-will be set.
-
-
 ## Outputs
 
 ### previous_ref
