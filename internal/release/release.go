@@ -51,7 +51,7 @@ type Result struct {
 	PreviousRef           string               `json:"previous-ref"`
 	PreviousVersion       string               `json:"previous-version"`
 	FirstRelease          bool                 `json:"first-release"`
-	ReleaseVersion        string               `json:"release-version,omitempty"`
+	ReleaseVersion        *semver.Version      `json:"release-version,omitempty"`
 	ReleaseTag            string               `json:"release-tag,omitempty"`
 	ChangeLevel           internal.ChangeLevel `json:"change-level"`
 	CreatedTag            bool                 `json:"created-tag,omitempty"`
@@ -78,12 +78,18 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 	}
 	firstRelease := prevRef == ""
 	if firstRelease {
-		return &Result{
-			FirstRelease:   true,
-			ReleaseTag:     o.InitialTag,
-			ReleaseVersion: strings.TrimPrefix(o.InitialTag, o.TagPrefix),
-			ChangeLevel:    internal.ChangeLevelNoChange,
-		}, nil
+		result := Result{
+			FirstRelease: true,
+			ReleaseTag:   o.InitialTag,
+			ChangeLevel:  internal.ChangeLevelNoChange,
+		}
+		if o.InitialTag != "" {
+			result.ReleaseVersion, err = semver.NewVersion(strings.TrimPrefix(o.InitialTag, o.TagPrefix))
+			if err != nil {
+				return nil, err
+			}
+		}
+		return &result, nil
 	}
 	prevVersion, err := semver.NewVersion(strings.TrimPrefix(prevRef, o.TagPrefix))
 	if err != nil {
@@ -114,8 +120,8 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	result.ReleaseVersion = nextRes.NextVersion
-	result.ReleaseTag = o.TagPrefix + nextRes.NextVersion
+	result.ReleaseVersion = &nextRes.NextVersion
+	result.ReleaseTag = o.TagPrefix + nextRes.NextVersion.String()
 	result.ChangeLevel = nextRes.ChangeLevel
 	return &result, nil
 }
@@ -130,10 +136,7 @@ func (o *Runner) runGoValidation(modFile string, result *Result) error {
 	if err != nil {
 		return err
 	}
-	sv, err := semver.NewVersion(result.ReleaseVersion)
-	if err != nil {
-		return err
-	}
+	sv := result.ReleaseVersion
 	major := int(sv.Major())
 	wantM := ""
 	if major > 1 {
@@ -217,7 +220,8 @@ func (o *Runner) Run(ctx context.Context) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	if result.ReleaseVersion == "" || !createTag {
+
+	if result.ReleaseVersion == nil || !createTag {
 		return result, nil
 	}
 	if !result.FirstRelease && result.ChangeLevel == internal.ChangeLevelNoChange {
@@ -225,7 +229,7 @@ func (o *Runner) Run(ctx context.Context) (*Result, error) {
 	}
 
 	runEnv := map[string]string{
-		"RELEASE_VERSION":    result.ReleaseVersion,
+		"RELEASE_VERSION":    result.ReleaseVersion.String(),
 		"RELEASE_TAG":        result.ReleaseTag,
 		"PREVIOUS_VERSION":   result.PreviousVersion,
 		"FIRST_RELEASE":      fmt.Sprintf("%t", result.FirstRelease),
@@ -275,11 +279,13 @@ func (o *Runner) Run(ctx context.Context) (*Result, error) {
 		return nil, err
 	}
 
+	prerelease := result.ReleaseVersion.Prerelease() != ""
 	err = o.GithubClient.CreateRelease(ctx, o.repoOwner(), o.repoName(), &github.RepositoryRelease{
 		TagName:    &result.ReleaseTag,
 		Name:       &result.ReleaseTag,
 		Body:       &releaseNotes,
 		MakeLatest: github.String("legacy"),
+		Prerelease: &prerelease,
 	})
 	if err != nil {
 		return nil, err

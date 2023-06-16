@@ -14,8 +14,8 @@ import (
 )
 
 type Result struct {
-	NextVersion     string               `json:"next_version"`
-	PreviousVersion string               `json:"previous_version"`
+	NextVersion     semver.Version       `json:"next_version"`
+	PreviousVersion semver.Version       `json:"previous_version"`
 	ChangeLevel     internal.ChangeLevel `json:"change_level"`
 	Commits         []Commit             `json:"commits,omitempty"`
 }
@@ -135,7 +135,7 @@ func bumpVersion(prev semver.Version, minBump, maxBump internal.ChangeLevel, com
 	}
 	result := Result{
 		Commits:         commits,
-		PreviousVersion: prev.String(),
+		PreviousVersion: prev,
 	}
 	pullsMap := map[int]internal.Pull{}
 	for _, c := range commits {
@@ -200,13 +200,13 @@ func bumpVersion(prev semver.Version, minBump, maxBump internal.ChangeLevel, com
 		if err != nil {
 			return nil, err
 		}
-		result.NextVersion = next.String()
+		result.NextVersion = next
 		return &result, nil
 	}
 	if prev.Prerelease() != "" && !isStable {
 		return nil, fmt.Errorf("cannot create a stable release from a pre-release unless all PRs are labeled semver:stable. unlabeled PRs: %v", unstablePulls)
 	}
-	result.NextVersion = incrLevel(prev, result.ChangeLevel).String()
+	result.NextVersion = incrLevel(prev, result.ChangeLevel)
 	return &result, nil
 }
 
