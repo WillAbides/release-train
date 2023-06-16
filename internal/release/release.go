@@ -33,6 +33,7 @@ type Runner struct {
 	Repo           string
 	PushRemote     string
 	TempDir        string
+	ReleaseRefs    []string
 	GithubClient   internal.GithubClient
 }
 
@@ -197,10 +198,15 @@ func (o *Runner) getReleaseNotes(ctx context.Context, result *Result) (string, e
 
 func (o *Runner) Run(ctx context.Context) (*Result, error) {
 	createTag := o.CreateTag
-	if o.CreateRelease {
+	release := o.CreateRelease
+	if release {
 		createTag = true
 	}
-	shallow, err := RunCmd(o.CheckoutDir, nil, "git", "rev-parse", "--is-shallow-repository")
+	if len(o.ReleaseRefs) > 0 && !gitRefMatchesPattern(o.CheckoutDir, o.Ref, o.ReleaseRefs) {
+		createTag = false
+		release = false
+	}
+	shallow, err := runCmd(o.CheckoutDir, nil, "git", "rev-parse", "--is-shallow-repository")
 	if err != nil {
 		return nil, err
 	}
@@ -248,19 +254,19 @@ func (o *Runner) Run(ctx context.Context) (*Result, error) {
 		return nil, err
 	}
 
-	_, err = RunCmd(o.CheckoutDir, nil, "git", "tag", result.ReleaseTag, target)
+	_, err = runCmd(o.CheckoutDir, nil, "git", "tag", result.ReleaseTag, target)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = RunCmd(o.CheckoutDir, nil, "git", "push", o.PushRemote, result.ReleaseTag)
+	_, err = runCmd(o.CheckoutDir, nil, "git", "push", o.PushRemote, result.ReleaseTag)
 	if err != nil {
 		return nil, err
 	}
 
 	result.CreatedTag = true
 
-	if !o.CreateRelease {
+	if !release {
 		return result, nil
 	}
 
@@ -298,7 +304,7 @@ func runPrereleaseHook(dir string, env map[string]string, hook string) (stdout s
 	cmd.Stdout = &stdoutBuf
 	err := cmd.Run()
 	if err != nil {
-		exitErr := AsExitErr(err)
+		exitErr := asExitErr(err)
 		if exitErr != nil {
 			err = errors.Join(err, errors.New(string(exitErr.Stderr)))
 			if exitErr.ExitCode() == 10 {
@@ -310,7 +316,7 @@ func runPrereleaseHook(dir string, env map[string]string, hook string) (stdout s
 	return stdoutBuf.String(), false, nil
 }
 
-func RunCmd(dir string, env map[string]string, command string, args ...string) (string, error) {
+func runCmd(dir string, env map[string]string, command string, args ...string) (string, error) {
 	cmd := exec.Command(command, args...)
 	cmd.Dir = dir
 	cmd.Env = os.Environ()
@@ -319,7 +325,7 @@ func RunCmd(dir string, env map[string]string, command string, args ...string) (
 	}
 	out, err := cmd.Output()
 	if err != nil {
-		exitErr := AsExitErr(err)
+		exitErr := asExitErr(err)
 		if exitErr != nil {
 			err = errors.Join(err, errors.New(string(exitErr.Stderr)))
 		}
@@ -329,10 +335,32 @@ func RunCmd(dir string, env map[string]string, command string, args ...string) (
 	return strings.TrimSpace(string(out)), nil
 }
 
-func AsExitErr(err error) *exec.ExitError {
+func asExitErr(err error) *exec.ExitError {
 	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) {
 		return exitErr
 	}
 	return nil
+}
+
+func gitRefMatchesPattern(dir, ref string, patterns []string) bool {
+	sha, err := runCmd(dir, nil, "git", "rev-parse", ref)
+	if err != nil {
+		return false
+	}
+	for _, pattern := range patterns {
+		showRefResult, e := runCmd(dir, nil, "git", "show-ref", "--hash", "--heads", "--tags", pattern)
+		if e != nil {
+			continue
+		}
+		// normalize line endings
+		showRefResult = strings.ReplaceAll(showRefResult, "\r\n", "\n")
+		patternShas := strings.Split(showRefResult, "\n")
+		for _, patternSha := range patternShas {
+			if patternSha == sha {
+				return true
+			}
+		}
+	}
+	return false
 }
