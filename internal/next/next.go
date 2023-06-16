@@ -4,34 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/willabides/release-train-action/v2/internal"
 )
-
-var LabelLevels = map[string]internal.ChangeLevel{
-	"breaking":        internal.ChangeLevelMajor,
-	"breaking change": internal.ChangeLevelMajor,
-	"major":           internal.ChangeLevelMajor,
-	"semver:major":    internal.ChangeLevelMajor,
-
-	"enhancement":  internal.ChangeLevelMinor,
-	"minor":        internal.ChangeLevelMinor,
-	"semver:minor": internal.ChangeLevelMinor,
-
-	"bug":          internal.ChangeLevelPatch,
-	"fix":          internal.ChangeLevelPatch,
-	"patch":        internal.ChangeLevelPatch,
-	"semver:patch": internal.ChangeLevelPatch,
-
-	"no change":        internal.ChangeLevelNoChange,
-	"semver:none":      internal.ChangeLevelNoChange,
-	"semver:no change": internal.ChangeLevelNoChange,
-	"semver:nochange":  internal.ChangeLevelNoChange,
-	"semver:skip":      internal.ChangeLevelNoChange,
-}
 
 type Result struct {
 	NextVersion     string               `json:"next_version"`
@@ -40,31 +20,18 @@ type Result struct {
 	Commits         []Commit             `json:"commits,omitempty"`
 }
 
-type Commit struct {
-	Sha         string               `json:"sha"`
-	ChangeLevel internal.ChangeLevel `json:"change_level"`
-	Pulls       []internal.Pull      `json:"pulls,omitempty"`
-}
-
 func getCommitPRs(ctx context.Context, gh ghClient, owner, repo, commitSha string) ([]internal.Pull, error) {
-	result, err := gh.ListPullRequestsWithCommit(ctx, owner, repo, commitSha)
+	ghResult, err := gh.ListPullRequestsWithCommit(ctx, owner, repo, commitSha)
 	if err != nil {
 		return nil, err
 	}
-	for i := range result {
-		filteredLabels := make([]string, 0, len(result[i].Labels))
-		for _, l := range result[i].Labels {
-			l = strings.ToLower(l)
-			level, ok := LabelLevels[l]
-			if !ok {
-				continue
-			}
-			filteredLabels = append(filteredLabels, l)
-			if level > result[i].ChangeLevel {
-				result[i].ChangeLevel = level
-			}
+	result := make([]internal.Pull, 0, len(ghResult))
+	for _, r := range ghResult {
+		p, e := internal.NewPull(r.Number, r.Labels...)
+		if e != nil {
+			return nil, e
 		}
-		result[i].Labels = filteredLabels
+		result = append(result, *p)
 	}
 	return result, nil
 }
@@ -80,7 +47,7 @@ func compareCommits(ctx context.Context, gh ghClient, owner, repo, baseRef, head
 	var errLock sync.Mutex
 	for i := range commitShas {
 		commitSha := commitShas[i]
-		result[i] = Commit{Sha: commitSha}
+		result[i].Sha = commitSha
 		wg.Add(1)
 		go func(idx int) {
 			var e error
@@ -95,37 +62,17 @@ func compareCommits(ctx context.Context, gh ghClient, owner, repo, baseRef, head
 	if err != nil {
 		return nil, err
 	}
-	var commitsMissingLabels []Commit
 	for i := range result {
-		hasLabel := false
-		for _, p := range result[i].Pulls {
-			if len(p.Labels) > 0 {
-				hasLabel = true
-			}
-			if p.ChangeLevel > result[i].ChangeLevel {
-				result[i].ChangeLevel = p.ChangeLevel
-			}
+		err = result[i].validate()
+		if err != nil {
+			return nil, err
 		}
-		if len(result[i].Pulls) > 0 && !hasLabel {
-			commitsMissingLabels = append(commitsMissingLabels, result[i])
-		}
-	}
-	if len(commitsMissingLabels) > 0 {
-		var commitMsgs []string
-		for _, c := range commitsMissingLabels {
-			var prNumbers []string
-			for _, p := range c.Pulls {
-				prNumbers = append(prNumbers, fmt.Sprintf("#%d", p.Number))
-			}
-			commitMsgs = append(commitMsgs, fmt.Sprintf("%s (%s)", c.Sha, strings.Join(prNumbers, ", ")))
-		}
-		return nil, fmt.Errorf("commits with no semver labels on associated PRs:\n%s", strings.Join(commitMsgs, "\n"))
 	}
 	return result, nil
 }
 
 type ghClient interface {
-	ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string) ([]internal.Pull, error)
+	ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error)
 	CompareCommits(ctx context.Context, owner, repo, base, head string) ([]string, error)
 }
 
@@ -179,30 +126,165 @@ func GetNext(ctx context.Context, opts *Options) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
+	return bumpVersion(*prev, minBumpLevel, maxBumpLevel, resultCommits)
+}
+
+func bumpVersion(prev semver.Version, minBump, maxBump internal.ChangeLevel, commits []Commit) (*Result, error) {
+	if maxBump == 0 {
+		maxBump = internal.ChangeLevelMajor
+	}
 	result := Result{
-		Commits:         resultCommits,
+		Commits:         commits,
 		PreviousVersion: prev.String(),
 	}
-	for _, c := range resultCommits {
-		if c.ChangeLevel > result.ChangeLevel {
-			result.ChangeLevel = c.ChangeLevel
+	pullsMap := map[int]internal.Pull{}
+	for _, c := range commits {
+		level := c.changeLevel()
+		if level > result.ChangeLevel {
+			result.ChangeLevel = level
+		}
+		for _, p := range c.Pulls {
+			pullsMap[p.Number] = p
 		}
 	}
-	if result.ChangeLevel < minBumpLevel && len(result.Commits) > 0 {
-		result.ChangeLevel = minBumpLevel
+	if len(pullsMap) == 0 {
+		result.NextVersion = result.PreviousVersion
+		return &result, nil
 	}
-	if result.ChangeLevel > maxBumpLevel {
-		result.ChangeLevel = maxBumpLevel
+	pulls := make([]internal.Pull, 0, len(pullsMap))
+	for _, p := range pullsMap {
+		pulls = append(pulls, p)
 	}
-	switch result.ChangeLevel {
-	case internal.ChangeLevelNoChange:
-		result.NextVersion = prev.String()
-	case internal.ChangeLevelPatch:
-		result.NextVersion = prev.IncPatch().String()
-	case internal.ChangeLevelMinor:
-		result.NextVersion = prev.IncMinor().String()
-	case internal.ChangeLevelMajor:
-		result.NextVersion = prev.IncMajor().String()
+	sort.Slice(pulls, func(i, j int) bool {
+		return pulls[i].Number < pulls[j].Number
+	})
+	var prePulls, nonPrePulls, stablePulls, unstablePulls []string
+	var isPre, isStable bool
+	prePrefix := ""
+	for _, pull := range pulls {
+		if pull.HasPreLabel {
+			isPre = true
+			prePulls = append(prePulls, fmt.Sprintf("#%d", pull.Number))
+			if pull.PreReleasePrefix != "" {
+				if prePrefix == "" {
+					prePrefix = pull.PreReleasePrefix
+				}
+				if prePrefix != pull.PreReleasePrefix {
+					return nil, fmt.Errorf("cannot have multiple pre-release prefixes in the same release. pre-release prefix. release contains both %q and %q", prePrefix, pull.PreReleasePrefix)
+				}
+			}
+		} else {
+			nonPrePulls = append(nonPrePulls, fmt.Sprintf("#%d", pull.Number))
+		}
+		if pull.HasStableLabel {
+			isStable = true
+			stablePulls = append(stablePulls, fmt.Sprintf("#%d", pull.Number))
+		} else {
+			unstablePulls = append(unstablePulls, fmt.Sprintf("#%d", pull.Number))
+		}
 	}
+	if isPre && len(nonPrePulls) > 0 {
+		return nil, fmt.Errorf("cannot have pre-release and non-pre-release PRs in the same release. pre-release PRs: %v, non-pre-release PRs: %v", prePulls, nonPrePulls)
+	}
+	if prev.Prerelease() != "" && isStable && len(unstablePulls) > 0 {
+		return nil, fmt.Errorf("in order to release a stable version, all PRs must be labeled as stable. stable PRs: %v, unstable PRs: %v", stablePulls, unstablePulls)
+	}
+	if result.ChangeLevel < minBump && len(result.Commits) > 0 {
+		result.ChangeLevel = minBump
+	}
+	if result.ChangeLevel > maxBump {
+		result.ChangeLevel = maxBump
+	}
+	if isPre {
+		next, err := incrPre(prev, result.ChangeLevel, prePrefix)
+		if err != nil {
+			return nil, err
+		}
+		result.NextVersion = next.String()
+		return &result, nil
+	}
+	if prev.Prerelease() != "" && !isStable {
+		return nil, fmt.Errorf("cannot create a stable release from a pre-release unless all PRs are labeled semver:stable. unlabeled PRs: %v", unstablePulls)
+	}
+	result.NextVersion = incrLevel(prev, result.ChangeLevel).String()
 	return &result, nil
+}
+
+func incrLevel(prev semver.Version, level internal.ChangeLevel) semver.Version {
+	switch level {
+	case internal.ChangeLevelNoChange:
+		return prev
+	case internal.ChangeLevelPatch:
+		return prev.IncPatch()
+	case internal.ChangeLevelMinor:
+		return prev.IncMinor()
+	case internal.ChangeLevelMajor:
+		return prev.IncMajor()
+	default:
+		panic(fmt.Sprintf("unknown change level %v", level))
+	}
+}
+
+func incrPre(prev semver.Version, level internal.ChangeLevel, prefix string) (next semver.Version, errOut error) {
+	orig := prev
+
+	// make sure result is always greater than prev
+	defer func() {
+		if errOut != nil {
+			return
+		}
+		if !next.GreaterThan(&orig) {
+			errOut = fmt.Errorf("pre-release version %q is not greater than %q", next, orig)
+		}
+	}()
+
+	if level == internal.ChangeLevelNoChange {
+		return prev, fmt.Errorf("invalid change level for pre-release: %v", level)
+	}
+	prevPre := prev.Prerelease()
+	if prevPre == "" {
+		pre := prefix + ".0"
+		if pre == ".0" {
+			pre = "0"
+		}
+		prev = incrLevel(prev, level)
+		return prev.SetPrerelease(pre)
+	}
+	// make sure everything to the right of level is 0
+	needsIncr := false
+	switch level {
+	case internal.ChangeLevelMinor:
+		needsIncr = prev.Patch() > 0
+	case internal.ChangeLevelMajor:
+		needsIncr = prev.Minor() > 0 || prev.Patch() > 0
+	}
+	if needsIncr {
+		prev = incrLevel(prev, level)
+	}
+	preParts := strings.Split(prevPre, ".")
+	end, err := strconv.Atoi(preParts[len(preParts)-1])
+	if err == nil {
+		if needsIncr {
+			end = -1
+		}
+		prevPre = strings.Join(preParts[:len(preParts)-1], ".")
+
+		// when no prefix is specified or prefix matches prevPre, use the same prefix as the previous version
+		if prefix == "" && prevPre == "" {
+			return prev.SetPrerelease(strconv.Itoa(end + 1))
+		}
+		if prefix == prevPre || prefix == "" {
+			return prev.SetPrerelease(prevPre + "." + strconv.Itoa(end+1))
+		}
+
+		// otherwise, use the specified prefix starting at 0
+		return prev.SetPrerelease(prefix + "." + "0")
+	}
+
+	// if prefix isn't specified, use the same prefix as the previous version
+	if prefix == "" {
+		prefix = prevPre
+	}
+
+	return prev.SetPrerelease(prefix + ".0")
 }

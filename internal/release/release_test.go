@@ -91,15 +91,15 @@ git tag head
 				assert.Equal(t, repos.taggedCommits["head"], head)
 				return []string{repos.taggedCommits["fourth"], repos.taggedCommits["head"]}, nil
 			},
-			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.Pull, error) {
+			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
 				switch sha {
 				case repos.taggedCommits["fourth"]:
-					return []internal.Pull{{Number: 1, Labels: []string{"semver:minor"}}}, nil
+					return []internal.BasePull{{Number: 1, Labels: []string{"semver:minor"}}}, nil
 				case repos.taggedCommits["head"]:
-					return []internal.Pull{}, nil
+					return []internal.BasePull{}, nil
 				default:
 					e := fmt.Errorf("unexpected sha %s", sha)
 					t.Error(e)
@@ -238,15 +238,15 @@ echo "hello to my friends reading stdout"
 				assert.Equal(t, repos.taggedCommits["head"], head)
 				return []string{repos.taggedCommits["fourth"], repos.taggedCommits["head"]}, nil
 			},
-			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.Pull, error) {
+			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
 				switch sha {
 				case repos.taggedCommits["fourth"]:
-					return []internal.Pull{{Number: 1, Labels: []string{"semver:minor"}}}, nil
+					return []internal.BasePull{{Number: 1, Labels: []string{"semver:minor"}}}, nil
 				case repos.taggedCommits["head"]:
-					return []internal.Pull{}, nil
+					return []internal.BasePull{}, nil
 				default:
 					e := fmt.Errorf("unexpected sha %s", sha)
 					t.Error(e)
@@ -318,15 +318,15 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 				assert.Equal(t, repos.taggedCommits["head"], head)
 				return []string{repos.taggedCommits["fourth"], repos.taggedCommits["head"]}, nil
 			},
-			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.Pull, error) {
+			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
 				switch sha {
 				case repos.taggedCommits["fourth"]:
-					return []internal.Pull{{Number: 1, Labels: []string{"semver:minor"}}}, nil
+					return []internal.BasePull{{Number: 1, Labels: []string{"semver:minor"}}}, nil
 				case repos.taggedCommits["head"]:
-					return []internal.Pull{}, nil
+					return []internal.BasePull{}, nil
 				default:
 					e := fmt.Errorf("unexpected sha %s", sha)
 					t.Error(e)
@@ -374,11 +374,11 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 				assert.Equal(t, repos.taggedCommits["head"], head)
 				return []string{repos.taggedCommits["v2.0.0"], repos.taggedCommits["head"]}, nil
 			},
-			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.Pull, error) {
+			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
-				return []internal.Pull{
+				return []internal.BasePull{
 					{Number: 1, Labels: []string{"semver:minor"}},
 				}, nil
 			},
@@ -474,8 +474,8 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
 				return []string{repos.taggedCommits["head"]}, nil
 			},
-			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.Pull, error) {
-				return []internal.Pull{{Number: 2, Labels: []string{"semver:major"}}}, nil
+			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
+				return []internal.BasePull{{Number: 2, Labels: []string{"semver:major"}}}, nil
 			},
 		}
 		got, err := (&Runner{
@@ -504,8 +504,8 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
 				return []string{repos.taggedCommits["second"]}, nil
 			},
-			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.Pull, error) {
-				return []internal.Pull{{Number: 2, Labels: []string{"semver:major"}}}, nil
+			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
+				return []internal.BasePull{{Number: 2, Labels: []string{"semver:major"}}}, nil
 			},
 		}
 		got, err := (&Runner{
@@ -535,8 +535,8 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
 				return []string{repos.taggedCommits["third"]}, nil
 			},
-			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.Pull, error) {
-				return []internal.Pull{{Number: 2, Labels: []string{"semver:minor"}}}, nil
+			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
+				return []internal.BasePull{{Number: 2, Labels: []string{"semver:minor"}}}, nil
 			},
 		}
 		_, err := (&Runner{
