@@ -675,7 +675,7 @@ func Test_bumpVersion(t *testing.T) {
 						Number:      1,
 						HasPreLabel: true,
 					}, {
-						ChangeLevel: internal.ChangeLevelNoChange,
+						ChangeLevel: internal.ChangeLevelPatch,
 						Number:      2,
 						HasPreLabel: false,
 					}},
@@ -693,7 +693,7 @@ func Test_bumpVersion(t *testing.T) {
 						Number:      1,
 						HasPreLabel: true,
 					}, {
-						ChangeLevel: internal.ChangeLevelNoChange,
+						ChangeLevel: internal.ChangeLevelPatch,
 						Number:      2,
 						HasPreLabel: false,
 					}},

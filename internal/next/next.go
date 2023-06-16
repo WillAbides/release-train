@@ -130,6 +130,9 @@ func GetNext(ctx context.Context, opts *Options) (*Result, error) {
 }
 
 func bumpVersion(prev semver.Version, minBump, maxBump internal.ChangeLevel, commits []Commit) (*Result, error) {
+	for _, commit := range commits {
+		fmt.Println("commit", commit.Sha, commit.Pulls)
+	}
 	if maxBump == 0 {
 		maxBump = internal.ChangeLevelMajor
 	}
@@ -173,7 +176,7 @@ func bumpVersion(prev semver.Version, minBump, maxBump internal.ChangeLevel, com
 					return nil, fmt.Errorf("cannot have multiple pre-release prefixes in the same release. pre-release prefix. release contains both %q and %q", prePrefix, pull.PreReleasePrefix)
 				}
 			}
-		} else {
+		} else if pull.ChangeLevel > internal.ChangeLevelNoChange {
 			nonPrePulls = append(nonPrePulls, fmt.Sprintf("#%d", pull.Number))
 		}
 		if pull.HasStableLabel {
