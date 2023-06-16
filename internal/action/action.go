@@ -89,6 +89,10 @@ func (m *OrderedMap[V]) Get(key string) V {
 	return m.values[key]
 }
 
+func (m *OrderedMap[V]) Keys() []string {
+	return append([]string{}, m.keys...)
+}
+
 func (m *OrderedMap[V]) MarshalYAML() (any, error) {
 	var node yaml.Node
 	node.Kind = yaml.MappingNode

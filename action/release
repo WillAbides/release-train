@@ -21,8 +21,11 @@ set -- release "$GITHUB_REPOSITORY" \
 
 [ "$CREATE_TAG" != "true" ]     || set -- "$@" --create-tag
 [ "$CREATE_RELEASE" != "true" ] || set -- "$@" --create-release
+[ "$V0" != "true" ]             || set -- "$@" --v0
 [ -z "$TAG_PREFIX" ]            || set -- "$@" --tag-prefix "$TAG_PREFIX"
 [ -z "$VALIDATE_GO_MODULE" ]    || set -- "$@" --go-mod-file "$VALIDATE_GO_MODULE"
 [ -z "$RUNNER_TEMP" ]           || set -- "$@" --tempdir "$RUNNER_TEMP"
+[ -z "$CHECKOUT_DIR" ]          || set -- "$@" --checkout-dir "$CHECKOUT_DIR"
+[ -z "$RELEASE_REF" ]           || set -- "$@" --release-ref "$RELEASE_REF"
 
 "$ACTION_DIR"/bin/release-train "$@"

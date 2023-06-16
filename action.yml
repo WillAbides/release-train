@@ -120,15 +120,18 @@ runs:
       shell: sh
       working-directory: ${{ inputs.checkout_dir }}
       env:
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        CHECK_PR_LABELS: ${{ inputs.check_pr_labels }}
+        CHECKOUT_DIR: ${{ inputs.checkout_dir }}
         REF: ${{ inputs.ref }}
         GITHUB_TOKEN: ${{ inputs.github_token }}
         CREATE_TAG: ${{ inputs.create_tag }}
         CREATE_RELEASE: ${{ inputs.create_release }}
         TAG_PREFIX: ${{ inputs.tag_prefix }}
+        V0: ${{ inputs.v0 }}
         INITIAL_RELEASE_TAG: ${{ inputs.initial_release_tag }}
         PRE_RELEASE_HOOK: ${{ inputs.pre_release_hook }}
-        POST_RELEASE_HOOK: ${{ inputs.post_release_hook }}
         VALIDATE_GO_MODULE: ${{ inputs.validate_go_module }}
+        RELEASE_REFS: ${{ inputs.release_refs }}
         NO_RELEASE: ${{ inputs.no_release }}
-        GITHUB_REPOSITORY: ${{ github.repository }}
       run: '"${{ github.action_path }}"/action/release'
