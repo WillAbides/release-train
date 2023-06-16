@@ -16,6 +16,7 @@ type releaseCmd struct {
 	Ref                string   `kong:"default=HEAD,help=${ref_help}"`
 	CreateTag          bool     `kong:"help=${create_tag_help}"`
 	CreateRelease      bool     `kong:"help=${create_release_help}"`
+	ReleaseRef         []string `kong:"placeholder=<branch>,help=${release_ref_help}"`
 	GoModFile          []string `kong:"placeholder=<filepath>,help=${go_mod_file_help}"`
 	InitialTag         string   `kong:"help=${initial_tag_help},default=${initial_tag_default}"`
 	PreReleaseHook     string   `kong:"placeholder=<command>,help=${pre_release_hook_help}"`
@@ -75,6 +76,8 @@ func (cmd *releaseCmd) Run(ctx context.Context, root *rootCmd) (errOut error) {
 		PushRemote:     cmd.PushRemote,
 		Repo:           cmd.Repo,
 		TempDir:        tempDir,
+		V0:             cmd.V0,
+		ReleaseRefs:    cmd.ReleaseRef,
 
 		GithubClient: ghClient,
 	}

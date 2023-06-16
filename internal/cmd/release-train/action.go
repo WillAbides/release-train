@@ -8,7 +8,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const actionBoolSuffix = "Only literal 'true' will be treated as true."
+const (
+	actionBoolSuffix = "Only literal 'true' will be treated as true."
+	actionCsvSuffix  = "Comma separated list of values without spaces."
+)
 
 type actionCmd struct{}
 
@@ -23,7 +26,7 @@ func getAction(k *kong.Context) *action.CompositeAction {
 	vars := k.Model.Vars()
 	thisAction := &action.CompositeAction{
 		Name:        "release-train",
-		Description: "hop on the release train",
+		Description: "release-train keeps a-rollin' down to San Antone",
 		Branding: &action.Branding{
 			Icon:  "send",
 			Color: "yellow",
@@ -78,6 +81,10 @@ func getAction(k *kong.Context) *action.CompositeAction {
 
 			action.MapEntry("validate_go_module", action.Input{
 				Description: vars["go_mod_file_help"],
+			}),
+
+			action.MapEntry("release_refs", action.Input{
+				Description: vars["release_ref_help"] + "\n\n" + actionCsvSuffix,
 			}),
 
 			action.MapEntry("no_release", action.Input{

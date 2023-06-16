@@ -16,7 +16,7 @@ import (
 
 func mustRunCmd(t *testing.T, dir string, env map[string]string, name string, args ...string) string {
 	t.Helper()
-	out, err := RunCmd(dir, env, name, args...)
+	out, err := runCmd(dir, env, name, args...)
 	require.NoError(t, err)
 	return out
 }
@@ -61,6 +61,7 @@ git tag foo
 git commit --allow-empty -m "fifth"
 git tag fifth
 git commit --allow-empty -m "sixth"
+git tag sixth
 git tag head
 `,
 		)
@@ -88,7 +89,7 @@ git tag head
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
 				assert.Equal(t, "v2.0.0", base)
-				assert.Equal(t, repos.taggedCommits["head"], head)
+				assert.Equal(t, "refs/tags/head", head)
 				return []string{repos.taggedCommits["fourth"], repos.taggedCommits["head"]}, nil
 			},
 			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
@@ -143,8 +144,9 @@ echo "I got your release notes right here buddy" >> "$RELEASE_NOTES_FILE"
 echo "hello to my friends reading stdout"
 `
 		runner := Runner{
-			CheckoutDir:    repos.clone,
-			Ref:            repos.taggedCommits["head"],
+			CheckoutDir: repos.clone,
+			// Ref:            repos.taggedCommits["head"],
+			Ref:            "refs/tags/head",
 			TagPrefix:      "v",
 			Repo:           "orgName/repoName",
 			PushRemote:     "origin",
@@ -154,6 +156,7 @@ echo "hello to my friends reading stdout"
 			GithubToken:    "token",
 			GoModFiles:     []string{"src/go/go.mod"},
 			TempDir:        t.TempDir(),
+			ReleaseRefs:    []string{"first", "fake", "sixth"},
 		}
 		got, err := runner.Run(ctx)
 		require.NoError(t, err)
@@ -168,7 +171,7 @@ echo "hello to my friends reading stdout"
 			CreatedRelease:       true,
 			PrereleaseHookOutput: "hello to my friends reading stdout\n",
 		}, got)
-		taggedSha, err := RunCmd(repos.origin, nil, "git", "rev-parse", "v2.1.0")
+		taggedSha, err := runCmd(repos.origin, nil, "git", "rev-parse", "v2.1.0")
 		require.NoError(t, err)
 		require.Equal(t, repos.taggedCommits["head"], taggedSha)
 	})
@@ -483,6 +486,38 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			TagPrefix:    "v",
 			Repo:         "orgName/repoName",
 			GithubClient: &githubClient,
+		}).Run(ctx)
+		require.NoError(t, err)
+		require.Equal(t, &Result{
+			PreviousRef:     "v2.0.0",
+			PreviousVersion: "2.0.0",
+			FirstRelease:    false,
+			ReleaseVersion:  "3.0.0",
+			ReleaseTag:      "v3.0.0",
+			ChangeLevel:     internal.ChangeLevelMajor,
+		}, got)
+	})
+
+	t.Run("non-matching ref prevents tag", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		repos := setupGit(t)
+		githubClient := testutil.GithubStub{
+			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
+				return []string{repos.taggedCommits["head"]}, nil
+			},
+			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
+				return []internal.BasePull{{Number: 2, Labels: []string{"semver:major"}}}, nil
+			},
+		}
+		got, err := (&Runner{
+			CheckoutDir:   repos.clone,
+			Ref:           repos.taggedCommits["head"],
+			TagPrefix:     "v",
+			Repo:          "orgName/repoName",
+			GithubClient:  &githubClient,
+			CreateRelease: true,
+			ReleaseRefs:   []string{"fake"},
 		}).Run(ctx)
 		require.NoError(t, err)
 		require.Equal(t, &Result{
