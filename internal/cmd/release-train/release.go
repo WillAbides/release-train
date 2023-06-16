@@ -97,7 +97,7 @@ func (cmd *releaseCmd) Run(ctx context.Context, root *rootCmd) (errOut error) {
 	action.SetOutput("previous_ref", result.PreviousRef)
 	action.SetOutput("previous_version", result.PreviousVersion)
 	action.SetOutput("first_release", fmt.Sprintf("%t", result.FirstRelease))
-	action.SetOutput("release_version", result.ReleaseVersion)
+	action.SetOutput("release_version", result.ReleaseVersion.String())
 	action.SetOutput("release_tag", result.ReleaseTag)
 	action.SetOutput("change_level", result.ChangeLevel.String())
 	action.SetOutput("created_tag", fmt.Sprintf("%t", result.CreatedTag))

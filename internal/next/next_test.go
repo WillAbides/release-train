@@ -148,14 +148,15 @@ func Test_next(t *testing.T) {
 			&Options{
 				Repo:         "willabides/semver-next",
 				Base:         "v0.15.0",
+				PrevVersion:  "0.15.0",
 				Head:         sha1,
 				GithubClient: &gh,
 			},
 		)
 		require.NoError(t, err)
 		want := Result{
-			NextVersion:     "1.0.0",
-			PreviousVersion: "0.15.0",
+			NextVersion:     *semver.MustParse("1.0.0"),
+			PreviousVersion: *semver.MustParse("0.15.0"),
 			ChangeLevel:     internal.ChangeLevelMajor,
 			Commits: []Commit{
 				{
@@ -205,14 +206,15 @@ func Test_next(t *testing.T) {
 			&Options{
 				Repo:         "willabides/semver-next",
 				Base:         "v0.15.0",
+				PrevVersion:  "0.15.0",
 				Head:         sha1,
 				GithubClient: &gh,
 			},
 		)
 		require.NoError(t, err)
 		want := Result{
-			NextVersion:     "0.16.0",
-			PreviousVersion: "0.15.0",
+			NextVersion:     *semver.MustParse("0.16.0"),
+			PreviousVersion: *semver.MustParse("0.15.0"),
 			ChangeLevel:     internal.ChangeLevelMinor,
 			Commits: []Commit{
 				{
@@ -262,14 +264,15 @@ func Test_next(t *testing.T) {
 			&Options{
 				Repo:         "willabides/semver-next",
 				Base:         "v0.15.0",
+				PrevVersion:  "0.15.0",
 				Head:         sha1,
 				GithubClient: &gh,
 			},
 		)
 		require.NoError(t, err)
 		want := Result{
-			NextVersion:     "0.15.1",
-			PreviousVersion: "0.15.0",
+			NextVersion:     *semver.MustParse("0.15.1"),
+			PreviousVersion: *semver.MustParse("0.15.0"),
 			ChangeLevel:     internal.ChangeLevelPatch,
 			Commits: []Commit{
 				{
@@ -319,14 +322,15 @@ func Test_next(t *testing.T) {
 			&Options{
 				Repo:         "willabides/semver-next",
 				Base:         "v0.15.0",
+				PrevVersion:  "0.15.0",
 				Head:         sha1,
 				GithubClient: &gh,
 			},
 		)
 		require.NoError(t, err)
 		want := Result{
-			NextVersion:     "0.15.0",
-			PreviousVersion: "0.15.0",
+			NextVersion:     *semver.MustParse("0.15.0"),
+			PreviousVersion: *semver.MustParse("0.15.0"),
 			ChangeLevel:     internal.ChangeLevelNoChange,
 			Commits: []Commit{
 				{
@@ -392,13 +396,14 @@ func Test_next(t *testing.T) {
 		got, err := GetNext(ctx, &Options{
 			Repo:         "willabides/semver-next",
 			Base:         "v0.15.0",
+			PrevVersion:  "0.15.0",
 			Head:         sha1,
 			GithubClient: &gh,
 		})
 		require.NoError(t, err)
 		want := Result{
-			NextVersion:     "0.15.0",
-			PreviousVersion: "0.15.0",
+			NextVersion:     *semver.MustParse("0.15.0"),
+			PreviousVersion: *semver.MustParse("0.15.0"),
 			ChangeLevel:     internal.ChangeLevelNoChange,
 			Commits:         []Commit{},
 		}
@@ -417,14 +422,15 @@ func Test_next(t *testing.T) {
 		got, err := GetNext(ctx, &Options{
 			Repo:         "willabides/semver-next",
 			Base:         "v0.15.0",
+			PrevVersion:  "0.15.0",
 			Head:         sha1,
 			MinBump:      internal.ChangeLevelPatch.String(),
 			GithubClient: &gh,
 		})
 		require.NoError(t, err)
 		want := Result{
-			NextVersion:     "0.15.0",
-			PreviousVersion: "0.15.0",
+			NextVersion:     *semver.MustParse("0.15.0"),
+			PreviousVersion: *semver.MustParse("0.15.0"),
 			ChangeLevel:     internal.ChangeLevelNoChange,
 			Commits:         []Commit{},
 		}
@@ -460,6 +466,7 @@ func Test_next(t *testing.T) {
 			&Options{
 				Repo:         "willabides/semver-next",
 				Base:         "v0.15.0",
+				PrevVersion:  "0.15.0",
 				Head:         sha1,
 				MinBump:      internal.ChangeLevelMinor.String(),
 				GithubClient: &gh,
@@ -467,8 +474,8 @@ func Test_next(t *testing.T) {
 		)
 		require.NoError(t, err)
 		want := Result{
-			NextVersion:     "0.16.0",
-			PreviousVersion: "0.15.0",
+			NextVersion:     *semver.MustParse("0.16.0"),
+			PreviousVersion: *semver.MustParse("0.15.0"),
 			ChangeLevel:     internal.ChangeLevelMinor,
 			Commits: []Commit{
 				{
@@ -570,16 +577,16 @@ func Test_bumpVersion(t *testing.T) {
 			name: "no commits",
 			prev: "1.2.3",
 			want: &Result{
-				NextVersion:     "1.2.3",
-				PreviousVersion: "1.2.3",
+				NextVersion:     *semver.MustParse("1.2.3"),
+				PreviousVersion: *semver.MustParse("1.2.3"),
 			},
 		},
 		{
 			name: "no commits, prerelease",
 			prev: "1.2.3-alpha.0",
 			want: &Result{
-				NextVersion:     "1.2.3-alpha.0",
-				PreviousVersion: "1.2.3-alpha.0",
+				NextVersion:     *semver.MustParse("1.2.3-alpha.0"),
+				PreviousVersion: *semver.MustParse("1.2.3-alpha.0"),
 			},
 		},
 		{
@@ -600,8 +607,8 @@ func Test_bumpVersion(t *testing.T) {
 				},
 			},
 			want: &Result{
-				NextVersion:     "1.3.0",
-				PreviousVersion: "1.2.3",
+				NextVersion:     *semver.MustParse("1.3.0"),
+				PreviousVersion: *semver.MustParse("1.2.3"),
 				ChangeLevel:     internal.ChangeLevelMinor,
 			},
 		},
@@ -618,8 +625,8 @@ func Test_bumpVersion(t *testing.T) {
 				},
 			},
 			want: &Result{
-				NextVersion:     "1.2.4-0",
-				PreviousVersion: "1.2.3",
+				NextVersion:     *semver.MustParse("1.2.4-0"),
+				PreviousVersion: *semver.MustParse("1.2.3"),
 				ChangeLevel:     internal.ChangeLevelPatch,
 			},
 		},
@@ -640,8 +647,8 @@ func Test_bumpVersion(t *testing.T) {
 				},
 			},
 			want: &Result{
-				NextVersion:     "1.2.3-alpha.34",
-				PreviousVersion: "1.2.3-alpha.33",
+				NextVersion:     *semver.MustParse("1.2.3-alpha.34"),
+				PreviousVersion: *semver.MustParse("1.2.3-alpha.33"),
 				ChangeLevel:     internal.ChangeLevelPatch,
 			},
 		},

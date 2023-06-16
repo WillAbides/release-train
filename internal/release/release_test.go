@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v53/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -164,7 +165,7 @@ echo "hello to my friends reading stdout"
 			PreviousRef:          "v2.0.0",
 			PreviousVersion:      "2.0.0",
 			FirstRelease:         false,
-			ReleaseVersion:       "2.1.0",
+			ReleaseVersion:       semver.MustParse("2.1.0"),
 			ReleaseTag:           "v2.1.0",
 			ChangeLevel:          internal.ChangeLevelMinor,
 			CreatedTag:           true,
@@ -219,7 +220,7 @@ echo "hello to my friends reading stdout"
 		require.Equal(t, &Result{
 			FirstRelease:   true,
 			ReleaseTag:     "x1.0.0",
-			ReleaseVersion: "1.0.0",
+			ReleaseVersion: semver.MustParse("1.0.0"),
 			ChangeLevel:    internal.ChangeLevelNoChange,
 			CreatedTag:     true,
 			CreatedRelease: true,
@@ -294,7 +295,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		require.Equal(t, &Result{
 			FirstRelease:    false,
 			ReleaseTag:      "v2.1.0",
-			ReleaseVersion:  "2.1.0",
+			ReleaseVersion:  semver.MustParse("2.1.0"),
 			PreviousVersion: "2.0.0",
 			PreviousRef:     "v2.0.0",
 			ChangeLevel:     internal.ChangeLevelMinor,
@@ -352,7 +353,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		require.Equal(t, &Result{
 			FirstRelease:          false,
 			ReleaseTag:            "v2.1.0",
-			ReleaseVersion:        "2.1.0",
+			ReleaseVersion:        semver.MustParse("2.1.0"),
 			PreviousVersion:       "2.0.0",
 			PreviousRef:           "v2.0.0",
 			ChangeLevel:           internal.ChangeLevelMinor,
@@ -418,7 +419,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			PreviousVersion: "2.0.0",
 			FirstRelease:    false,
 			ReleaseTag:      "v2.1.0",
-			ReleaseVersion:  "2.1.0",
+			ReleaseVersion:  semver.MustParse("2.1.0"),
 			ChangeLevel:     internal.ChangeLevelMinor,
 			CreatedTag:      true,
 			CreatedRelease:  true,
@@ -492,7 +493,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			PreviousRef:     "v2.0.0",
 			PreviousVersion: "2.0.0",
 			FirstRelease:    false,
-			ReleaseVersion:  "3.0.0",
+			ReleaseVersion:  semver.MustParse("3.0.0"),
 			ReleaseTag:      "v3.0.0",
 			ChangeLevel:     internal.ChangeLevelMajor,
 		}, got)
@@ -524,7 +525,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			PreviousRef:     "v2.0.0",
 			PreviousVersion: "2.0.0",
 			FirstRelease:    false,
-			ReleaseVersion:  "3.0.0",
+			ReleaseVersion:  semver.MustParse("3.0.0"),
 			ReleaseTag:      "v3.0.0",
 			ChangeLevel:     internal.ChangeLevelMajor,
 		}, got)
@@ -555,7 +556,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			PreviousRef:     "v0.2.0",
 			PreviousVersion: "0.2.0",
 			FirstRelease:    false,
-			ReleaseVersion:  "0.3.0",
+			ReleaseVersion:  semver.MustParse("0.3.0"),
 			ReleaseTag:      "v0.3.0",
 			ChangeLevel:     internal.ChangeLevelMinor,
 		}, got)
