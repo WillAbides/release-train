@@ -61,16 +61,19 @@ type Result struct {
 }
 
 func (o *Runner) Next(ctx context.Context) (*Result, error) {
-	// allows any semver that doesn't have a prerelease or build metadata
-	stableConstraint, err := semver.NewConstraint("*")
+	ref := o.Ref
+	if o.Ref == "" {
+		ref = "HEAD"
+	}
+	head, err := runCmd(o.CheckoutDir, nil, "git", "rev-parse", ref)
 	if err != nil {
 		return nil, err
 	}
+	head = strings.TrimSpace(head)
 	prevOpts := prev.Options{
-		Head:        o.Ref,
-		RepoDir:     o.CheckoutDir,
-		Prefixes:    []string{o.TagPrefix},
-		Constraints: stableConstraint,
+		Head:     head,
+		RepoDir:  o.CheckoutDir,
+		Prefixes: []string{o.TagPrefix},
 	}
 	prevRef, err := prev.GetPrevTag(ctx, &prevOpts)
 	if err != nil {
@@ -114,7 +117,7 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 		GithubClient: o.GithubClient,
 		PrevVersion:  prevVersion.String(),
 		Base:         prevRef,
-		Head:         o.Ref,
+		Head:         head,
 		MaxBump:      maxBump.String(),
 	})
 	if err != nil {

@@ -57,7 +57,6 @@ echo 'module example.com/foo/v2' > src/go/go.mod
 git add src/go/go.mod
 git commit -m "fourth"
 git tag v2.0.0
-git tag v2.0.1-rc1
 git tag foo
 git commit --allow-empty -m "fifth"
 git tag fifth
@@ -90,7 +89,7 @@ git tag head
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
 				assert.Equal(t, "v2.0.0", base)
-				assert.Equal(t, "refs/tags/head", head)
+				assert.Equal(t, repos.taggedCommits["head"], head)
 				return []string{repos.taggedCommits["fourth"], repos.taggedCommits["head"]}, nil
 			},
 			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
@@ -583,5 +582,38 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			V0:           true,
 		}).Run(ctx)
 		require.EqualError(t, err, `v0 flag is set, but previous version "1.0.0" has major version > 0`)
+	})
+
+	t.Run("iterates prerelease", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		repos := setupGit(t)
+		mustRunCmd(t, repos.clone, nil, "git", "tag", "v2.1.0-rc.1", "fifth")
+		githubClient := testutil.GithubStub{
+			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
+				assert.Equal(t, "v2.1.0-rc.1", base)
+				assert.Equal(t, repos.taggedCommits["head"], head)
+				return []string{repos.taggedCommits["head"]}, nil
+			},
+			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
+				return []internal.BasePull{{Number: 2, Labels: []string{"semver:minor", "semver:pre"}}}, nil
+			},
+		}
+		got, err := (&Runner{
+			CheckoutDir:  repos.clone,
+			Ref:          repos.taggedCommits["head"],
+			TagPrefix:    "v",
+			Repo:         "orgName/repoName",
+			GithubClient: &githubClient,
+		}).Run(ctx)
+		require.NoError(t, err)
+		require.Equal(t, &Result{
+			PreviousRef:     "v2.1.0-rc.1",
+			PreviousVersion: "2.1.0-rc.1",
+			FirstRelease:    false,
+			ReleaseVersion:  semver.MustParse("2.1.0-rc.2"),
+			ReleaseTag:      "v2.1.0-rc.2",
+			ChangeLevel:     internal.ChangeLevelMinor,
+		}, got)
 	})
 }
