@@ -143,18 +143,17 @@ echo "I got your release notes right here buddy" >> "$RELEASE_NOTES_FILE"
 echo "hello to my friends reading stdout"
 `
 		runner := Runner{
-			CheckoutDir:     repos.clone,
-			Ref:             repos.taggedCommits["head"],
-			TagPrefix:       "v",
-			Repo:            "orgName/repoName",
-			PushRemote:      "origin",
-			GithubClient:    &githubClient,
-			CreateRelease:   true,
-			PrereleaseHook:  preHook,
-			PostreleaseHook: postHook,
-			GithubToken:     "token",
-			GoModFiles:      []string{"src/go/go.mod"},
-			TempDir:         t.TempDir(),
+			CheckoutDir:    repos.clone,
+			Ref:            repos.taggedCommits["head"],
+			TagPrefix:      "v",
+			Repo:           "orgName/repoName",
+			PushRemote:     "origin",
+			GithubClient:   &githubClient,
+			CreateRelease:  true,
+			PrereleaseHook: preHook,
+			GithubToken:    "token",
+			GoModFiles:     []string{"src/go/go.mod"},
+			TempDir:        t.TempDir(),
 		}
 		got, err := runner.Run(ctx)
 		require.NoError(t, err)

@@ -20,21 +20,20 @@ import (
 )
 
 type Runner struct {
-	CheckoutDir     string
-	Ref             string
-	GithubToken     string
-	CreateTag       bool
-	CreateRelease   bool
-	V0              bool
-	TagPrefix       string
-	InitialTag      string
-	PrereleaseHook  string
-	PostreleaseHook string
-	GoModFiles      []string
-	Repo            string
-	PushRemote      string
-	TempDir         string
-	GithubClient    internal.GithubClient
+	CheckoutDir    string
+	Ref            string
+	GithubToken    string
+	CreateTag      bool
+	CreateRelease  bool
+	V0             bool
+	TagPrefix      string
+	InitialTag     string
+	PrereleaseHook string
+	GoModFiles     []string
+	Repo           string
+	PushRemote     string
+	TempDir        string
+	GithubClient   internal.GithubClient
 }
 
 func (o *Runner) releaseNotesFile() string {
@@ -281,13 +280,6 @@ func (o *Runner) Run(ctx context.Context) (*Result, error) {
 	}
 
 	result.CreatedRelease = true
-
-	if o.PostreleaseHook != "" {
-		_, err = RunCmd(o.CheckoutDir, runEnv, "sh", "-c", o.PostreleaseHook)
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	return result, nil
 }
