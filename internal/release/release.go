@@ -202,7 +202,7 @@ func (o *Runner) Run(ctx context.Context) (*Result, error) {
 	if release {
 		createTag = true
 	}
-	if len(o.ReleaseRefs) > 0 && !gitRefMatchesPattern(o.CheckoutDir, o.Ref, o.ReleaseRefs) {
+	if len(o.ReleaseRefs) > 0 && !gitNameRev(o.CheckoutDir, o.Ref, o.ReleaseRefs) {
 		createTag = false
 		release = false
 	}
@@ -343,24 +343,11 @@ func asExitErr(err error) *exec.ExitError {
 	return nil
 }
 
-func gitRefMatchesPattern(dir, ref string, patterns []string) bool {
-	sha, err := runCmd(dir, nil, "git", "rev-parse", ref)
-	if err != nil {
-		return false
+func gitNameRev(dir, commitish string, refs []string) bool {
+	args := []string{"name-rev", commitish, "--no-undefined"}
+	for _, ref := range refs {
+		args = append(args, "--refs", ref)
 	}
-	for _, pattern := range patterns {
-		showRefResult, e := runCmd(dir, nil, "git", "show-ref", "--hash", "--heads", "--tags", pattern)
-		if e != nil {
-			continue
-		}
-		// normalize line endings
-		showRefResult = strings.ReplaceAll(showRefResult, "\r\n", "\n")
-		patternShas := strings.Split(showRefResult, "\n")
-		for _, patternSha := range patternShas {
-			if patternSha == sha {
-				return true
-			}
-		}
-	}
-	return false
+	_, err := runCmd(dir, nil, "git", args...)
+	return err == nil
 }
