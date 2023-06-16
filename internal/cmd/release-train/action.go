@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kong"
-	"github.com/willabides/release-train-action/v2/internal/action"
+	"github.com/willabides/release-train-action/v3/internal/action"
 	"gopkg.in/yaml.v3"
 )
 

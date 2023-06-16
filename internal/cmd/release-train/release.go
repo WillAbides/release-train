@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/sethvargo/go-githubactions"
-	"github.com/willabides/release-train-action/v2/internal/release"
+	"github.com/willabides/release-train-action/v3/internal/release"
 )
 
 type releaseCmd struct {

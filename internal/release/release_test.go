@@ -10,8 +10,8 @@ import (
 	"github.com/google/go-github/v53/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/willabides/release-train-action/v2/internal"
-	"github.com/willabides/release-train-action/v2/internal/testutil"
+	"github.com/willabides/release-train-action/v3/internal"
+	"github.com/willabides/release-train-action/v3/internal/testutil"
 )
 
 func mustRunCmd(t *testing.T, dir string, env map[string]string, name string, args ...string) string {

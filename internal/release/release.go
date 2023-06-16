@@ -13,9 +13,9 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v53/github"
-	"github.com/willabides/release-train-action/v2/internal"
-	"github.com/willabides/release-train-action/v2/internal/next"
-	"github.com/willabides/release-train-action/v2/internal/prev"
+	"github.com/willabides/release-train-action/v3/internal"
+	"github.com/willabides/release-train-action/v3/internal/next"
+	"github.com/willabides/release-train-action/v3/internal/prev"
 	"golang.org/x/mod/modfile"
 )
 

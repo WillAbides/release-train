@@ -3,7 +3,7 @@ package next
 import (
 	"fmt"
 
-	"github.com/willabides/release-train-action/v2/internal"
+	"github.com/willabides/release-train-action/v3/internal"
 )
 
 type Commit struct {

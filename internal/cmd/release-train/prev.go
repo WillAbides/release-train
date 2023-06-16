@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/willabides/release-train-action/v2/internal/prev"
+	"github.com/willabides/release-train-action/v3/internal/prev"
 )
 
 type prevCmd struct {

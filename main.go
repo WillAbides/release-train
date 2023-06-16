@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	releasetrain "github.com/willabides/release-train-action/v2/internal/cmd/release-train"
+	releasetrain "github.com/willabides/release-train-action/v3/internal/cmd/release-train"
 )
 
 var version = "dev"

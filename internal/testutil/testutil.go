@@ -9,7 +9,7 @@ import (
 	"github.com/google/go-github/v53/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/willabides/release-train-action/v2/internal"
+	"github.com/willabides/release-train-action/v3/internal"
 )
 
 type GithubStub struct {
