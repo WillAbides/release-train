@@ -231,7 +231,10 @@ func (o *Runner) Run(ctx context.Context) (*Result, error) {
 		return result, nil
 	}
 
-	err = assertTagNotExists(o.CheckoutDir, result.ReleaseTag, o.PushRemote)
+	err = assertTagNotExists(o.CheckoutDir, o.PushRemote, result.ReleaseTag)
+	if err != nil {
+		return nil, err
+	}
 
 	runEnv := map[string]string{
 		"RELEASE_VERSION":    result.ReleaseVersion.String(),
