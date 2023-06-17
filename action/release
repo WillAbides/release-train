@@ -26,7 +26,7 @@ set -- release "$GITHUB_REPOSITORY" \
 [ -z "$VALIDATE_GO_MODULE" ]    || set -- "$@" --go-mod-file "$VALIDATE_GO_MODULE"
 [ -z "$RUNNER_TEMP" ]           || set -- "$@" --tempdir "$RUNNER_TEMP"
 [ -z "$CHECKOUT_DIR" ]          || set -- "$@" --checkout-dir "$CHECKOUT_DIR"
-[ -z "$RELEASE_REF" ]           || set -- "$@" --release-ref "$RELEASE_REF"
+[ -z "$RELEASE_REFS" ]           || set -- "$@" --release-ref "$RELEASE_REFS"
 
 echo running: "$ACTION_DIR"/bin/release-train "$@"
 "$ACTION_DIR"/bin/release-train "$@"
