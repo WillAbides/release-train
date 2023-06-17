@@ -162,20 +162,20 @@ func (o *Runner) repoName() string {
 
 func (o *Runner) getReleaseTarget() (string, error) {
 	targetFile := o.releaseTargetFile()
-	targetInfo, err := os.Stat(targetFile)
-	if err != nil && !os.IsNotExist(err) {
+	_, err := os.Stat(targetFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return o.Ref, nil
+		}
 		return "", err
 	}
-	target := ""
-	if err == nil && !targetInfo.IsDir() {
-		content, e := os.ReadFile(o.releaseTargetFile())
-		if e != nil {
-			return "", e
-		}
-		target = strings.TrimSpace(string(content))
+	content, err := os.ReadFile(o.releaseTargetFile())
+	if err != nil {
+		return "", err
 	}
+	target := strings.TrimSpace(string(content))
 	if target == "" {
-		return o.Ref, nil
+		target = o.Ref
 	}
 	return target, nil
 }
