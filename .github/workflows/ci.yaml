@@ -58,16 +58,19 @@ jobs:
             script/bindown dependency update-vars release-train \
               --set version="$RELEASE_VERSION" \
               --skipchecksums
-            if ! git diff --quiet .bindown.yaml; then
-              exit 10
-            fi
+            
+            # abort release if .bindown.yaml changed
+            git diff --quiet .bindown.yaml || exit 10
+            
+            script/bindown install goreleaser
+            git tag "$RELEASE_TAG"
+            bin/goreleaser release --clean --skip-publish
       - if: steps.release-train.outputs.created_release == 'true'
-        name: goreleaser
+        name: upload release assets
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          script/bindown -q install goreleaser gh
-          bin/goreleaser release --clean
+          script/bindown -q install gh
           bin/gh release upload "${{ steps.release-train.outputs.release_tag }}" \
             dist/checksums.txt dist/release-train_*.tar.gz
       - if: steps.release-train.outputs.pre_release_hook_aborted == 'true'
