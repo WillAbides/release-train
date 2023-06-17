@@ -39,6 +39,7 @@ jobs:
           app_id: ${{ secrets.RELEASER_APP_ID }}
           private_key: ${{ secrets.RELEASER_APP_KEY }}
       - name: config
+        id: config
         run: |
           git config --local user.name '${{ github.actor }}'
           git config --local user.email '${{ github.actor }}@users.noreply.github.com'
