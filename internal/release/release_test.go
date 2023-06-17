@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -107,7 +109,7 @@ git tag head
 					return nil, e
 				}
 			},
-			StubCreateRelease: func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) error {
+			StubCreateRelease: func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) (*github.RepositoryRelease, error) {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
@@ -115,11 +117,31 @@ git tag head
 				assert.Equal(t, "v2.1.0", *opts.Name)
 				assert.Equal(t, "I got your release notes right here buddy\n", *opts.Body)
 				assert.Equal(t, "legacy", *opts.MakeLatest)
+				return &github.RepositoryRelease{
+					UploadURL: github.String("localhost"),
+				}, nil
+			},
+			StubUploadAsset: func(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error {
+				t.Helper()
+				content, err := os.ReadFile(filename)
+				if !assert.NoError(t, err) {
+					return err
+				}
+				switch filepath.Base(filename) {
+				case "foo.txt":
+					assert.Equal(t, "foo\n", string(content))
+				case "bar.txt":
+					assert.Equal(t, "bar\n", string(content))
+				default:
+					e := fmt.Errorf("unexpected filename %s", filename)
+					t.Error(e)
+					return e
+				}
 				return nil
 			},
 		}
 
-		postHook := `
+		preHook := `
 #!/bin/sh
 set -e
 
@@ -138,14 +160,15 @@ assertVar RELEASE_TAG v2.1.0 "$RELEASE_TAG"
 assertVar PREVIOUS_VERSION 2.0.0 "$PREVIOUS_VERSION"
 assertVar FIRST_RELEASE false "$FIRST_RELEASE"
 assertVar GITHUB_TOKEN token "$GITHUB_TOKEN"
-`
-		preHook := postHook + `
+
 echo "I got your release notes right here buddy" >> "$RELEASE_NOTES_FILE"
 echo "hello to my friends reading stdout"
+
+echo foo > "$ASSETS_DIR/foo.txt"
+echo bar > "$ASSETS_DIR/bar.txt"
 `
 		runner := Runner{
-			CheckoutDir: repos.clone,
-			// Ref:            repos.taggedCommits["head"],
+			CheckoutDir:    repos.clone,
 			Ref:            "refs/tags/head",
 			TagPrefix:      "v",
 			Repo:           "orgName/repoName",
@@ -193,14 +216,16 @@ echo "hello to my friends reading stdout"
 			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error) {
 				panic("GenerateReleaseNotes should not be called")
 			},
-			StubCreateRelease: func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) error {
+			StubCreateRelease: func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) (*github.RepositoryRelease, error) {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
 				assert.Equal(t, "x1.0.0", *opts.TagName)
 				assert.Equal(t, "x1.0.0", *opts.Name)
 				assert.Equal(t, "", *opts.Body)
-				return nil
+				return &github.RepositoryRelease{
+					UploadURL: github.String("localhost"),
+				}, nil
 			},
 		}
 		runner := Runner{
@@ -392,14 +417,16 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 				assert.Equal(t, "v2.0.0", *opts.PreviousTagName)
 				return "release notes", nil
 			},
-			StubCreateRelease: func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) error {
+			StubCreateRelease: func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) (*github.RepositoryRelease, error) {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
 				assert.Equal(t, "v2.1.0", *opts.TagName)
 				assert.Equal(t, "v2.1.0", *opts.Name)
 				assert.Equal(t, "release notes", *opts.Body)
-				return nil
+				return &github.RepositoryRelease{
+					UploadURL: github.String("localhost"),
+				}, nil
 			},
 		}
 		runner := Runner{
@@ -466,6 +493,99 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			GithubClient: &githubClient,
 		}).Run(ctx)
 		require.EqualError(t, err, "api error")
+	})
+
+	t.Run("release error deletes tag", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		repos := setupGit(t)
+		githubClient := testutil.GithubStub{
+			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
+				return []string{repos.taggedCommits["head"]}, nil
+			},
+			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
+				return []internal.BasePull{{Number: 2, Labels: []string{"semver:major"}}}, nil
+			},
+			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error) {
+				return "release notes", nil
+			},
+			StubCreateRelease: func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) (*github.RepositoryRelease, error) {
+				return nil, errors.New("release error")
+			},
+		}
+		runner := Runner{
+			CheckoutDir:   repos.clone,
+			Ref:           repos.taggedCommits["head"],
+			TagPrefix:     "v",
+			Repo:          "orgName/repoName",
+			PushRemote:    "origin",
+			GithubClient:  &githubClient,
+			CreateRelease: true,
+		}
+		_, err := runner.Run(ctx)
+		require.EqualError(t, err, "release error")
+		ok, err := localTagExists(repos.origin, "v3.0.0")
+		require.NoError(t, err)
+		require.False(t, ok)
+	})
+
+	t.Run("upload error deletes release", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		repos := setupGit(t)
+		calledDelete := false
+		githubClient := testutil.GithubStub{
+			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
+				return []string{repos.taggedCommits["head"]}, nil
+			},
+			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
+				return []internal.BasePull{{Number: 2, Labels: []string{"semver:major"}}}, nil
+			},
+			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error) {
+				return "release notes", nil
+			},
+			StubCreateRelease: func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) (*github.RepositoryRelease, error) {
+				return &github.RepositoryRelease{
+					ID:        github.Int64(1),
+					UploadURL: github.String("localhost"),
+				}, nil
+			},
+			StubUploadAsset: func(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error {
+				return errors.New("upload error")
+			},
+			StubDeleteRelease: func(ctx context.Context, owner, repo string, id int64) error {
+				t.Helper()
+				assert.Equal(t, "orgName", owner)
+				assert.Equal(t, "repoName", repo)
+				assert.Equal(t, int64(1), id)
+				calledDelete = true
+				return nil
+			},
+		}
+		preHook := `
+#!/bin/sh
+set -e
+
+echo foo > "$ASSETS_DIR/foo.txt"
+echo bar > "$ASSETS_DIR/bar.txt"
+`
+		runner := &Runner{
+			CheckoutDir:    repos.clone,
+			Ref:            repos.taggedCommits["head"],
+			TagPrefix:      "v",
+			Repo:           "orgName/repoName",
+			PushRemote:     "origin",
+			GithubClient:   &githubClient,
+			CreateRelease:  true,
+			PrereleaseHook: preHook,
+			TempDir:        t.TempDir(),
+		}
+		_, err := runner.Run(ctx)
+		require.ErrorContains(t, err, "upload error")
+		require.Equal(t, true, calledDelete)
+		ok, err := localTagExists(repos.origin, "v3.0.0")
+		require.NoError(t, err)
+		require.False(t, ok)
 	})
 
 	t.Run("no create tag", func(t *testing.T) {

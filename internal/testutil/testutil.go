@@ -16,7 +16,9 @@ type GithubStub struct {
 	StubListPullRequestsWithCommit func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error)
 	StubCompareCommits             func(ctx context.Context, owner, repo, base, head string) ([]string, error)
 	StubGenerateReleaseNotes       func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error)
-	StubCreateRelease              func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) error
+	StubCreateRelease              func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) (*github.RepositoryRelease, error)
+	StubUploadAsset                func(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error
+	StubDeleteRelease              func(ctx context.Context, owner, repo string, id int64) error
 }
 
 var _ internal.GithubClient = &GithubStub{}
@@ -33,8 +35,16 @@ func (w *GithubStub) GenerateReleaseNotes(ctx context.Context, owner, repo strin
 	return w.StubGenerateReleaseNotes(ctx, owner, repo, opts)
 }
 
-func (w *GithubStub) CreateRelease(ctx context.Context, owner, repo string, release *github.RepositoryRelease) error {
+func (w *GithubStub) CreateRelease(ctx context.Context, owner, repo string, release *github.RepositoryRelease) (*github.RepositoryRelease, error) {
 	return w.StubCreateRelease(ctx, owner, repo, release)
+}
+
+func (w *GithubStub) UploadAsset(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error {
+	return w.StubUploadAsset(ctx, uploadURL, filename, opts)
+}
+
+func (w *GithubStub) DeleteRelease(ctx context.Context, owner, repo string, id int64) error {
+	return w.StubDeleteRelease(ctx, owner, repo, id)
 }
 
 type ListPullRequestsWithCommitCall struct {

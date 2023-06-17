@@ -93,8 +93,10 @@ You can update the git ref to be released by writing it to the file at `$RELEASE
 If you create a tag named $RELEASE_TAG, it will be used as the release target instead of either HEAD or the value
 written to $RELEASE_TARGET.
 
+Any files written to $ASSETS_DIR will be uploaded as release assets.
+
 The environment variables RELEASE_VERSION, RELEASE_TAG, PREVIOUS_VERSION, FIRST_RELEASE, GITHUB_TOKEN,
-RELEASE_NOTES_FILE and RELEASE_TARGET will be set.
+RELEASE_NOTES_FILE, RELEASE_TARGET and ASSETS_DIR will be set.
 
 
 ### validate_go_module
