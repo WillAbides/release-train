@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"fmt"
 	"mime"
 	"net/url"
 	"os"
@@ -88,6 +89,7 @@ func (g *ghClient) UploadAsset(ctx context.Context, uploadURL, filename string, 
 		mediaType = opts.MediaType
 	}
 
+	fmt.Printf("Uploading %s to %s\n", filename, u.String())
 	req, err := g.Client.NewUploadRequest(u.String(), file, stat.Size(), mediaType)
 	if err != nil {
 		return err
