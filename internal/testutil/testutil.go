@@ -18,6 +18,7 @@ type GithubStub struct {
 	StubGenerateReleaseNotes       func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error)
 	StubCreateRelease              func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) (*github.RepositoryRelease, error)
 	StubUploadAsset                func(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error
+	StubDeleteRelease              func(ctx context.Context, owner, repo string, id int64) error
 }
 
 var _ internal.GithubClient = &GithubStub{}
@@ -40,6 +41,10 @@ func (w *GithubStub) CreateRelease(ctx context.Context, owner, repo string, rele
 
 func (w *GithubStub) UploadAsset(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error {
 	return w.StubUploadAsset(ctx, uploadURL, filename, opts)
+}
+
+func (w *GithubStub) DeleteRelease(ctx context.Context, owner, repo string, id int64) error {
+	return w.StubDeleteRelease(ctx, owner, repo, id)
 }
 
 type ListPullRequestsWithCommitCall struct {

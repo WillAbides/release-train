@@ -24,6 +24,7 @@ type GithubClient interface {
 	GenerateReleaseNotes(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error)
 	CreateRelease(ctx context.Context, owner, repo string, release *github.RepositoryRelease) (*github.RepositoryRelease, error)
 	UploadAsset(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error
+	DeleteRelease(ctx context.Context, owner, repo string, id int64) error
 }
 
 func NewGithubClient(ctx context.Context, baseUrl, token, userAgent string) (GithubClient, error) {
@@ -72,6 +73,10 @@ func (g *ghClient) UploadAsset(ctx context.Context, uploadURL, filename string, 
 	if err != nil {
 		return err
 	}
+	defer func() {
+		//nolint:errcheck // ignore close error for read-only file
+		_ = file.Close()
+	}()
 
 	stat, err := file.Stat()
 	if err != nil {
@@ -159,4 +164,9 @@ func (g *ghClient) CreateRelease(ctx context.Context, owner, repo string, opts *
 		return nil, err
 	}
 	return rel, nil
+}
+
+func (g *ghClient) DeleteRelease(ctx context.Context, owner, repo string, id int64) error {
+	_, err := g.Client.Repositories.DeleteRelease(ctx, owner, repo, id)
+	return err
 }

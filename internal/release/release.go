@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v53/github"
@@ -206,7 +207,16 @@ func (o *Runner) getReleaseNotes(ctx context.Context, result *Result) (string, e
 	})
 }
 
-func (o *Runner) Run(ctx context.Context) (*Result, error) {
+func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
+	var teardowns []func() error
+	defer func() {
+		if errOut == nil {
+			return
+		}
+		for i := len(teardowns) - 1; i >= 0; i-- {
+			errOut = errors.Join(errOut, teardowns[i]())
+		}
+	}()
 	createTag := o.CreateTag
 	release := o.CreateRelease
 	if release {
@@ -275,6 +285,10 @@ func (o *Runner) Run(ctx context.Context) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
+	teardowns = append(teardowns, func() error {
+		_, e := runCmd(o.CheckoutDir, nil, "git", "push", o.PushRemote, "--delete", result.ReleaseTag)
+		return e
+	})
 
 	result.CreatedTag = true
 
@@ -288,7 +302,7 @@ func (o *Runner) Run(ctx context.Context) (*Result, error) {
 	}
 
 	prerelease := result.ReleaseVersion.Prerelease() != ""
-	_, err = o.GithubClient.CreateRelease(ctx, o.repoOwner(), o.repoName(), &github.RepositoryRelease{
+	rel, err := o.GithubClient.CreateRelease(ctx, o.repoOwner(), o.repoName(), &github.RepositoryRelease{
 		TagName:    &result.ReleaseTag,
 		Name:       &result.ReleaseTag,
 		Body:       &releaseNotes,
@@ -299,9 +313,47 @@ func (o *Runner) Run(ctx context.Context) (*Result, error) {
 		return nil, err
 	}
 
+	teardowns = append(teardowns, func() error {
+		return o.GithubClient.DeleteRelease(ctx, o.repoOwner(), o.repoName(), *rel.ID)
+	})
+
 	result.CreatedRelease = true
 
+	err = o.uploadAssets(ctx, *rel.UploadURL)
+	if err != nil {
+		return nil, err
+	}
+
 	return result, nil
+}
+
+func (o *Runner) uploadAssets(ctx context.Context, uploadURL string) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	assets, err := filepath.Glob(filepath.Join(o.assetsDir(), "*"))
+	if err != nil {
+		return err
+	}
+	var wg sync.WaitGroup
+	var errMux sync.Mutex
+	for _, asset := range assets {
+		a := asset
+		wg.Add(1)
+		go func() {
+			e := o.GithubClient.UploadAsset(ctx, uploadURL, a, nil)
+			if e != nil {
+				if !errors.Is(e, context.Canceled) {
+					cancel()
+					errMux.Lock()
+					err = errors.Join(err, e)
+					errMux.Unlock()
+				}
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	return err
 }
 
 func (o *Runner) tagRelease(releaseTag string) error {
