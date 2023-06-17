@@ -57,7 +57,7 @@ var _ GithubClient = &ghClient{}
 // building it from releaseID so that we don't need to set upload url. It also accepts a filename instead of an
 // *os.File.
 func (g *ghClient) UploadAsset(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error {
-	re := regexp.MustCompile(`^(?P<base>.+)/repos/(?P<owner>[^/]+)/(?P<repo>[^/]+)/releases/(?P<id>\d+)/assets`)
+	re := regexp.MustCompile(`^(?P<base>.+/)repos/(?P<owner>[^/]+)/(?P<repo>[^/]+)/releases/(?P<id>\d+)/assets`)
 	matches := re.FindStringSubmatch(uploadURL)
 	if len(matches) != 5 {
 		return fmt.Errorf("invalid upload url: %s", uploadURL)
