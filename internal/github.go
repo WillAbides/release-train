@@ -3,14 +3,14 @@ package internal
 import (
 	"context"
 	"fmt"
-	"mime"
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 
 	"github.com/gofri/go-github-ratelimit/github_ratelimit"
 	"github.com/google/go-github/v53/github"
-	"github.com/google/go-querystring/query"
 	"golang.org/x/oauth2"
 )
 
@@ -57,49 +57,46 @@ var _ GithubClient = &ghClient{}
 // building it from releaseID so that we don't need to set upload url. It also accepts a filename instead of an
 // *os.File.
 func (g *ghClient) UploadAsset(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error {
-	if opts == nil {
-		opts = &github.UploadOptions{}
+	re := regexp.MustCompile(`^(?P<base>.+)/repos/(?P<owner>[^/]+)/(?P<repo>[^/]+)/releases/(?P<id>\d+)/assets`)
+	matches := re.FindStringSubmatch(uploadURL)
+	if len(matches) != 5 {
+		return fmt.Errorf("invalid upload url: %s", uploadURL)
 	}
-	u, err := url.Parse(uploadURL)
+	base := matches[1]
+	owner := matches[2]
+	repo := matches[3]
+	id := matches[4]
+
+	baseUrl, err := url.Parse(base)
 	if err != nil {
 		return err
 	}
-	qs, err := query.Values(opts)
-	if err != nil {
-		return err
-	}
-	u.RawQuery = qs.Encode()
+	g.Client.UploadURL = baseUrl
 
 	file, err := os.Open(filename)
 	if err != nil {
 		return err
 	}
+
 	defer func() {
 		//nolint:errcheck // ignore close error for read-only file
 		_ = file.Close()
 	}()
 
-	stat, err := file.Stat()
+	idInt, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
 		return err
 	}
 
-	mediaType := mime.TypeByExtension(filepath.Ext(file.Name()))
-	if opts.MediaType != "" {
-		mediaType = opts.MediaType
+	if opts == nil {
+		opts = &github.UploadOptions{}
+	}
+	if opts.Name == "" {
+		opts.Name = filepath.Base(file.Name())
 	}
 
-	fmt.Printf("Uploading %s to %s\n", filename, u.String())
-	req, err := g.Client.NewUploadRequest(u.String(), file, stat.Size(), mediaType)
-	if err != nil {
-		return err
-	}
-
-	resp, err := g.Client.Do(ctx, req, nil)
-	if err != nil {
-		return err
-	}
-	return resp.Body.Close()
+	_, _, err = g.Client.Repositories.UploadReleaseAsset(ctx, owner, repo, idInt, opts, file)
+	return err
 }
 
 func (g *ghClient) ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string) ([]BasePull, error) {
