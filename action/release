@@ -28,4 +28,5 @@ set -- release "$GITHUB_REPOSITORY" \
 [ -z "$CHECKOUT_DIR" ]          || set -- "$@" --checkout-dir "$CHECKOUT_DIR"
 [ -z "$RELEASE_REF" ]           || set -- "$@" --release-ref "$RELEASE_REF"
 
+echo running: "$ACTION_DIR"/bin/release-train "$@"
 "$ACTION_DIR"/bin/release-train "$@"
