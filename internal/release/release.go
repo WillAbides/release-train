@@ -45,6 +45,10 @@ func (o *Runner) releaseTargetFile() string {
 	return filepath.Join(o.TempDir, "release-target")
 }
 
+func (o *Runner) assetsDir() string {
+	return filepath.Join(o.TempDir, "assets")
+}
+
 var modVersionRe = regexp.MustCompile(`v\d+$`)
 
 type Result struct {
@@ -236,6 +240,11 @@ func (o *Runner) Run(ctx context.Context) (*Result, error) {
 		return nil, err
 	}
 
+	err = os.MkdirAll(o.assetsDir(), 0o700)
+	if err != nil {
+		return nil, err
+	}
+
 	runEnv := map[string]string{
 		"RELEASE_VERSION":    result.ReleaseVersion.String(),
 		"RELEASE_TAG":        result.ReleaseTag,
@@ -244,6 +253,7 @@ func (o *Runner) Run(ctx context.Context) (*Result, error) {
 		"GITHUB_TOKEN":       o.GithubToken,
 		"RELEASE_NOTES_FILE": o.releaseNotesFile(),
 		"RELEASE_TARGET":     o.releaseTargetFile(),
+		"ASSETS_DIR":         o.assetsDir(),
 	}
 
 	result.PrereleaseHookOutput, result.PrereleaseHookAborted, err = runPrereleaseHook(o.CheckoutDir, runEnv, o.PrereleaseHook)
