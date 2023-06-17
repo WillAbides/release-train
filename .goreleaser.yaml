@@ -1,6 +1,6 @@
 project_name: release-train
-#gomod:
-#  proxy: true
+gomod:
+  proxy: true
 builds:
   - goos:
       - linux
