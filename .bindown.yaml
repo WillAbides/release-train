@@ -35,7 +35,7 @@ dependencies:
   release-train:
     template: release-train
     vars:
-      version: 3.0.0-alpha.6
+      version: 3.0.0-alpha.7
   semver-next:
     template: origin#semver-next
     vars:
