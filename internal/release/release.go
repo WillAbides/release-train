@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"sync"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v53/github"
@@ -334,26 +333,14 @@ func (o *Runner) uploadAssets(ctx context.Context, uploadURL string) error {
 	if err != nil {
 		return err
 	}
-	var wg sync.WaitGroup
-	var errMux sync.Mutex
 	for _, asset := range assets {
-		a := asset
-		wg.Add(1)
-		go func() {
-			e := o.GithubClient.UploadAsset(ctx, uploadURL, a, nil)
-			if e != nil {
-				if !errors.Is(e, context.Canceled) {
-					cancel()
-					errMux.Lock()
-					err = errors.Join(err, e)
-					errMux.Unlock()
-				}
-			}
-			wg.Done()
-		}()
+		fmt.Printf("Uploading %s to %s\n", asset, uploadURL)
+		err = o.GithubClient.UploadAsset(ctx, uploadURL, asset, nil)
+		if err != nil {
+			return err
+		}
 	}
-	wg.Wait()
-	return err
+	return nil
 }
 
 func (o *Runner) tagRelease(releaseTag string) error {
