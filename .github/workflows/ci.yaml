@@ -44,6 +44,7 @@ jobs:
           git config --local user.email '${{ github.actor }}@users.noreply.github.com'
           go build -o bin/release-train .
           echo RELEASE_TRAIN_BIN="$(pwd)"/bin/release-train >> "$GITHUB_ENV"
+          echo branch_name="${GITHUB_REF##*/}" >> "$GITHUB_OUTPUT"
       - run: script/cibuild
       - id: release-train
         uses: './'
@@ -72,7 +73,7 @@ jobs:
           token: "${{ steps.generate-token.outputs.token }}"
           add-paths: ".bindown.yaml"
           commit-message: "prepare to release ${{ steps.release-train.outputs.release_tag }}"
-          branch: "prepare-release"
+          branch: "prepare-release-${{ steps.config.outputs.branch_name }}"
           delete-branch: true
           title: "prepare to release ${{ steps.release-train.outputs.release_tag }}"
           body: "prepare to release ${{ steps.release-train.outputs.release_tag }}"
