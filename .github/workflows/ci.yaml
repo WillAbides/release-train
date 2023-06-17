@@ -64,7 +64,6 @@ jobs:
             
             script/bindown install goreleaser
             git tag "$RELEASE_TAG"
-            git push origin "$RELEASE_TAG"
             bin/goreleaser release --clean --skip-publish
       - if: steps.release-train.outputs.created_release == 'true'
         name: upload release assets
