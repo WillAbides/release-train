@@ -3,7 +3,6 @@ package release
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -283,25 +282,14 @@ func (o *Runner) Run(ctx context.Context) (*Result, error) {
 		return nil, err
 	}
 
-	makeLatest := "legacy"
-	markPrerelease := result.ReleaseVersion.Prerelease() != ""
-	if markPrerelease {
-		makeLatest = "false"
-	}
-
-	rel := github.RepositoryRelease{
+	prerelease := result.ReleaseVersion.Prerelease() != ""
+	err = o.GithubClient.CreateRelease(ctx, o.repoOwner(), o.repoName(), &github.RepositoryRelease{
 		TagName:    &result.ReleaseTag,
 		Name:       &result.ReleaseTag,
 		Body:       &releaseNotes,
-		MakeLatest: &makeLatest,
-		Prerelease: &markPrerelease,
-	}
-	debugRel, err := json.MarshalIndent(rel, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println("creating release:", string(debugRel))
-	err = o.GithubClient.CreateRelease(ctx, o.repoOwner(), o.repoName(), &rel)
+		MakeLatest: github.String("legacy"),
+		Prerelease: &prerelease,
+	})
 	if err != nil {
 		return nil, err
 	}
