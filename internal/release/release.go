@@ -334,7 +334,6 @@ func (o *Runner) uploadAssets(ctx context.Context, uploadURL string) error {
 		return err
 	}
 	for _, asset := range assets {
-		fmt.Printf("Uploading %s to %s\n", asset, uploadURL)
 		err = o.GithubClient.UploadAsset(ctx, uploadURL, asset, nil)
 		if err != nil {
 			return err
