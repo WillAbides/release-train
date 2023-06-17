@@ -288,7 +288,7 @@ func (o *Runner) Run(ctx context.Context) (*Result, error) {
 	}
 
 	prerelease := result.ReleaseVersion.Prerelease() != ""
-	err = o.GithubClient.CreateRelease(ctx, o.repoOwner(), o.repoName(), &github.RepositoryRelease{
+	_, err = o.GithubClient.CreateRelease(ctx, o.repoOwner(), o.repoName(), &github.RepositoryRelease{
 		TagName:    &result.ReleaseTag,
 		Name:       &result.ReleaseTag,
 		Body:       &releaseNotes,

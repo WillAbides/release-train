@@ -22,7 +22,7 @@ type GithubClient interface {
 	ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string) ([]BasePull, error)
 	CompareCommits(ctx context.Context, owner, repo, base, head string) ([]string, error)
 	GenerateReleaseNotes(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error)
-	CreateRelease(ctx context.Context, owner, repo string, release *github.RepositoryRelease) error
+	CreateRelease(ctx context.Context, owner, repo string, release *github.RepositoryRelease) (*github.RepositoryRelease, error)
 	UploadAsset(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error
 }
 
@@ -153,7 +153,10 @@ func (g *ghClient) GenerateReleaseNotes(ctx context.Context, owner, repo string,
 	return comp.Body, nil
 }
 
-func (g *ghClient) CreateRelease(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) error {
-	_, _, err := g.Client.Repositories.CreateRelease(ctx, owner, repo, opts)
-	return err
+func (g *ghClient) CreateRelease(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) (*github.RepositoryRelease, error) {
+	rel, _, err := g.Client.Repositories.CreateRelease(ctx, owner, repo, opts)
+	if err != nil {
+		return nil, err
+	}
+	return rel, nil
 }
