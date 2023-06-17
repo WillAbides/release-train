@@ -307,6 +307,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		Body:       &releaseNotes,
 		MakeLatest: github.String("legacy"),
 		Prerelease: &prerelease,
+		Draft:      github.Bool(true),
 	})
 	if err != nil {
 		return nil, err
@@ -316,12 +317,19 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		return o.GithubClient.DeleteRelease(ctx, o.repoOwner(), o.repoName(), *rel.ID)
 	})
 
-	result.CreatedRelease = true
-
 	err = o.uploadAssets(ctx, *rel.UploadURL)
 	if err != nil {
 		return nil, err
 	}
+
+	err = o.GithubClient.EditRelease(ctx, o.repoOwner(), o.repoName(), *rel.ID, &github.RepositoryRelease{
+		Draft: github.Bool(false),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	result.CreatedRelease = true
 
 	return result, nil
 }

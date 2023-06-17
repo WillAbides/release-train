@@ -118,6 +118,7 @@ git tag head
 				assert.Equal(t, "I got your release notes right here buddy\n", *opts.Body)
 				assert.Equal(t, "legacy", *opts.MakeLatest)
 				return &github.RepositoryRelease{
+					ID:        github.Int64(1),
 					UploadURL: github.String("localhost"),
 				}, nil
 			},
@@ -137,6 +138,14 @@ git tag head
 					t.Error(e)
 					return e
 				}
+				return nil
+			},
+			StubEditRelease: func(ctx context.Context, owner, repo string, id int64, opts *github.RepositoryRelease) error {
+				t.Helper()
+				assert.Equal(t, "orgName", owner)
+				assert.Equal(t, "repoName", repo)
+				assert.Equal(t, int64(1), id)
+				assert.Equal(t, false, *opts.Draft)
 				return nil
 			},
 		}
@@ -224,8 +233,17 @@ echo bar > "$ASSETS_DIR/bar.txt"
 				assert.Equal(t, "x1.0.0", *opts.Name)
 				assert.Equal(t, "", *opts.Body)
 				return &github.RepositoryRelease{
+					ID:        github.Int64(1),
 					UploadURL: github.String("localhost"),
 				}, nil
+			},
+			StubEditRelease: func(ctx context.Context, owner, repo string, id int64, opts *github.RepositoryRelease) error {
+				t.Helper()
+				assert.Equal(t, "orgName", owner)
+				assert.Equal(t, "repoName", repo)
+				assert.Equal(t, int64(1), id)
+				assert.Equal(t, false, *opts.Draft)
+				return nil
 			},
 		}
 		runner := Runner{
@@ -425,8 +443,17 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 				assert.Equal(t, "v2.1.0", *opts.Name)
 				assert.Equal(t, "release notes", *opts.Body)
 				return &github.RepositoryRelease{
+					ID:        github.Int64(1),
 					UploadURL: github.String("localhost"),
 				}, nil
+			},
+			StubEditRelease: func(ctx context.Context, owner, repo string, id int64, opts *github.RepositoryRelease) error {
+				t.Helper()
+				assert.Equal(t, "orgName", owner)
+				assert.Equal(t, "repoName", repo)
+				assert.Equal(t, int64(1), id)
+				assert.Equal(t, false, *opts.Draft)
+				return nil
 			},
 		}
 		runner := Runner{
