@@ -62,14 +62,7 @@ jobs:
             script/bindown install goreleaser
             git tag "$RELEASE_TAG"
             bin/goreleaser release --clean --skip-publish
-      - if: steps.release-train.outputs.created_release == 'true'
-        name: upload release assets
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          script/bindown -q install gh
-          bin/gh release upload "${{ steps.release-train.outputs.release_tag }}" \
-            dist/checksums.txt dist/release-train_*.tar.gz
+            cp dist/checksums.txt dist/release-train_*.tar.gz "$ASSETS_DIR"
       - if: steps.release-train.outputs.pre_release_hook_aborted == 'true'
         name: create release pr
         id: create-release-pr
