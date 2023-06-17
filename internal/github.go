@@ -2,8 +2,6 @@ package internal
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
 	"github.com/gofri/go-github-ratelimit/github_ratelimit"
 	"github.com/google/go-github/v53/github"
@@ -106,14 +104,6 @@ func (g *ghClient) GenerateReleaseNotes(ctx context.Context, owner, repo string,
 }
 
 func (g *ghClient) CreateRelease(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) error {
-	got, _, err := g.Client.Repositories.CreateRelease(ctx, owner, repo, opts)
-	if err != nil {
-		return err
-	}
-	b, err := json.MarshalIndent(got, "", "  ")
-	if err != nil {
-		return err
-	}
-	fmt.Println("got", string(b))
-	return nil
+	_, _, err := g.Client.Repositories.CreateRelease(ctx, owner, repo, opts)
+	return err
 }
