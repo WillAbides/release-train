@@ -1,6 +1,6 @@
 project_name: release-train
-gomod:
-  proxy: true
+#gomod:
+#  proxy: true
 builds:
   - goos:
       - linux
@@ -19,8 +19,3 @@ snapshot:
   name_template: "{{ .Tag }}-next"
 release:
   disable: true
-publishers:
-  - name: gh
-    env:
-      - GITHUB_TOKEN="{{ .Env.GITHUB_TOKEN }}"
-    cmd: env && bin/gh release upload --clobber {{ .Tag }} dist/{{ .ArtifactName }}
