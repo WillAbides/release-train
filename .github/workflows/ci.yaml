@@ -66,13 +66,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          git status
-          echo show release before goreleaser
-          gh release view ${{ steps.release-train.outputs.release_tag }}
-          script/bindown -q install goreleaser
+          script/bindown -q install goreleaser gh
           bin/goreleaser release --clean
-          echo show release after goreleaser
-          gh release view ${{ steps.release-train.outputs.release_tag }}
+          bin/gh release upload "${{ steps.release-train.outputs.release_tag }}" \
+            dist/checksums.txt dist/release-train_*.tar.gz
       - if: steps.release-train.outputs.pre_release_hook_aborted == 'true'
         name: create release pr
         id: create-release-pr
