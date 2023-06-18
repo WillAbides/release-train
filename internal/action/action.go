@@ -89,6 +89,14 @@ func (m *OrderedMap[V]) Get(key string) V {
 	return m.values[key]
 }
 
+func (m *OrderedMap[V]) Has(key string) bool {
+	if m.values == nil {
+		return false
+	}
+	_, ok := m.values[key]
+	return ok
+}
+
 func (m *OrderedMap[V]) Keys() []string {
 	return append([]string{}, m.keys...)
 }

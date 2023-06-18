@@ -111,32 +111,29 @@ outputs:
 runs:
   using: composite
   steps:
-    - id: check_pr_labels
-      if: ${{ inputs.check_pr_labels == 'true' }}
-      shell: sh
-      working-directory: ${{ inputs.checkout_dir }}
-      env:
-        GITHUB_TOKEN: ${{ inputs.github_token }}
-        GH_TOKEN: ${{ inputs.github_token }}
-        NO_RELEASE: ${{ inputs.no_release }}
-      run: '"${{ github.action_path }}"/action/check_pr_labels'
     - id: release
-      if: ${{ inputs.check_pr_labels != 'true' }}
       shell: sh
       working-directory: ${{ inputs.checkout_dir }}
       env:
         GITHUB_REPOSITORY: ${{ github.repository }}
-        CHECK_PR_LABELS: ${{ inputs.check_pr_labels }}
-        CHECKOUT_DIR: ${{ inputs.checkout_dir }}
-        REF: ${{ inputs.ref }}
-        GITHUB_TOKEN: ${{ inputs.github_token }}
-        CREATE_TAG: ${{ inputs.create_tag }}
-        CREATE_RELEASE: ${{ inputs.create_release }}
-        TAG_PREFIX: ${{ inputs.tag_prefix }}
-        V0: ${{ inputs.v0 }}
-        INITIAL_RELEASE_TAG: ${{ inputs.initial_release_tag }}
-        PRE_RELEASE_HOOK: ${{ inputs.pre_release_hook }}
-        VALIDATE_GO_MODULE: ${{ inputs.validate_go_module }}
-        RELEASE_REFS: ${{ inputs.release_refs }}
-        NO_RELEASE: ${{ inputs.no_release }}
-      run: '"${{ github.action_path }}"/action/release'
+        INPUT_CHECK_PR_LABELS: ${{ inputs.check_pr_labels }}
+        INPUT_CHECKOUT_DIR: ${{ inputs.checkout_dir }}
+        INPUT_REF: ${{ inputs.ref }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github_token }}
+        INPUT_CREATE_TAG: ${{ inputs.create_tag }}
+        INPUT_CREATE_RELEASE: ${{ inputs.create_release }}
+        INPUT_TAG_PREFIX: ${{ inputs.tag_prefix }}
+        INPUT_V0: ${{ inputs.v0 }}
+        INPUT_INITIAL_RELEASE_TAG: ${{ inputs.initial_release_tag }}
+        INPUT_PRE_RELEASE_HOOK: ${{ inputs.pre_release_hook }}
+        INPUT_VALIDATE_GO_MODULE: ${{ inputs.validate_go_module }}
+        INPUT_RELEASE_REFS: ${{ inputs.release_refs }}
+        INPUT_NO_RELEASE: ${{ inputs.no_release }}
+      run: |-
+        ACTION_DIR="${{ github.action_path }}"
+        if [ -z "$RELEASE_TRAIN_BIN" ]; then
+          "$ACTION_DIR"/action/bindown -q install release-train --allow-missing-checksum
+          RELEASE_TRAIN_BIN="$ACTION_DIR"/bin/release-train
+        fi
+
+        "$RELEASE_TRAIN_BIN" action run
