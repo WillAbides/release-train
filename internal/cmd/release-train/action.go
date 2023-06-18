@@ -67,7 +67,7 @@ func (cmd *actionRunCmd) Run(ctx context.Context) (errOut error) {
 			cmd.ghAction.Errorf("%s", errOut)
 		}
 	}()
-	if cmd.getInput("label_check") == "true" {
+	if cmd.getInput("check_pr_labels") == "true" {
 		return cmd.runLabelCheck(ctx)
 	}
 	return cmd.runRelease(ctx)
