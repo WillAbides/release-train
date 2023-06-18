@@ -119,7 +119,7 @@ func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
 
 	ownerName, repoName := cmd.context.Repo()
 
-	tmpDir := cmd.getInput("RUNNER_TEMP")
+	tmpDir := os.Getenv("RUNNER_TEMP")
 	if tmpDir == "" {
 		tmpDir, err = os.MkdirTemp("", "release-train-*")
 		if err != nil {
