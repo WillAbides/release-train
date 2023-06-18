@@ -331,6 +331,7 @@ release yet.` + "\n\n" + actionBoolSuffix,
 		Id:               "release",
 		Shell:            "sh",
 		WorkingDirectory: "${{ inputs.checkout_dir }}",
+		Env:              releaseStepEnv,
 		Run: `ACTION_DIR="${{ github.action_path }}"
 if [ -z "$RELEASE_TRAIN_BIN" ]; then
   "$ACTION_DIR"/action/bindown -q install release-train --allow-missing-checksum
