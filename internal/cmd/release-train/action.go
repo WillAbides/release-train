@@ -84,11 +84,12 @@ func (cmd *actionRunCmd) runLabelCheck(ctx context.Context) error {
 	if !ok {
 		return fmt.Errorf("event is not a pull request")
 	}
-	prNumberString, ok := eventPR["number"].(string)
+	rawPRNumber, ok := eventPR["number"]
 	if !ok {
 		return fmt.Errorf("event pull request has no number")
 	}
-	prNumber, err := strconv.Atoi(prNumberString)
+	fmt.Printf("rawPRNumber %v %T", rawPRNumber, rawPRNumber)
+	prNumber, err := strconv.Atoi(rawPRNumber.(string))
 	if err != nil {
 		return err
 	}
