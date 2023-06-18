@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/alecthomas/kong"
@@ -83,9 +84,13 @@ func (cmd *actionRunCmd) runLabelCheck(ctx context.Context) error {
 	if !ok {
 		return fmt.Errorf("event is not a pull request")
 	}
-	prNumber, ok := eventPR["number"].(int)
+	prNumberString, ok := eventPR["number"].(string)
 	if !ok {
 		return fmt.Errorf("event pull request has no number")
+	}
+	prNumber, err := strconv.Atoi(prNumberString)
+	if err != nil {
+		return err
 	}
 	ghClientConfig := &githubClientConfig{
 		GithubToken:  cmd.getInput("github_token"),
