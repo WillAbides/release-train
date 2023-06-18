@@ -116,31 +116,18 @@ runs:
       working-directory: ${{ inputs.checkout_dir }}
       env:
         GITHUB_REPOSITORY: ${{ github.repository }}
-        CHECK_PR_LABELS: ${{ inputs.check_pr_labels }}
         INPUT_CHECK_PR_LABELS: ${{ inputs.check_pr_labels }}
-        CHECKOUT_DIR: ${{ inputs.checkout_dir }}
         INPUT_CHECKOUT_DIR: ${{ inputs.checkout_dir }}
-        REF: ${{ inputs.ref }}
         INPUT_REF: ${{ inputs.ref }}
-        GITHUB_TOKEN: ${{ inputs.github_token }}
         INPUT_GITHUB_TOKEN: ${{ inputs.github_token }}
-        CREATE_TAG: ${{ inputs.create_tag }}
         INPUT_CREATE_TAG: ${{ inputs.create_tag }}
-        CREATE_RELEASE: ${{ inputs.create_release }}
         INPUT_CREATE_RELEASE: ${{ inputs.create_release }}
-        TAG_PREFIX: ${{ inputs.tag_prefix }}
         INPUT_TAG_PREFIX: ${{ inputs.tag_prefix }}
-        V0: ${{ inputs.v0 }}
         INPUT_V0: ${{ inputs.v0 }}
-        INITIAL_RELEASE_TAG: ${{ inputs.initial_release_tag }}
         INPUT_INITIAL_RELEASE_TAG: ${{ inputs.initial_release_tag }}
-        PRE_RELEASE_HOOK: ${{ inputs.pre_release_hook }}
         INPUT_PRE_RELEASE_HOOK: ${{ inputs.pre_release_hook }}
-        VALIDATE_GO_MODULE: ${{ inputs.validate_go_module }}
         INPUT_VALIDATE_GO_MODULE: ${{ inputs.validate_go_module }}
-        RELEASE_REFS: ${{ inputs.release_refs }}
         INPUT_RELEASE_REFS: ${{ inputs.release_refs }}
-        NO_RELEASE: ${{ inputs.no_release }}
         INPUT_NO_RELEASE: ${{ inputs.no_release }}
       run: |-
         ACTION_DIR="${{ github.action_path }}"

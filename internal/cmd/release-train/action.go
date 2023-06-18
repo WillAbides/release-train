@@ -270,11 +270,10 @@ release yet.` + "\n\n" + actionBoolSuffix,
 		action.MapEntry("GITHUB_REPOSITORY", "${{ github.repository }}"),
 	)
 	for _, inputName := range inputs.Keys() {
-		envName := strings.ToUpper(inputName)
+		envName := fmt.Sprintf("INPUT_%s", strings.ToUpper(inputName))
 		envName = strings.ReplaceAll(envName, "-", "_")
 		val := fmt.Sprintf("${{ inputs.%s }}", inputName)
 		releaseStepEnv.Add(envName, val)
-		releaseStepEnv.Add(fmt.Sprintf("INPUT_%s", envName), val)
 	}
 	outputs := action.NewOrderedMap(
 		action.MapEntry("previous_ref", action.CompositeOutput{
