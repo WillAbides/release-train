@@ -11,6 +11,10 @@ release-train uses a number of scripts to automate common tasks. They are found 
 
 script/bindown runs bindown
 
+### bootstrap-bindown.sh
+
+bootstraps bindown -- only used by script/bindown
+
 ### cibuild
 
 script/cibuild is run by CI to test this project. It can also be run locally.

@@ -1,4 +1,5 @@
 #!/bin/sh
+#/ bootstraps bindown -- only used by script/bindown
 
 set -e
 
