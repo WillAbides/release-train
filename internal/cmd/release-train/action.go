@@ -273,6 +273,7 @@ release yet.` + "\n\n" + actionBoolSuffix,
 		envName = strings.ReplaceAll(envName, "-", "_")
 		val := fmt.Sprintf("${{ inputs.%s }}", inputName)
 		releaseStepEnv.Add(envName, val)
+		releaseStepEnv.Add(fmt.Sprintf("INPUT_%s", envName), val)
 	}
 	outputs := action.NewOrderedMap(
 		action.MapEntry("previous_ref", action.CompositeOutput{
