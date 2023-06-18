@@ -2,6 +2,7 @@ package releasetrain
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -161,6 +162,14 @@ func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
 	}
 
 	result, err := runner.Run(ctx)
+	if err != nil {
+		return err
+	}
+
+	// output result for debugging
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	err = enc.Encode(result)
 	if err != nil {
 		return err
 	}
