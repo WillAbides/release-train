@@ -60,9 +60,9 @@ func Test_incrPre(t *testing.T) {
 		},
 		{
 			prev:    "1.2.3",
-			level:   internal.ChangeLevelNoChange,
+			level:   internal.ChangeLevelNone,
 			prefix:  "alpha",
-			wantErr: `invalid change level for pre-release: no change`,
+			wantErr: `invalid change level for pre-release: none`,
 		},
 		{
 			prev:    "1.2.3-beta.0",
@@ -306,9 +306,9 @@ func Test_next(t *testing.T) {
 					Owner: "willabides", Repo: "semver-next", Sha: sha1,
 					Result: []internal.BasePull{
 						{Number: 1, Labels: []string{"something else"}},
-						{Number: 2, Labels: []string{internal.ChangeLevelNoChange.String()}},
+						{Number: 2, Labels: []string{internal.ChangeLevelNone.String()}},
 						{Number: 3},
-						{Number: 4, Labels: []string{internal.ChangeLevelNoChange.String()}},
+						{Number: 4, Labels: []string{internal.ChangeLevelNone.String()}},
 					},
 				},
 				{
@@ -331,15 +331,15 @@ func Test_next(t *testing.T) {
 		want := Result{
 			NextVersion:     *semver.MustParse("0.15.0"),
 			PreviousVersion: *semver.MustParse("0.15.0"),
-			ChangeLevel:     internal.ChangeLevelNoChange,
+			ChangeLevel:     internal.ChangeLevelNone,
 			Commits: []Commit{
 				{
 					Sha: sha1,
 					Pulls: []internal.Pull{
 						{Number: 1},
-						{Number: 2, LevelLabels: []string{internal.ChangeLevelNoChange.String()}, ChangeLevel: internal.ChangeLevelNoChange},
+						{Number: 2, LevelLabels: []string{internal.ChangeLevelNone.String()}, ChangeLevel: internal.ChangeLevelNone},
 						{Number: 3},
-						{Number: 4, LevelLabels: []string{internal.ChangeLevelNoChange.String()}, ChangeLevel: internal.ChangeLevelNoChange},
+						{Number: 4, LevelLabels: []string{internal.ChangeLevelNone.String()}, ChangeLevel: internal.ChangeLevelNone},
 					},
 				},
 				{
@@ -404,7 +404,7 @@ func Test_next(t *testing.T) {
 		want := Result{
 			NextVersion:     *semver.MustParse("0.15.0"),
 			PreviousVersion: *semver.MustParse("0.15.0"),
-			ChangeLevel:     internal.ChangeLevelNoChange,
+			ChangeLevel:     internal.ChangeLevelNone,
 			Commits:         []Commit{},
 		}
 		require.Equal(t, &want, got)
@@ -431,7 +431,7 @@ func Test_next(t *testing.T) {
 		want := Result{
 			NextVersion:     *semver.MustParse("0.15.0"),
 			PreviousVersion: *semver.MustParse("0.15.0"),
-			ChangeLevel:     internal.ChangeLevelNoChange,
+			ChangeLevel:     internal.ChangeLevelNone,
 			Commits:         []Commit{},
 		}
 		require.Equal(t, &want, got)
@@ -640,7 +640,7 @@ func Test_bumpVersion(t *testing.T) {
 						Number:      1,
 						HasPreLabel: true,
 					}, {
-						ChangeLevel: internal.ChangeLevelNoChange,
+						ChangeLevel: internal.ChangeLevelNone,
 						Number:      2,
 						HasPreLabel: true,
 					}},
@@ -663,7 +663,7 @@ func Test_bumpVersion(t *testing.T) {
 						HasPreLabel:      true,
 						PreReleasePrefix: "alpha",
 					}, {
-						ChangeLevel:      internal.ChangeLevelNoChange,
+						ChangeLevel:      internal.ChangeLevelNone,
 						Number:           2,
 						HasPreLabel:      true,
 						PreReleasePrefix: "beta",

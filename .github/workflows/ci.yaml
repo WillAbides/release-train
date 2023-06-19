@@ -82,7 +82,7 @@ jobs:
           delete-branch: true
           title: "prepare to release ${{ steps.release-train.outputs.release-tag }}"
           body: "prepare to release ${{ steps.release-train.outputs.release-tag }}"
-          labels: "semver:nochange"
+          labels: "semver:none"
       - if: steps.create-release-pr.outputs.pull-request-number
         name: auto-merge release pr
         env:

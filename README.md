@@ -144,7 +144,7 @@ The tag of the new release. Empty if no release is called for.
 
 ### change-level
 
-The level of change in the release. Either "major", "minor", "patch" or "no change".
+The level of change in the release. Either "major", "minor", "patch" or "none".
 
 ### created-tag
 

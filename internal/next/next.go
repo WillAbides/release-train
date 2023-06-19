@@ -92,11 +92,11 @@ func GetNext(ctx context.Context, opts *Options) (*Result, error) {
 	}
 	minBump := opts.MinBump
 	if minBump == "" {
-		minBump = "no change"
+		minBump = internal.ChangeLevelNone.String()
 	}
 	maxBump := opts.MaxBump
 	if maxBump == "" {
-		maxBump = "major"
+		maxBump = internal.ChangeLevelMajor.String()
 	}
 	minBumpLevel, err := internal.ParseChangeLevel(minBump)
 	if err != nil {
@@ -173,7 +173,7 @@ func bumpVersion(prev semver.Version, minBump, maxBump internal.ChangeLevel, com
 					return nil, fmt.Errorf("cannot have multiple pre-release prefixes in the same release. pre-release prefix. release contains both %q and %q", prePrefix, pull.PreReleasePrefix)
 				}
 			}
-		} else if pull.ChangeLevel > internal.ChangeLevelNoChange {
+		} else if pull.ChangeLevel > internal.ChangeLevelNone {
 			nonPrePulls = append(nonPrePulls, fmt.Sprintf("#%d", pull.Number))
 		}
 		if pull.HasStableLabel {
@@ -212,7 +212,7 @@ func bumpVersion(prev semver.Version, minBump, maxBump internal.ChangeLevel, com
 
 func incrLevel(prev semver.Version, level internal.ChangeLevel) semver.Version {
 	switch level {
-	case internal.ChangeLevelNoChange:
+	case internal.ChangeLevelNone:
 		return prev
 	case internal.ChangeLevelPatch:
 		return prev.IncPatch()
@@ -238,7 +238,7 @@ func incrPre(prev semver.Version, level internal.ChangeLevel, prefix string) (ne
 		}
 	}()
 
-	if level == internal.ChangeLevelNoChange {
+	if level == internal.ChangeLevelNone {
 		return prev, fmt.Errorf("invalid change level for pre-release: %v", level)
 	}
 	prevPre := prev.Prerelease()

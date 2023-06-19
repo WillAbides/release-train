@@ -18,7 +18,7 @@ type Pull struct {
 func NewPull(number int, labels ...string) (*Pull, error) {
 	p := Pull{
 		Number:      number,
-		ChangeLevel: ChangeLevelNoChange,
+		ChangeLevel: ChangeLevelNone,
 	}
 	sort.Strings(labels)
 	for _, label := range labels {

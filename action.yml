@@ -97,7 +97,7 @@ outputs:
     description: The tag of the new release. Empty if no release is called for.
   change-level:
     value: ${{ steps.release.outputs.change-level }}
-    description: The level of change in the release. Either "major", "minor", "patch" or "no change".
+    description: The level of change in the release. Either "major", "minor", "patch" or "none".
   created-tag:
     value: ${{ steps.release.outputs.created-tag }}
     description: Whether a tag was created. Either "true" or "false".

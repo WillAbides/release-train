@@ -263,7 +263,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			FirstRelease:   true,
 			ReleaseTag:     "x1.0.0",
 			ReleaseVersion: semver.MustParse("1.0.0"),
-			ChangeLevel:    internal.ChangeLevelNoChange,
+			ChangeLevel:    internal.ChangeLevelNone,
 			CreatedTag:     true,
 			CreatedRelease: true,
 		}, got)

@@ -361,7 +361,7 @@ release yet.` + "\n\n" + actionBoolSuffix,
 
 		orderedmap.Pair(outputChangeLevel, action.CompositeOutput{
 			Value:       releaseOutput(outputChangeLevel),
-			Description: "The level of change in the release. Either \"major\", \"minor\", \"patch\" or \"no change\".",
+			Description: "The level of change in the release. Either \"major\", \"minor\", \"patch\" or \"none\".",
 		}),
 
 		orderedmap.Pair(outputCreatedTag, action.CompositeOutput{

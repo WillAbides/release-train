@@ -19,11 +19,9 @@ var LabelLevels = map[string]ChangeLevel{
 	"patch":        ChangeLevelPatch,
 	"semver:patch": ChangeLevelPatch,
 
-	"no change":        ChangeLevelNoChange,
-	"semver:none":      ChangeLevelNoChange,
-	"semver:no change": ChangeLevelNoChange,
-	"semver:nochange":  ChangeLevelNoChange,
-	"semver:skip":      ChangeLevelNoChange,
+	"none":        ChangeLevelNone,
+	"semver:none": ChangeLevelNone,
+	"semver:skip": ChangeLevelNone,
 }
 
 var (
