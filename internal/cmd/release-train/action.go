@@ -2,6 +2,7 @@ package releasetrain
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/willabides/release-train-action/v3/internal/labelcheck"
 	"github.com/willabides/release-train-action/v3/internal/orderedmap"
 	"github.com/willabides/release-train-action/v3/internal/release"
+	"golang.org/x/exp/slog"
 	"gopkg.in/yaml.v3"
 )
 
@@ -193,10 +195,22 @@ func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
 		GithubClient: ghClient,
 	}
 
+	b, err := json.MarshalIndent(runner, "", "  ")
+	if err != nil {
+		return err
+	}
+	logger(ctx).Debug("running", slog.String("runner", string(b)))
+
 	result, err := runner.Run(ctx)
 	if err != nil {
 		return err
 	}
+
+	b, err = json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		return err
+	}
+	logger(ctx).Debug("got result", slog.String("result", string(b)))
 
 	cmd.setOutput(outputPreviousRef, result.PreviousRef)
 	cmd.setOutput(outputPreviousVersion, result.PreviousVersion)
