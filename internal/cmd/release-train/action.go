@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	actionBoolSuffix = "Only literal 'true' will be treated as true."
-	actionCsvSuffix  = "Comma separated list of values without spaces."
+	actionBoolSuffix  = "Only literal 'true' will be treated as true."
+	actionSliceSuffix = "One value per line."
 )
 
 const (
@@ -93,6 +93,27 @@ func (cmd *actionRunCmd) getInput(name string) string {
 	return cmd.ghAction.GetInput(name)
 }
 
+func (cmd *actionRunCmd) getSliceInput(name string) []string {
+	input := strings.TrimSpace(cmd.getInput(name))
+	if input == "" {
+		return nil
+	}
+	var val []string
+	input = strings.ReplaceAll(input, "\r\n", "\n")
+	for _, v := range strings.Split(input, "\n") {
+		if strings.TrimSpace(v) == "" {
+			continue
+		}
+		val = append(val, v)
+	}
+	return val
+}
+
+func (cmd *actionRunCmd) getBoolInput(name string) bool {
+	input := strings.TrimSpace(cmd.getInput(name))
+	return input == "true"
+}
+
 func (cmd *actionRunCmd) setOutput(name, value string) {
 	_, ok := cmd.action.Outputs.Get(name)
 	if !ok {
@@ -152,11 +173,6 @@ func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
 		return nil
 	}
 
-	var goModFiles []string
-	if cmd.getInput(inputValidateGoMod) != "" {
-		goModFiles = []string{cmd.getInput(inputValidateGoMod)}
-	}
-
 	var err error
 
 	ownerName, repoName := cmd.context.Repo()
@@ -167,11 +183,10 @@ func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-	}
-
-	var releaseRefs []string
-	if cmd.getInput(inputReleaseRefs) != "" {
-		releaseRefs = strings.Split(cmd.getInput(inputReleaseRefs), ",")
+		defer func() {
+			//nolint:errcheck // ignore error
+			_ = os.RemoveAll(tmpDir)
+		}()
 	}
 
 	ghClientConfig := &githubClientConfig{
@@ -187,17 +202,17 @@ func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
 		CheckoutDir:    cmd.getInput(inputCheckoutDir),
 		Ref:            cmd.getInput(inputRef),
 		GithubToken:    cmd.getInput(inputGithubToken),
-		CreateTag:      cmd.getInput(inputCreateTag) == "true",
-		CreateRelease:  cmd.getInput(inputCreateRelease) == "true",
+		CreateTag:      cmd.getBoolInput(inputCreateTag),
+		CreateRelease:  cmd.getBoolInput(inputCreateRelease),
 		TagPrefix:      cmd.getInput(inputTagPrefix),
 		InitialTag:     cmd.getInput(inputInitialTag),
 		PrereleaseHook: cmd.getInput(inputPreReleaseHook),
-		GoModFiles:     goModFiles,
+		GoModFiles:     cmd.getSliceInput(inputValidateGoMod),
+		V0:             cmd.getBoolInput(inputV0),
+		ReleaseRefs:    cmd.getSliceInput(inputReleaseRefs),
 		PushRemote:     "origin",
 		Repo:           fmt.Sprintf("%s/%s", ownerName, repoName),
 		TempDir:        tmpDir,
-		V0:             cmd.getInput(inputV0) == "true",
-		ReleaseRefs:    releaseRefs,
 
 		GithubClient: ghClient,
 	}
@@ -291,11 +306,11 @@ func getAction(kongCtx *kong.Context) *action.CompositeAction {
 		}),
 
 		orderedmap.Pair(inputValidateGoMod, action.Input{
-			Description: getVar("go_mod_file_help"),
+			Description: getVar("go_mod_file_help") + "\n" + actionSliceSuffix,
 		}),
 
 		orderedmap.Pair(inputReleaseRefs, action.Input{
-			Description: getVar("release_ref_help") + "\n\n" + actionCsvSuffix,
+			Description: getVar("release_ref_help") + "\n" + actionSliceSuffix,
 		}),
 
 		orderedmap.Pair(inputNoRelease, action.Input{

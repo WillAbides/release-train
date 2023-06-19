@@ -104,14 +104,14 @@ RELEASE_NOTES_FILE, RELEASE_TARGET and ASSETS_DIR will be set.
 Validates that the name of the go module at the given path matches the major version of the release. For example,
 validation will fail when releasing v3.0.0 when the module name is "my_go_module/v2".
 
+One value per line.
 
 ### release-refs
 
 Only allow tags and releases to be created from matching refs. Refs can be patterns accepted by git-show-ref. 
 If undefined, any branch can be used.
 
-
-Comma separated list of values without spaces.
+One value per line.
 
 ### no-release
 
