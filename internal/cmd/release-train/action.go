@@ -10,6 +10,7 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/sethvargo/go-githubactions"
 	"github.com/willabides/release-train-action/v3/internal/action"
+	"github.com/willabides/release-train-action/v3/internal/actionlogger"
 	"github.com/willabides/release-train-action/v3/internal/labelcheck"
 	"github.com/willabides/release-train-action/v3/internal/orderedmap"
 	"github.com/willabides/release-train-action/v3/internal/release"
@@ -68,12 +69,17 @@ type actionRunCmd struct {
 	action   *action.CompositeAction
 	ghAction *githubactions.Action
 	context  *githubactions.GitHubContext
+	logger   *slog.Logger
 }
 
 func (cmd *actionRunCmd) BeforeApply(kongCtx *kong.Context) error {
 	var err error
 	cmd.action = getAction(kongCtx)
 	cmd.ghAction = githubactions.New()
+	cmd.logger = slog.New(actionlogger.NewHandler(os.Stdout, &actionlogger.Options{
+		Level:     slog.LevelDebug,
+		AddSource: true,
+	}))
 	cmd.context, err = cmd.ghAction.Context()
 	return err
 }
@@ -99,7 +105,7 @@ func (cmd *actionRunCmd) setOutput(ctx context.Context, name, value string) {
 func (cmd *actionRunCmd) Run(ctx context.Context) (errOut error) {
 	defer func() {
 		if errOut != nil {
-			cmd.ghAction.Errorf("%s", errOut)
+			cmd.logger.Error(errOut.Error())
 		}
 	}()
 	if cmd.getInput(inputCheckPRLabels) == "true" {
@@ -110,7 +116,7 @@ func (cmd *actionRunCmd) Run(ctx context.Context) (errOut error) {
 
 func (cmd *actionRunCmd) runLabelCheck(ctx context.Context) error {
 	if cmd.getInput(inputNoRelease) == "true" {
-		cmd.ghAction.Infof("Skipping check")
+		cmd.logger.Info("skipping label check because no-release is true")
 		return nil
 	}
 	eventPR, ok := cmd.context.Event["pull_request"].(map[string]any)
@@ -142,7 +148,7 @@ func (cmd *actionRunCmd) runLabelCheck(ctx context.Context) error {
 
 func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
 	if cmd.getInput(inputNoRelease) == "true" {
-		cmd.ghAction.Infof("Skipping release creation")
+		cmd.logger.Info("skipping release because no-release is true")
 		return nil
 	}
 
@@ -200,7 +206,7 @@ func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	logger(ctx).Debug("running", slog.String("runner", string(b)))
+	cmd.logger.Debug("running", slog.String("runner", string(b)))
 
 	result, err := runner.Run(ctx)
 	if err != nil {
@@ -211,7 +217,7 @@ func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	logger(ctx).Debug("got result", slog.String("result", string(b)))
+	cmd.logger.Debug("got result", slog.String("result", string(b)))
 
 	cmd.setOutput(ctx, outputPreviousRef, result.PreviousRef)
 	cmd.setOutput(ctx, outputPreviousVersion, result.PreviousVersion)
