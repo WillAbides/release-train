@@ -98,7 +98,7 @@ func (cmd *actionRunCmd) setOutput(name, value string) {
 	if !ok {
 		panic(fmt.Sprintf("output %s not found", name))
 	}
-	cmd.logger.Info("outputting", slog.String("name", name), slog.String("value", value))
+	cmd.logger.Debug("outputting", slog.String("name", name), slog.String("value", value))
 	cmd.ghAction.SetOutput(name, value)
 }
 
@@ -147,9 +147,6 @@ func (cmd *actionRunCmd) runLabelCheck(ctx context.Context) error {
 }
 
 func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
-	oldLogger := logger(ctx)
-	oldLogger.Info("hello from the old logger", slog.String("foo", "bar"))
-	cmd.logger.Info("hello from the new logger", slog.String("foo", "bar"))
 	if cmd.getInput(inputNoRelease) == "true" {
 		cmd.logger.Info("skipping release because no-release is true")
 		return nil
@@ -209,7 +206,7 @@ func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	cmd.logger.Info("running", slog.String("runner", string(b)))
+	cmd.logger.Debug("running", slog.String("runner", string(b)))
 
 	result, err := runner.Run(ctx)
 	if err != nil {
@@ -220,7 +217,7 @@ func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	cmd.logger.Info("got result", slog.String("result", string(b)))
+	cmd.logger.Debug("got result", slog.String("result", string(b)))
 
 	cmd.setOutput(outputPreviousRef, result.PreviousRef)
 	cmd.setOutput(outputPreviousVersion, result.PreviousVersion)
