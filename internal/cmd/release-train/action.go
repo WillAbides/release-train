@@ -21,32 +21,32 @@ const (
 )
 
 const (
-	inputCheckPRLabels  = "check_pr_labels"
-	inputCheckoutDir    = "checkout_dir"
+	inputCheckPRLabels  = "check-pr-labels"
+	inputCheckoutDir    = "checkout-dir"
 	inputRef            = "ref"
-	inputGithubToken    = "github_token"
-	inputCreateTag      = "create_tag"
-	inputCreateRelease  = "create_release"
-	inputTagPrefix      = "tag_prefix"
+	inputGithubToken    = "github-token"
+	inputCreateTag      = "create-tag"
+	inputCreateRelease  = "create-release"
+	inputTagPrefix      = "tag-prefix"
 	inputV0             = "v0"
-	inputInitialTag     = "initial_release_tag"
-	inputPreReleaseHook = "pre_release_hook"
-	inputValidateGoMod  = "validate_go_module"
-	inputReleaseRefs    = "release_refs"
-	inputNoRelease      = "no_release"
+	inputInitialTag     = "initial-release-tag"
+	inputPreReleaseHook = "pre-release-hook"
+	inputValidateGoMod  = "validate-go-module"
+	inputReleaseRefs    = "release-refs"
+	inputNoRelease      = "no-release"
 )
 
 const (
-	outputPreviousRef           = "previous_ref"
-	outputPreviousVersion       = "previous_version"
-	outputFirstRelease          = "first_release"
-	outputReleaseVersion        = "release_version"
-	outputReleaseTag            = "release_tag"
-	outputChangeLevel           = "change_level"
-	outputCreatedTag            = "created_tag"
-	outputCreatedRelease        = "created_release"
-	outputPreReleaseHookOutput  = "pre_release_hook_output"
-	outputPreReleaseHookAborted = "pre_release_hook_aborted"
+	outputPreviousRef           = "previous-ref"
+	outputPreviousVersion       = "previous-version"
+	outputFirstRelease          = "first-release"
+	outputReleaseVersion        = "release-version"
+	outputReleaseTag            = "release-tag"
+	outputChangeLevel           = "change-level"
+	outputCreatedTag            = "created-tag"
+	outputCreatedRelease        = "created-release"
+	outputPreReleaseHookOutput  = "pre-release-hook-output"
+	outputPreReleaseHookAborted = "pre-release-hook-aborted"
 )
 
 type actionCmd struct {

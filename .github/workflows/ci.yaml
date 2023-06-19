@@ -48,12 +48,13 @@ jobs:
           echo branch_name="${GITHUB_REF##*/}" >> "$GITHUB_OUTPUT"
       - run: script/cibuild
       - id: release-train
+        name: release-train
         uses: './'
         with:
-          create_release: true
-          validate_go_module: go.mod
-          release_refs: refs/heads/v[0-9],refs/heads/v[0-9][0-9],main
-          pre_release_hook: |
+          create-release: true
+          validate-go-module: go.mod
+          release-refs: refs/heads/v[0-9],refs/heads/v[0-9][0-9],main
+          pre-release-hook: |
             script/bindown dependency update-vars release-train \
               --set version="$RELEASE_VERSION" \
               --skipchecksums
@@ -65,7 +66,7 @@ jobs:
             git tag "$RELEASE_TAG"
             bin/goreleaser release --clean --skip-publish
             cp dist/checksums.txt dist/release-train_*.tar.gz "$ASSETS_DIR"
-      - if: steps.release-train.outputs.pre_release_hook_aborted == 'true'
+      - if: steps.release-train.outputs.pre-release-hook-aborted == 'true'
         name: create release pr
         id: create-release-pr
         # v5.0.1
@@ -73,11 +74,11 @@ jobs:
         with:
           token: "${{ steps.generate-token.outputs.token }}"
           add-paths: ".bindown.yaml"
-          commit-message: "prepare to release ${{ steps.release-train.outputs.release_tag }}"
+          commit-message: "prepare to release ${{ steps.release-train.outputs.release-tag }}"
           branch: "prepare-release-${{ steps.config.outputs.branch_name }}"
           delete-branch: true
-          title: "prepare to release ${{ steps.release-train.outputs.release_tag }}"
-          body: "prepare to release ${{ steps.release-train.outputs.release_tag }}"
+          title: "prepare to release ${{ steps.release-train.outputs.release-tag }}"
+          body: "prepare to release ${{ steps.release-train.outputs.release-tag }}"
           labels: "semver:nochange"
       - if: steps.create-release-pr.outputs.pull-request-number
         name: auto-merge release pr
