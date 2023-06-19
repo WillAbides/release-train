@@ -147,6 +147,9 @@ func (cmd *actionRunCmd) runLabelCheck(ctx context.Context) error {
 }
 
 func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
+	oldLogger := logger(ctx)
+	oldLogger.Info("hello from the old logger", slog.String("foo", "bar"))
+	cmd.logger.Info("hello from the new logger", slog.String("foo", "bar"))
 	if cmd.getInput(inputNoRelease) == "true" {
 		cmd.logger.Info("skipping release because no-release is true")
 		return nil
