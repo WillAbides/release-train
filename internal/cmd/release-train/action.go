@@ -59,7 +59,6 @@ type actionOutputCmd struct{}
 func (cmd *actionOutputCmd) Run(kongCtx *kong.Context) error {
 	enc := yaml.NewEncoder(os.Stdout)
 	enc.SetIndent(2)
-	kongCtx.Model.Vars()
 	return enc.Encode(getAction(kongCtx))
 }
 
