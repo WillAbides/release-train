@@ -79,34 +79,34 @@ inputs:
       Only literal 'true' will be treated as true.
 outputs:
   previous-ref:
-    value: ${{ steps.release.outputs.previous_ref }}
+    value: ${{ steps.release.outputs.previous-ref }}
     description: A git ref pointing to the previous release, or the current ref if no previous release can be found.
   previous-version:
-    value: ${{ steps.release.outputs.previous_version }}
+    value: ${{ steps.release.outputs.previous-version }}
     description: The previous version on the release branch.
   first-release:
-    value: ${{ steps.release.outputs.first_release }}
+    value: ${{ steps.release.outputs.first-release }}
     description: Whether this is the first release on the release branch. Either "true" or "false".
   release-version:
-    value: ${{ steps.release.outputs.release_version }}
+    value: ${{ steps.release.outputs.release-version }}
     description: The version of the new release. Empty if no release is called for.
   release-tag:
-    value: ${{ steps.release.outputs.release_tag }}
+    value: ${{ steps.release.outputs.release-tag }}
     description: The tag of the new release. Empty if no release is called for.
   change-level:
-    value: ${{ steps.release.outputs.change_level }}
+    value: ${{ steps.release.outputs.change-level }}
     description: The level of change in the release. Either "major", "minor", "patch" or "no change".
   created-tag:
-    value: ${{ steps.release.outputs.created_tag }}
+    value: ${{ steps.release.outputs.created-tag }}
     description: Whether a tag was created. Either "true" or "false".
   created-release:
-    value: ${{ steps.release.outputs.created_release }}
+    value: ${{ steps.release.outputs.created-release }}
     description: Whether a release was created. Either "true" or "false".
   pre-release-hook-output:
-    value: ${{ steps.release.outputs.pre_release_hook_output }}
+    value: ${{ steps.release.outputs.pre-release-hook-output }}
     description: The stdout of the pre_release_hook. Empty if pre_release_hook is not set or if the hook returned an exit other than 0 or 10.
   pre-release-hook-aborted:
-    value: ${{ steps.release.outputs.pre_release_hook_aborted }}
+    value: ${{ steps.release.outputs.pre-release-hook-aborted }}
     description: Whether pre_release_hook issued an abort by exiting 10. Either "true" or "false".
 runs:
   using: composite
