@@ -2,6 +2,7 @@ package releasetrain
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -193,7 +194,19 @@ func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
 		GithubClient: ghClient,
 	}
 
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	err = enc.Encode(runner)
+	if err != nil {
+		return err
+	}
+
 	result, err := runner.Run(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = enc.Encode(result)
 	if err != nil {
 		return err
 	}
