@@ -90,7 +90,7 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 	if err != nil {
 		return err
 	}
-	err = writeEscaped(h.w, record.Message)
+	err = writeEscaped(h.w, record.Message+" ")
 	if err != nil {
 		return err
 	}
