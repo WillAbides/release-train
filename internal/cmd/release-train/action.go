@@ -83,6 +83,7 @@ func (cmd *actionRunCmd) getInput(name string) string {
 	if !ok {
 		panic(fmt.Sprintf("input %s not found", name))
 	}
+	name = strings.ReplaceAll(name, "-", "_")
 	return cmd.ghAction.GetInput(name)
 }
 
