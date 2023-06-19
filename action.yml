@@ -4,40 +4,40 @@ branding:
   icon: send
   color: yellow
 inputs:
-  check_pr_labels:
+  check-pr-labels:
     description: |-
       Instead of releasing, check that the PR has a label indicating the type of change.
 
       Only literal 'true' will be treated as true.
     default: ${{ github.event_name == 'pull_request' }}
-  checkout_dir:
+  checkout-dir:
     description: The directory where the repository is checked out.
     default: ${{ github.workspace }}
   ref:
     description: git ref.
     default: ${{ github.ref }}
-  github_token:
+  github-token:
     description: 'The GitHub token to use for authentication. Must have `contents: write` permission if creating a release or tag.'
     default: ${{ github.token }}
-  create_tag:
+  create-tag:
     description: |-
       Whether to create a tag for the release. Implies create-tag.
 
       Only literal 'true' will be treated as true.
-  create_release:
+  create-release:
     description: |-
       Whether to create a release. Implies create-tag.
 
       Only literal 'true' will be treated as true.
-  tag_prefix:
+  tag-prefix:
     description: The prefix to use for the tag.
     default: v
   v0:
     description: "Assert that current major version is 0 and treat breaking changes as minor changes. \nErrors if the major version is not 0.\n\n\nOnly literal 'true' will be treated as true."
-  initial_release_tag:
+  initial-release-tag:
     description: The tag to use if no previous version can be found. Set to "" to cause an error instead.
     default: v0.0.0
-  pre_release_hook:
+  pre-release-hook:
     description: |
       Command to run before creating the release. You may abort the release by exiting with a non-zero exit code.
 
@@ -65,47 +65,47 @@ inputs:
 
       The environment variables RELEASE_VERSION, RELEASE_TAG, PREVIOUS_VERSION, FIRST_RELEASE, GITHUB_TOKEN,
       RELEASE_NOTES_FILE, RELEASE_TARGET and ASSETS_DIR will be set.
-  validate_go_module:
+  validate-go-module:
     description: |
       Validates that the name of the go module at the given path matches the major version of the release. For example,
       validation will fail when releasing v3.0.0 when the module name is "my_go_module/v2".
-  release_refs:
+  release-refs:
     description: "Only allow tags and releases to be created from matching refs. Refs can be patterns accepted by git-show-ref. \nIf undefined, any branch can be used.\n\n\nComma separated list of values without spaces."
-  no_release:
+  no-release:
     description: |-
       If set to true, this will be a no-op. This is useful for creating a new repository or branch that isn't ready for
       release yet.
 
       Only literal 'true' will be treated as true.
 outputs:
-  previous_ref:
+  previous-ref:
     value: ${{ steps.release.outputs.previous_ref }}
     description: A git ref pointing to the previous release, or the current ref if no previous release can be found.
-  previous_version:
+  previous-version:
     value: ${{ steps.release.outputs.previous_version }}
     description: The previous version on the release branch.
-  first_release:
+  first-release:
     value: ${{ steps.release.outputs.first_release }}
     description: Whether this is the first release on the release branch. Either "true" or "false".
-  release_version:
+  release-version:
     value: ${{ steps.release.outputs.release_version }}
     description: The version of the new release. Empty if no release is called for.
-  release_tag:
+  release-tag:
     value: ${{ steps.release.outputs.release_tag }}
     description: The tag of the new release. Empty if no release is called for.
-  change_level:
+  change-level:
     value: ${{ steps.release.outputs.change_level }}
     description: The level of change in the release. Either "major", "minor", "patch" or "no change".
-  created_tag:
+  created-tag:
     value: ${{ steps.release.outputs.created_tag }}
     description: Whether a tag was created. Either "true" or "false".
-  created_release:
+  created-release:
     value: ${{ steps.release.outputs.created_release }}
     description: Whether a release was created. Either "true" or "false".
-  pre_release_hook_output:
+  pre-release-hook-output:
     value: ${{ steps.release.outputs.pre_release_hook_output }}
     description: The stdout of the pre_release_hook. Empty if pre_release_hook is not set or if the hook returned an exit other than 0 or 10.
-  pre_release_hook_aborted:
+  pre-release-hook-aborted:
     value: ${{ steps.release.outputs.pre_release_hook_aborted }}
     description: Whether pre_release_hook issued an abort by exiting 10. Either "true" or "false".
 runs:
@@ -116,19 +116,19 @@ runs:
       working-directory: ${{ inputs.checkout_dir }}
       env:
         GITHUB_REPOSITORY: ${{ github.repository }}
-        INPUT_CHECK_PR_LABELS: ${{ inputs.check_pr_labels }}
-        INPUT_CHECKOUT_DIR: ${{ inputs.checkout_dir }}
+        INPUT_CHECK_PR_LABELS: ${{ inputs.check-pr-labels }}
+        INPUT_CHECKOUT_DIR: ${{ inputs.checkout-dir }}
         INPUT_REF: ${{ inputs.ref }}
-        INPUT_GITHUB_TOKEN: ${{ inputs.github_token }}
-        INPUT_CREATE_TAG: ${{ inputs.create_tag }}
-        INPUT_CREATE_RELEASE: ${{ inputs.create_release }}
-        INPUT_TAG_PREFIX: ${{ inputs.tag_prefix }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_CREATE_TAG: ${{ inputs.create-tag }}
+        INPUT_CREATE_RELEASE: ${{ inputs.create-release }}
+        INPUT_TAG_PREFIX: ${{ inputs.tag-prefix }}
         INPUT_V0: ${{ inputs.v0 }}
-        INPUT_INITIAL_RELEASE_TAG: ${{ inputs.initial_release_tag }}
-        INPUT_PRE_RELEASE_HOOK: ${{ inputs.pre_release_hook }}
-        INPUT_VALIDATE_GO_MODULE: ${{ inputs.validate_go_module }}
-        INPUT_RELEASE_REFS: ${{ inputs.release_refs }}
-        INPUT_NO_RELEASE: ${{ inputs.no_release }}
+        INPUT_INITIAL_RELEASE_TAG: ${{ inputs.initial-release-tag }}
+        INPUT_PRE_RELEASE_HOOK: ${{ inputs.pre-release-hook }}
+        INPUT_VALIDATE_GO_MODULE: ${{ inputs.validate-go-module }}
+        INPUT_RELEASE_REFS: ${{ inputs.release-refs }}
+        INPUT_NO_RELEASE: ${{ inputs.no-release }}
       run: |-
         ACTION_DIR="${{ github.action_path }}"
         if [ -z "$RELEASE_TRAIN_BIN" ]; then

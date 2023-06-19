@@ -11,7 +11,7 @@ release-train keeps a-rollin' down to San Antone
 
 ## Inputs
 
-### check_pr_labels
+### check-pr-labels
 
 default: `${{ github.event_name == 'pull_request' }}`
 
@@ -19,7 +19,7 @@ Instead of releasing, check that the PR has a label indicating the type of chang
 
 Only literal 'true' will be treated as true.
 
-### checkout_dir
+### checkout-dir
 
 default: `${{ github.workspace }}`
 
@@ -31,25 +31,25 @@ default: `${{ github.ref }}`
 
 git ref.
 
-### github_token
+### github-token
 
 default: `${{ github.token }}`
 
 The GitHub token to use for authentication. Must have `contents: write` permission if creating a release or tag.
 
-### create_tag
+### create-tag
 
 Whether to create a tag for the release. Implies create-tag.
 
 Only literal 'true' will be treated as true.
 
-### create_release
+### create-release
 
 Whether to create a release. Implies create-tag.
 
 Only literal 'true' will be treated as true.
 
-### tag_prefix
+### tag-prefix
 
 default: `v`
 
@@ -63,13 +63,13 @@ Errors if the major version is not 0.
 
 Only literal 'true' will be treated as true.
 
-### initial_release_tag
+### initial-release-tag
 
 default: `v0.0.0`
 
 The tag to use if no previous version can be found. Set to "" to cause an error instead.
 
-### pre_release_hook
+### pre-release-hook
 
 Command to run before creating the release. You may abort the release by exiting with a non-zero exit code.
 
@@ -99,13 +99,13 @@ The environment variables RELEASE_VERSION, RELEASE_TAG, PREVIOUS_VERSION, FIRST_
 RELEASE_NOTES_FILE, RELEASE_TARGET and ASSETS_DIR will be set.
 
 
-### validate_go_module
+### validate-go-module
 
 Validates that the name of the go module at the given path matches the major version of the release. For example,
 validation will fail when releasing v3.0.0 when the module name is "my_go_module/v2".
 
 
-### release_refs
+### release-refs
 
 Only allow tags and releases to be created from matching refs. Refs can be patterns accepted by git-show-ref. 
 If undefined, any branch can be used.
@@ -113,7 +113,7 @@ If undefined, any branch can be used.
 
 Comma separated list of values without spaces.
 
-### no_release
+### no-release
 
 If set to true, this will be a no-op. This is useful for creating a new repository or branch that isn't ready for
 release yet.
@@ -122,43 +122,43 @@ Only literal 'true' will be treated as true.
 
 ## Outputs
 
-### previous_ref
+### previous-ref
 
 A git ref pointing to the previous release, or the current ref if no previous release can be found.
 
-### previous_version
+### previous-version
 
 The previous version on the release branch.
 
-### first_release
+### first-release
 
 Whether this is the first release on the release branch. Either "true" or "false".
 
-### release_version
+### release-version
 
 The version of the new release. Empty if no release is called for.
 
-### release_tag
+### release-tag
 
 The tag of the new release. Empty if no release is called for.
 
-### change_level
+### change-level
 
 The level of change in the release. Either "major", "minor", "patch" or "no change".
 
-### created_tag
+### created-tag
 
 Whether a tag was created. Either "true" or "false".
 
-### created_release
+### created-release
 
 Whether a release was created. Either "true" or "false".
 
-### pre_release_hook_output
+### pre-release-hook-output
 
 The stdout of the pre_release_hook. Empty if pre_release_hook is not set or if the hook returned an exit other than 0 or 10.
 
-### pre_release_hook_aborted
+### pre-release-hook-aborted
 
 Whether pre_release_hook issued an abort by exiting 10. Either "true" or "false".
 <!--- end action doc --->
