@@ -27,7 +27,7 @@ func NewHandler(w io.Writer, opts *slog.HandlerOptions) *Handler {
 		if opts.ReplaceAttr != nil {
 			attr = opts.ReplaceAttr(groups, attr)
 		}
-		if attr.Key == "time" || attr.Key == "level" {
+		if attr.Key == "time" || attr.Key == "level" || attr.Key == "msg" {
 			return slog.Attr{}
 		}
 		return attr
@@ -87,6 +87,10 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 		}
 	}
 	_, err = h.w.Write([]byte("::"))
+	if err != nil {
+		return err
+	}
+	err = writeEscaped(h.w, record.Message)
 	if err != nil {
 		return err
 	}
