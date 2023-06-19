@@ -87,11 +87,12 @@ func (cmd *actionRunCmd) getInput(name string) string {
 	return cmd.ghAction.GetInput(name)
 }
 
-func (cmd *actionRunCmd) setOutput(name, value string) {
+func (cmd *actionRunCmd) setOutput(ctx context.Context, name, value string) {
 	_, ok := cmd.action.Outputs.Get(name)
 	if !ok {
 		panic(fmt.Sprintf("output %s not found", name))
 	}
+	logger(ctx).Debug("outputting", slog.String("name", name), slog.String("value", value))
 	cmd.ghAction.SetOutput(name, value)
 }
 
@@ -195,7 +196,7 @@ func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
 		GithubClient: ghClient,
 	}
 
-	b, err := json.MarshalIndent(runner, "", "  ")
+	b, err := json.Marshal(runner)
 	if err != nil {
 		return err
 	}
@@ -206,22 +207,22 @@ func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
 		return err
 	}
 
-	b, err = json.MarshalIndent(result, "", "  ")
+	b, err = json.Marshal(result)
 	if err != nil {
 		return err
 	}
 	logger(ctx).Debug("got result", slog.String("result", string(b)))
 
-	cmd.setOutput(outputPreviousRef, result.PreviousRef)
-	cmd.setOutput(outputPreviousVersion, result.PreviousVersion)
-	cmd.setOutput(outputFirstRelease, fmt.Sprintf("%t", result.FirstRelease))
-	cmd.setOutput(outputReleaseVersion, result.ReleaseVersion.String())
-	cmd.setOutput(outputReleaseTag, result.ReleaseTag)
-	cmd.setOutput(outputChangeLevel, result.ChangeLevel.String())
-	cmd.setOutput(outputCreatedTag, fmt.Sprintf("%t", result.CreatedTag))
-	cmd.setOutput(outputCreatedRelease, fmt.Sprintf("%t", result.CreatedRelease))
-	cmd.setOutput(outputPreReleaseHookOutput, result.PrereleaseHookOutput)
-	cmd.setOutput(outputPreReleaseHookAborted, fmt.Sprintf("%t", result.PrereleaseHookAborted))
+	cmd.setOutput(ctx, outputPreviousRef, result.PreviousRef)
+	cmd.setOutput(ctx, outputPreviousVersion, result.PreviousVersion)
+	cmd.setOutput(ctx, outputFirstRelease, fmt.Sprintf("%t", result.FirstRelease))
+	cmd.setOutput(ctx, outputReleaseVersion, result.ReleaseVersion.String())
+	cmd.setOutput(ctx, outputReleaseTag, result.ReleaseTag)
+	cmd.setOutput(ctx, outputChangeLevel, result.ChangeLevel.String())
+	cmd.setOutput(ctx, outputCreatedTag, fmt.Sprintf("%t", result.CreatedTag))
+	cmd.setOutput(ctx, outputCreatedRelease, fmt.Sprintf("%t", result.CreatedRelease))
+	cmd.setOutput(ctx, outputPreReleaseHookOutput, result.PrereleaseHookOutput)
+	cmd.setOutput(ctx, outputPreReleaseHookAborted, fmt.Sprintf("%t", result.PrereleaseHookAborted))
 
 	return nil
 }
