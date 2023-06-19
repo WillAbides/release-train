@@ -3,10 +3,8 @@ package releasetrain
 import (
 	"context"
 	_ "embed"
-	"os"
 
 	"github.com/alecthomas/kong"
-	"golang.org/x/exp/slog"
 	"gopkg.in/yaml.v3"
 )
 
@@ -17,7 +15,6 @@ type contextKey string
 
 const (
 	versionKey contextKey = "version"
-	loggerKey  contextKey = "logger"
 )
 
 func withVersion(ctx context.Context, version string) context.Context {
@@ -31,25 +28,8 @@ func getVersion(ctx context.Context) string {
 	return ""
 }
 
-func withLogger(ctx context.Context, l *slog.Logger) context.Context {
-	return context.WithValue(ctx, loggerKey, l)
-}
-
-//nolint:unused // maybe later
-func logger(ctx context.Context) *slog.Logger {
-	if l, ok := ctx.Value(loggerKey).(*slog.Logger); ok {
-		return l
-	}
-	return slog.Default()
-}
-
 func Run(ctx context.Context, version string, args []string) {
 	ctx = withVersion(ctx, version)
-	ctx = withLogger(ctx, slog.New(
-		slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-			Level: slog.LevelDebug,
-		}),
-	))
 
 	vars := kong.Vars{}
 	err := yaml.Unmarshal(varsYaml, &vars)
