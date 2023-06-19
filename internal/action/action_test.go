@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/willabides/release-train-action/v3/internal/orderedmap"
 	"gopkg.in/yaml.v3"
 )
 
@@ -18,16 +19,16 @@ func TestAction(t *testing.T) {
 			Icon:  "test",
 			Color: "test",
 		},
-		Inputs: NewOrderedMap(
-			MapEntry("test", Input{
+		Inputs: orderedmap.NewOrderedMap(
+			orderedmap.Pair("test", Input{
 				DeprecationMessage: "omg this is deprecated",
 				Description:        "we are testing\nthis",
 				Required:           true,
 				Default:            "${{ github.event.inputs.test }}",
 			}),
 		),
-		Outputs: NewOrderedMap(
-			MapEntry("test", CompositeOutput{
+		Outputs: orderedmap.NewOrderedMap(
+			orderedmap.Pair("test", CompositeOutput{
 				Value:       "test",
 				Description: "this is a test",
 			}),
@@ -41,13 +42,13 @@ func TestAction(t *testing.T) {
 					If:               "test",
 					Shell:            "test",
 					WorkingDirectory: "test",
-					Env: NewOrderedMap(
-						MapEntry("test", "test"),
+					Env: orderedmap.NewOrderedMap(
+						orderedmap.Pair("test", "test"),
 					),
 					Run:  "test",
 					Uses: "test",
-					With: NewOrderedMap(
-						MapEntry("test", "test"),
+					With: orderedmap.NewOrderedMap(
+						orderedmap.Pair("test", "test"),
 					),
 				},
 			},
