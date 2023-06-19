@@ -20,6 +20,35 @@ const (
 	actionCsvSuffix  = "Comma separated list of values without spaces."
 )
 
+const (
+	inputCheckPRLabels  = "check_pr_labels"
+	inputCheckoutDir    = "checkout_dir"
+	inputRef            = "ref"
+	inputGithubToken    = "github_token"
+	inputCreateTag      = "create_tag"
+	inputCreateRelease  = "create_release"
+	inputTagPrefix      = "tag_prefix"
+	inputV0             = "v0"
+	inputInitialTag     = "initial_release_tag"
+	inputPreReleaseHook = "pre_release_hook"
+	inputValidateGoMod  = "validate_go_module"
+	inputReleaseRefs    = "release_refs"
+	inputNoRelease      = "no_release"
+)
+
+const (
+	outputPreviousRef           = "previous_ref"
+	outputPreviousVersion       = "previous_version"
+	outputFirstRelease          = "first_release"
+	outputReleaseVersion        = "release_version"
+	outputReleaseTag            = "release_tag"
+	outputChangeLevel           = "change_level"
+	outputCreatedTag            = "created_tag"
+	outputCreatedRelease        = "created_release"
+	outputPreReleaseHookOutput  = "pre_release_hook_output"
+	outputPreReleaseHookAborted = "pre_release_hook_aborted"
+)
+
 type actionCmd struct {
 	Output *actionOutputCmd `kong:"cmd,hidden,help='Output the action yaml to stdout'"`
 	Run    *actionRunCmd    `kong:"cmd,help='Run as a GitHub action.'"`
@@ -70,14 +99,14 @@ func (cmd *actionRunCmd) Run(ctx context.Context) (errOut error) {
 			cmd.ghAction.Errorf("%s", errOut)
 		}
 	}()
-	if cmd.getInput("check_pr_labels") == "true" {
+	if cmd.getInput(inputCheckPRLabels) == "true" {
 		return cmd.runLabelCheck(ctx)
 	}
 	return cmd.runRelease(ctx)
 }
 
 func (cmd *actionRunCmd) runLabelCheck(ctx context.Context) error {
-	if cmd.getInput("no_release") == "true" {
+	if cmd.getInput(inputNoRelease) == "true" {
 		cmd.ghAction.Infof("Skipping check")
 		return nil
 	}
@@ -91,7 +120,7 @@ func (cmd *actionRunCmd) runLabelCheck(ctx context.Context) error {
 	}
 	prNumber := int(prNumberFloat)
 	ghClientConfig := &githubClientConfig{
-		GithubToken:  cmd.getInput("github_token"),
+		GithubToken:  cmd.getInput(inputGithubToken),
 		GithubApiUrl: cmd.context.APIURL,
 	}
 	ghClient, err := ghClientConfig.Client(ctx)
@@ -109,14 +138,14 @@ func (cmd *actionRunCmd) runLabelCheck(ctx context.Context) error {
 }
 
 func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
-	if cmd.getInput("no_release") == "true" {
+	if cmd.getInput(inputNoRelease) == "true" {
 		cmd.ghAction.Infof("Skipping release creation")
 		return nil
 	}
 
 	var goModFiles []string
-	if cmd.getInput("validate_go_module") != "" {
-		goModFiles = []string{cmd.getInput("validate_go_module")}
+	if cmd.getInput(inputValidateGoMod) != "" {
+		goModFiles = []string{cmd.getInput(inputValidateGoMod)}
 	}
 
 	var err error
@@ -132,12 +161,12 @@ func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
 	}
 
 	var releaseRefs []string
-	if cmd.getInput("release_refs") != "" {
-		releaseRefs = strings.Split(cmd.getInput("release_refs"), ",")
+	if cmd.getInput(inputReleaseRefs) != "" {
+		releaseRefs = strings.Split(cmd.getInput(inputReleaseRefs), ",")
 	}
 
 	ghClientConfig := &githubClientConfig{
-		GithubToken:  cmd.getInput("github_token"),
+		GithubToken:  cmd.getInput(inputGithubToken),
 		GithubApiUrl: cmd.context.APIURL,
 	}
 	ghClient, err := ghClientConfig.Client(ctx)
@@ -146,19 +175,19 @@ func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
 	}
 
 	runner := &release.Runner{
-		CheckoutDir:    cmd.getInput("checkout_dir"),
-		Ref:            cmd.getInput("ref"),
-		GithubToken:    cmd.getInput("github_token"),
-		CreateTag:      cmd.getInput("create_tag") == "true",
-		CreateRelease:  cmd.getInput("create_release") == "true",
-		TagPrefix:      cmd.getInput("tag_prefix"),
-		InitialTag:     cmd.getInput("initial_release_tag"),
-		PrereleaseHook: cmd.getInput("pre_release_hook"),
+		CheckoutDir:    cmd.getInput(inputCheckoutDir),
+		Ref:            cmd.getInput(inputRef),
+		GithubToken:    cmd.getInput(inputGithubToken),
+		CreateTag:      cmd.getInput(inputCreateTag) == "true",
+		CreateRelease:  cmd.getInput(inputCreateRelease) == "true",
+		TagPrefix:      cmd.getInput(inputTagPrefix),
+		InitialTag:     cmd.getInput(inputInitialTag),
+		PrereleaseHook: cmd.getInput(inputPreReleaseHook),
 		GoModFiles:     goModFiles,
 		PushRemote:     "origin",
 		Repo:           fmt.Sprintf("%s/%s", ownerName, repoName),
 		TempDir:        tmpDir,
-		V0:             cmd.getInput("v0") == "true",
+		V0:             cmd.getInput(inputV0) == "true",
 		ReleaseRefs:    releaseRefs,
 
 		GithubClient: ghClient,
@@ -169,16 +198,16 @@ func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
 		return err
 	}
 
-	cmd.setOutput("previous_ref", result.PreviousRef)
-	cmd.setOutput("previous_version", result.PreviousVersion)
-	cmd.setOutput("first_release", fmt.Sprintf("%t", result.FirstRelease))
-	cmd.setOutput("release_version", result.ReleaseVersion.String())
-	cmd.setOutput("release_tag", result.ReleaseTag)
-	cmd.setOutput("change_level", result.ChangeLevel.String())
-	cmd.setOutput("created_tag", fmt.Sprintf("%t", result.CreatedTag))
-	cmd.setOutput("created_release", fmt.Sprintf("%t", result.CreatedRelease))
-	cmd.setOutput("pre_release_hook_output", result.PrereleaseHookOutput)
-	cmd.setOutput("pre_release_hook_aborted", fmt.Sprintf("%t", result.PrereleaseHookAborted))
+	cmd.setOutput(outputPreviousRef, result.PreviousRef)
+	cmd.setOutput(outputPreviousVersion, result.PreviousVersion)
+	cmd.setOutput(outputFirstRelease, fmt.Sprintf("%t", result.FirstRelease))
+	cmd.setOutput(outputReleaseVersion, result.ReleaseVersion.String())
+	cmd.setOutput(outputReleaseTag, result.ReleaseTag)
+	cmd.setOutput(outputChangeLevel, result.ChangeLevel.String())
+	cmd.setOutput(outputCreatedTag, fmt.Sprintf("%t", result.CreatedTag))
+	cmd.setOutput(outputCreatedRelease, fmt.Sprintf("%t", result.CreatedRelease))
+	cmd.setOutput(outputPreReleaseHookOutput, result.PrereleaseHookOutput)
+	cmd.setOutput(outputPreReleaseHookAborted, fmt.Sprintf("%t", result.PrereleaseHookAborted))
 
 	return nil
 }
@@ -193,62 +222,62 @@ func getAction(kongCtx *kong.Context) *action.CompositeAction {
 		return val
 	}
 	inputs := orderedmap.NewOrderedMap(
-		orderedmap.Pair("check_pr_labels", action.Input{
+		orderedmap.Pair(inputCheckPRLabels, action.Input{
 			Description: `Instead of releasing, check that the PR has a label indicating the type of change.` +
 				"\n\n" + actionBoolSuffix,
 			Default: "${{ github.event_name == 'pull_request' }}",
 		}),
 
-		orderedmap.Pair("checkout_dir", action.Input{
+		orderedmap.Pair(inputCheckoutDir, action.Input{
 			Description: getVar("checkout_dir_help"),
 			Default:     "${{ github.workspace }}",
 		}),
 
-		orderedmap.Pair("ref", action.Input{
+		orderedmap.Pair(inputRef, action.Input{
 			Description: getVar("ref_help"),
 			Default:     "${{ github.ref }}",
 		}),
 
-		orderedmap.Pair("github_token", action.Input{
+		orderedmap.Pair(inputGithubToken, action.Input{
 			Description: getVar("github_token_help"),
 			Default:     "${{ github.token }}",
 		}),
 
-		orderedmap.Pair("create_tag", action.Input{
+		orderedmap.Pair(inputCreateTag, action.Input{
 			Description: getVar("create_tag_help") + "\n\n" + actionBoolSuffix,
 		}),
 
-		orderedmap.Pair("create_release", action.Input{
+		orderedmap.Pair(inputCreateRelease, action.Input{
 			Description: getVar("create_release_help") + "\n\n" + actionBoolSuffix,
 		}),
 
-		orderedmap.Pair("tag_prefix", action.Input{
+		orderedmap.Pair(inputTagPrefix, action.Input{
 			Description: getVar("tag_prefix_help"),
 			Default:     vars["tag_prefix_default"],
 		}),
 
-		orderedmap.Pair("v0", action.Input{
+		orderedmap.Pair(inputV0, action.Input{
 			Description: getVar("v0_help") + "\n\n" + actionBoolSuffix,
 		}),
 
-		orderedmap.Pair("initial_release_tag", action.Input{
+		orderedmap.Pair(inputInitialTag, action.Input{
 			Description: getVar("initial_tag_help"),
 			Default:     vars["initial_tag_default"],
 		}),
 
-		orderedmap.Pair("pre_release_hook", action.Input{
+		orderedmap.Pair(inputPreReleaseHook, action.Input{
 			Description: getVar("pre_release_hook_help"),
 		}),
 
-		orderedmap.Pair("validate_go_module", action.Input{
+		orderedmap.Pair(inputValidateGoMod, action.Input{
 			Description: getVar("go_mod_file_help"),
 		}),
 
-		orderedmap.Pair("release_refs", action.Input{
+		orderedmap.Pair(inputReleaseRefs, action.Input{
 			Description: getVar("release_ref_help") + "\n\n" + actionCsvSuffix,
 		}),
 
-		orderedmap.Pair("no_release", action.Input{
+		orderedmap.Pair(inputNoRelease, action.Input{
 			Description: `
 If set to true, this will be a no-op. This is useful for creating a new repository or branch that isn't ready for
 release yet.` + "\n\n" + actionBoolSuffix,
@@ -264,52 +293,52 @@ release yet.` + "\n\n" + actionBoolSuffix,
 		releaseStepEnv.AddPairs(orderedmap.Pair(envName, val))
 	}
 	outputs := orderedmap.NewOrderedMap(
-		orderedmap.Pair("previous_ref", action.CompositeOutput{
+		orderedmap.Pair(outputPreviousRef, action.CompositeOutput{
 			Value:       "${{ steps.release.outputs.previous_ref }}",
 			Description: "A git ref pointing to the previous release, or the current ref if no previous release can be found.",
 		}),
 
-		orderedmap.Pair("previous_version", action.CompositeOutput{
+		orderedmap.Pair(outputPreviousVersion, action.CompositeOutput{
 			Value:       "${{ steps.release.outputs.previous_version }}",
 			Description: "The previous version on the release branch.",
 		}),
 
-		orderedmap.Pair("first_release", action.CompositeOutput{
+		orderedmap.Pair(outputFirstRelease, action.CompositeOutput{
 			Value:       "${{ steps.release.outputs.first_release }}",
 			Description: "Whether this is the first release on the release branch. Either \"true\" or \"false\".",
 		}),
 
-		orderedmap.Pair("release_version", action.CompositeOutput{
+		orderedmap.Pair(outputReleaseVersion, action.CompositeOutput{
 			Value:       "${{ steps.release.outputs.release_version }}",
 			Description: "The version of the new release. Empty if no release is called for.",
 		}),
 
-		orderedmap.Pair("release_tag", action.CompositeOutput{
+		orderedmap.Pair(outputReleaseTag, action.CompositeOutput{
 			Value:       "${{ steps.release.outputs.release_tag }}",
 			Description: "The tag of the new release. Empty if no release is called for.",
 		}),
 
-		orderedmap.Pair("change_level", action.CompositeOutput{
+		orderedmap.Pair(outputChangeLevel, action.CompositeOutput{
 			Value:       "${{ steps.release.outputs.change_level }}",
 			Description: "The level of change in the release. Either \"major\", \"minor\", \"patch\" or \"no change\".",
 		}),
 
-		orderedmap.Pair("created_tag", action.CompositeOutput{
+		orderedmap.Pair(outputCreatedTag, action.CompositeOutput{
 			Value:       "${{ steps.release.outputs.created_tag }}",
 			Description: "Whether a tag was created. Either \"true\" or \"false\".",
 		}),
 
-		orderedmap.Pair("created_release", action.CompositeOutput{
+		orderedmap.Pair(outputCreatedRelease, action.CompositeOutput{
 			Value:       "${{ steps.release.outputs.created_release }}",
 			Description: "Whether a release was created. Either \"true\" or \"false\".",
 		}),
 
-		orderedmap.Pair("pre_release_hook_output", action.CompositeOutput{
+		orderedmap.Pair(outputPreReleaseHookOutput, action.CompositeOutput{
 			Value:       "${{ steps.release.outputs.pre_release_hook_output }}",
 			Description: "The stdout of the pre_release_hook. Empty if pre_release_hook is not set or if the hook returned an exit other than 0 or 10.",
 		}),
 
-		orderedmap.Pair("pre_release_hook_aborted", action.CompositeOutput{
+		orderedmap.Pair(outputPreReleaseHookAborted, action.CompositeOutput{
 			Value:       "${{ steps.release.outputs.pre_release_hook_aborted }}",
 			Description: "Whether pre_release_hook issued an abort by exiting 10. Either \"true\" or \"false\".",
 		}),
