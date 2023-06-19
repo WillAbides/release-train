@@ -35,6 +35,7 @@ func withLogger(ctx context.Context, l *slog.Logger) context.Context {
 	return context.WithValue(ctx, loggerKey, l)
 }
 
+//nolint:unused // maybe later
 func logger(ctx context.Context) *slog.Logger {
 	if l, ok := ctx.Value(loggerKey).(*slog.Logger); ok {
 		return l
