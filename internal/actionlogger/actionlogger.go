@@ -59,7 +59,7 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 	case record.Level < slog.LevelInfo:
 		_, err = h.w.Write([]byte("::debug"))
 	case record.Level < slog.LevelWarn:
-		_, err = h.w.Write([]byte("::info"))
+		_, err = h.w.Write([]byte("::notice"))
 	case record.Level < slog.LevelError:
 		_, err = h.w.Write([]byte("::warn"))
 	default:
