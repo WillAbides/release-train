@@ -76,7 +76,7 @@ func (cmd *actionRunCmd) BeforeApply(kongCtx *kong.Context) error {
 	var err error
 	cmd.action = getAction(kongCtx)
 	cmd.ghAction = githubactions.New()
-	cmd.logger = slog.New(actionlogger.NewHandler(os.Stdout, &actionlogger.Options{
+	cmd.logger = slog.New(actionlogger.NewHandler(os.Stdout, &slog.HandlerOptions{
 		Level:     slog.LevelDebug,
 		AddSource: false,
 	}))

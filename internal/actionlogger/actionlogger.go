@@ -6,159 +6,130 @@ import (
 	"io"
 	"runtime"
 	"strconv"
-	"strings"
 	"sync"
 
 	"golang.org/x/exp/slog"
 )
 
-type Options struct {
-	// AddSource causes the handler to compute the source code position
-	// of the log statement and add a SourceKey attribute to the output.
-	AddSource bool
-
-	// Level reports the minimum record level that will be logged.
-	// The handler discards records with lower levels.
-	// If Level is nil, the handler assumes LevelInfo.
-	// The handler calls Level.Level for each record processed;
-	// to adjust the minimum level dynamically, use a LevelVar.
-	Level slog.Leveler
-}
-
 type Handler struct {
-	opts   Options
-	attrs  []slog.Attr
-	groups []string
-	mux    sync.Mutex
-	w      io.Writer
+	opts    slog.HandlerOptions
+	mux     sync.Mutex
+	w       io.Writer
+	buf     *bytes.Buffer
+	handler slog.Handler
 }
 
-var _ slog.Handler = &Handler{}
-
-func NewHandler(w io.Writer, opts *Options) *Handler {
-	h := Handler{
-		w: w,
+func NewHandler(w io.Writer, opts *slog.HandlerOptions) *Handler {
+	if opts == nil {
+		opts = &slog.HandlerOptions{}
 	}
-	if opts != nil {
-		h.opts = *opts
+	replace := func(groups []string, attr slog.Attr) slog.Attr {
+		if opts.ReplaceAttr != nil {
+			attr = opts.ReplaceAttr(groups, attr)
+		}
+		if attr.Key == "time" || attr.Key == "level" {
+			return slog.Attr{}
+		}
+		return attr
 	}
-	return &h
-}
-
-func (h *Handler) clone() *Handler {
+	var buf bytes.Buffer
+	handler := slog.NewTextHandler(&buf, &slog.HandlerOptions{
+		AddSource:   false,
+		Level:       opts.Level,
+		ReplaceAttr: replace,
+	})
 	return &Handler{
-		opts:   h.opts,
-		attrs:  append([]slog.Attr{}, h.attrs...),
-		groups: append([]string{}, h.groups...),
-		w:      h.w,
+		opts:    *opts,
+		w:       w,
+		buf:     &buf,
+		handler: handler,
 	}
 }
 
-//nolint:gocritic // we need this huge param to implement slog.Handler
+func (h *Handler) Enabled(ctx context.Context, level slog.Level) bool {
+	return h.handler.Enabled(ctx, level)
+}
+
+//nolint:gocritic // implementation of slog.Handler
 func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
-	if !h.Enabled(ctx, record.Level) {
-		return nil
-	}
-	output := ""
+	h.mux.Lock()
+	defer h.mux.Unlock()
+	var err error
 	switch {
 	case record.Level < slog.LevelInfo:
-		output = "::debug "
+		_, err = h.w.Write([]byte("::debug "))
 	case record.Level < slog.LevelWarn:
-		output = "::notice "
+		_, err = h.w.Write([]byte("::info "))
 	case record.Level < slog.LevelError:
-		output = "::warn "
+		_, err = h.w.Write([]byte("::warn "))
 	default:
-		output = "::error "
+		_, err = h.w.Write([]byte("::error "))
 	}
-	needsComma := false
-	var buf bytes.Buffer
-	if len(h.attrs) > 0 || record.NumAttrs() > 0 || h.opts.AddSource {
-		output += " "
+	if err != nil {
+		return err
 	}
 	if h.opts.AddSource {
 		frames := runtime.CallersFrames([]uintptr{record.PC})
 		frame, _ := frames.Next()
-		output += "file=" + escapeString(frame.File, &buf)
-		needsComma = true
+		_, err = h.w.Write([]byte("file="))
+		if err != nil {
+			return err
+		}
+		err = writeEscaped(h.w, frame.File)
+		if err != nil {
+			return err
+		}
 		if frame.Line > 0 {
-			output += ",line=" + strconv.Itoa(frame.Line)
+			_, err = h.w.Write([]byte(",line=" + strconv.Itoa(frame.Line)))
+			if err != nil {
+				return err
+			}
 		}
 	}
-	for _, attr := range h.attrs {
-		attr.Value = attr.Value.Resolve()
-		if needsComma {
-			output += ","
-		}
-		output += attr.Key + "=" + escapeString(attr.Value.String(), &buf)
-		needsComma = true
+	_, err = h.w.Write([]byte("::"))
+	if err != nil {
+		return err
 	}
-	record.Attrs(func(attr slog.Attr) bool {
-		attr.Value = attr.Value.Resolve()
-		if needsComma {
-			output += ","
-		}
-		key := strings.Join(h.groups, ".")
-		if key != "" {
-			key += "."
-		}
-		key += attr.Key
-		output += key + "=" + escapeString(attr.Value.String(), &buf)
-		needsComma = true
-		return true
-	})
-
-	output += "::" + record.Message + lineEnding
-	h.mux.Lock()
-	defer h.mux.Unlock()
-	_, err := h.w.Write([]byte(output))
+	h.buf.Reset()
+	err = h.handler.Handle(ctx, record)
+	if err != nil {
+		return err
+	}
+	_, err = h.w.Write(bytes.TrimPrefix(h.buf.Bytes(), []byte("msg=")))
 	return err
 }
 
-func (h *Handler) Enabled(_ context.Context, level slog.Level) bool {
-	minLevel := slog.LevelInfo
-	if h.opts.Level != nil {
-		minLevel = h.opts.Level.Level()
-	}
-	return level >= minLevel
-}
-
 func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	h2 := h.clone()
-	for _, attr := range attrs {
-		h2.attrs = append(h2.attrs, slog.Attr{
-			Key:   strings.Join(append(h.groups, attr.Key), "."),
-			Value: attr.Value,
-		})
+	return &Handler{
+		opts:    h.opts,
+		handler: h.handler.WithAttrs(attrs),
 	}
-	return h2
 }
 
 func (h *Handler) WithGroup(name string) slog.Handler {
-	h2 := h.clone()
-	h2.groups = append(h2.groups, name)
-	return h2
+	return &Handler{
+		opts:    h.opts,
+		handler: h.handler.WithGroup(name),
+	}
 }
 
-func escapeString(val string, buf *bytes.Buffer) string {
-	if buf == nil {
-		buf = bytes.NewBuffer(nil)
-	}
-	buf.Reset()
+func writeEscaped(w io.Writer, val string) error {
+	var err error
 	for _, r := range val {
 		switch r {
 		case '\n':
-			buf.WriteString("%0A")
+			_, err = w.Write([]byte("%0A"))
 		case '\r':
-			buf.WriteString("%0D")
+			_, err = w.Write([]byte("%0D"))
 		case '%':
-			buf.WriteString("%25")
+			_, err = w.Write([]byte("%25"))
 		case ':':
-			buf.WriteString("%3A")
+			_, err = w.Write([]byte("%3A"))
 		case ',':
-			buf.WriteString("%2C")
+			_, err = w.Write([]byte("%2C"))
 		default:
-			buf.WriteRune(r)
+			_, err = w.Write([]byte{byte(r)})
 		}
 	}
-	return buf.String()
+	return err
 }
