@@ -307,54 +307,59 @@ release yet.` + "\n\n" + actionBoolSuffix,
 		val := fmt.Sprintf("${{ inputs.%s }}", inputPair.Key)
 		releaseStepEnv.AddPairs(orderedmap.Pair(envName, val))
 	}
+
+	releaseOutput := func(s string) string {
+		return fmt.Sprintf("${{ steps.release.outputs.%s }}", s)
+	}
+
 	outputs := orderedmap.NewOrderedMap(
 		orderedmap.Pair(outputPreviousRef, action.CompositeOutput{
-			Value:       "${{ steps.release.outputs.previous_ref }}",
+			Value:       releaseOutput(outputPreviousRef),
 			Description: "A git ref pointing to the previous release, or the current ref if no previous release can be found.",
 		}),
 
 		orderedmap.Pair(outputPreviousVersion, action.CompositeOutput{
-			Value:       "${{ steps.release.outputs.previous_version }}",
+			Value:       releaseOutput(outputPreviousVersion),
 			Description: "The previous version on the release branch.",
 		}),
 
 		orderedmap.Pair(outputFirstRelease, action.CompositeOutput{
-			Value:       "${{ steps.release.outputs.first_release }}",
+			Value:       releaseOutput(outputFirstRelease),
 			Description: "Whether this is the first release on the release branch. Either \"true\" or \"false\".",
 		}),
 
 		orderedmap.Pair(outputReleaseVersion, action.CompositeOutput{
-			Value:       "${{ steps.release.outputs.release_version }}",
+			Value:       releaseOutput(outputReleaseVersion),
 			Description: "The version of the new release. Empty if no release is called for.",
 		}),
 
 		orderedmap.Pair(outputReleaseTag, action.CompositeOutput{
-			Value:       "${{ steps.release.outputs.release_tag }}",
+			Value:       releaseOutput(outputReleaseTag),
 			Description: "The tag of the new release. Empty if no release is called for.",
 		}),
 
 		orderedmap.Pair(outputChangeLevel, action.CompositeOutput{
-			Value:       "${{ steps.release.outputs.change_level }}",
+			Value:       releaseOutput(outputChangeLevel),
 			Description: "The level of change in the release. Either \"major\", \"minor\", \"patch\" or \"no change\".",
 		}),
 
 		orderedmap.Pair(outputCreatedTag, action.CompositeOutput{
-			Value:       "${{ steps.release.outputs.created_tag }}",
+			Value:       releaseOutput(outputCreatedTag),
 			Description: "Whether a tag was created. Either \"true\" or \"false\".",
 		}),
 
 		orderedmap.Pair(outputCreatedRelease, action.CompositeOutput{
-			Value:       "${{ steps.release.outputs.created_release }}",
+			Value:       releaseOutput(outputCreatedRelease),
 			Description: "Whether a release was created. Either \"true\" or \"false\".",
 		}),
 
 		orderedmap.Pair(outputPreReleaseHookOutput, action.CompositeOutput{
-			Value:       "${{ steps.release.outputs.pre_release_hook_output }}",
+			Value:       releaseOutput(outputPreReleaseHookOutput),
 			Description: "The stdout of the pre_release_hook. Empty if pre_release_hook is not set or if the hook returned an exit other than 0 or 10.",
 		}),
 
 		orderedmap.Pair(outputPreReleaseHookAborted, action.CompositeOutput{
-			Value:       "${{ steps.release.outputs.pre_release_hook_aborted }}",
+			Value:       releaseOutput(outputPreReleaseHookAborted),
 			Description: "Whether pre_release_hook issued an abort by exiting 10. Either \"true\" or \"false\".",
 		}),
 	)
