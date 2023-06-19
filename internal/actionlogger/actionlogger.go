@@ -57,13 +57,13 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 	var err error
 	switch {
 	case record.Level < slog.LevelInfo:
-		_, err = h.w.Write([]byte("::debug "))
+		_, err = h.w.Write([]byte("::debug"))
 	case record.Level < slog.LevelWarn:
-		_, err = h.w.Write([]byte("::info "))
+		_, err = h.w.Write([]byte("::info"))
 	case record.Level < slog.LevelError:
-		_, err = h.w.Write([]byte("::warn "))
+		_, err = h.w.Write([]byte("::warn"))
 	default:
-		_, err = h.w.Write([]byte("::error "))
+		_, err = h.w.Write([]byte("::error"))
 	}
 	if err != nil {
 		return err
@@ -71,7 +71,7 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 	if h.opts.AddSource {
 		frames := runtime.CallersFrames([]uintptr{record.PC})
 		frame, _ := frames.Next()
-		_, err = h.w.Write([]byte("file="))
+		_, err = h.w.Write([]byte(" file="))
 		if err != nil {
 			return err
 		}
@@ -95,7 +95,7 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 	if err != nil {
 		return err
 	}
-	_, err = h.w.Write(bytes.TrimPrefix(h.buf.Bytes(), []byte("msg=")))
+	_, err = h.w.Write(h.buf.Bytes())
 	return err
 }
 
