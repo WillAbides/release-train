@@ -99,7 +99,8 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 	if err != nil {
 		return err
 	}
-	return writeEscaped(h.w, h.buf.String())
+	_, err = h.w.Write(h.buf.Bytes())
+	return err
 }
 
 func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {

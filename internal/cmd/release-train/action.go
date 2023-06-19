@@ -205,7 +205,7 @@ func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
 		GithubClient: ghClient,
 	}
 
-	b, err := json.MarshalIndent(runner, "", "  ")
+	b, err := json.Marshal(runner)
 	if err != nil {
 		return err
 	}
@@ -216,7 +216,7 @@ func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
 		return err
 	}
 
-	b, err = json.MarshalIndent(result, "", "  ")
+	b, err = json.Marshal(result)
 	if err != nil {
 		return err
 	}
