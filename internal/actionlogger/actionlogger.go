@@ -86,11 +86,7 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 			}
 		}
 	}
-	_, err = h.w.Write([]byte("::"))
-	if err != nil {
-		return err
-	}
-	err = writeEscaped(h.w, record.Message+" ")
+	_, err = h.w.Write([]byte("::" + record.Message + " "))
 	if err != nil {
 		return err
 	}
