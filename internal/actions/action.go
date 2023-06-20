@@ -1,5 +1,5 @@
-// Package action is just a struct to represent a github action.yml file.
-package action
+// Package actions is just a struct to represent a github action.yml file.
+package actions
 
 import (
 	"github.com/willabides/release-train-action/v3/internal/orderedmap"

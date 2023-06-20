@@ -1,5 +1,7 @@
 # These are the vars used for the release-train command.
 
+action_help: Ignore all other flags and run as an action.
+generate_action_help: Ignore all other flags and generate a GitHub action.
 ref_help: git ref.
 checkout_dir_help: The directory where the repository is checked out.
 create_tag_help: Whether to create a tag for the release. Implies create-tag.
