@@ -4,29 +4,25 @@ import (
 	"strings"
 )
 
+const (
+	LabelNone       = "semver:none"
+	LabelPatch      = "semver:patch"
+	LabelMinor      = "semver:minor"
+	LabelBreaking   = "semver:breaking"
+	LabelStable     = "semver:stable"
+	LabelPrerelease = "semver:prerelease"
+)
+
 var LabelLevels = map[string]ChangeLevel{
-	"breaking":        ChangeLevelMajor,
-	"breaking change": ChangeLevelMajor,
-	"major":           ChangeLevelMajor,
-	"semver:major":    ChangeLevelMajor,
-
-	"enhancement":  ChangeLevelMinor,
-	"minor":        ChangeLevelMinor,
-	"semver:minor": ChangeLevelMinor,
-
-	"bug":          ChangeLevelPatch,
-	"fix":          ChangeLevelPatch,
-	"patch":        ChangeLevelPatch,
-	"semver:patch": ChangeLevelPatch,
-
-	"none":        ChangeLevelNone,
-	"semver:none": ChangeLevelNone,
-	"semver:skip": ChangeLevelNone,
+	LabelBreaking: ChangeLevelMajor,
+	LabelMinor:    ChangeLevelMinor,
+	LabelPatch:    ChangeLevelPatch,
+	LabelNone:     ChangeLevelNone,
 }
 
 var (
-	PrereleaseLabels = []string{"semver:pre", "semver:prerelease", "prerelease"}
-	StableLabels     = []string{"semver:stable"}
+	PrereleaseLabels = []string{LabelPrerelease}
+	StableLabels     = []string{LabelStable}
 )
 
 // CheckPrereleaseLabel returns true if the label is a prerelease label and the prerelease prefix (the part after the final colon)

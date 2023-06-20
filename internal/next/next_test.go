@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
@@ -129,10 +128,10 @@ func Test_next(t *testing.T) {
 					Owner: "willabides", Repo: "semver-next", Sha: sha1,
 					Result: []internal.BasePull{
 						// non-standard caps to test case insensitivity
-						{Number: 1, Labels: []string{strings.ToUpper(internal.ChangeLevelMajor.String()), "something else"}},
+						{Number: 1, Labels: []string{"SEMVER:BREAKING", "something else"}},
 						{Number: 2, Labels: []string{"something else"}},
 						{Number: 3},
-						{Number: 4, Labels: []string{internal.ChangeLevelMinor.String()}},
+						{Number: 4, Labels: []string{internal.LabelMinor}},
 					},
 				},
 				{
@@ -162,10 +161,10 @@ func Test_next(t *testing.T) {
 				{
 					Sha: sha1,
 					Pulls: []internal.Pull{
-						{Number: 1, LevelLabels: []string{"MAJOR"}, ChangeLevel: internal.ChangeLevelMajor},
+						{Number: 1, LevelLabels: []string{"SEMVER:BREAKING"}, ChangeLevel: internal.ChangeLevelMajor},
 						{Number: 2},
 						{Number: 3},
-						{Number: 4, LevelLabels: []string{"minor"}, ChangeLevel: internal.ChangeLevelMinor},
+						{Number: 4, LevelLabels: []string{internal.LabelMinor}, ChangeLevel: internal.ChangeLevelMinor},
 					},
 				},
 				{
@@ -190,9 +189,9 @@ func Test_next(t *testing.T) {
 					Owner: "willabides", Repo: "semver-next", Sha: sha1,
 					Result: []internal.BasePull{
 						{Number: 1, Labels: []string{"something else"}},
-						{Number: 2, Labels: []string{internal.ChangeLevelMinor.String()}},
+						{Number: 2, Labels: []string{internal.LabelMinor}},
 						{Number: 3},
-						{Number: 4, Labels: []string{internal.ChangeLevelPatch.String()}},
+						{Number: 4, Labels: []string{internal.LabelPatch}},
 					},
 				},
 				{
@@ -221,9 +220,9 @@ func Test_next(t *testing.T) {
 					Sha: sha1,
 					Pulls: []internal.Pull{
 						{Number: 1},
-						{Number: 2, LevelLabels: []string{"minor"}, ChangeLevel: internal.ChangeLevelMinor},
+						{Number: 2, LevelLabels: []string{internal.LabelMinor}, ChangeLevel: internal.ChangeLevelMinor},
 						{Number: 3},
-						{Number: 4, LevelLabels: []string{"patch"}, ChangeLevel: internal.ChangeLevelPatch},
+						{Number: 4, LevelLabels: []string{internal.LabelPatch}, ChangeLevel: internal.ChangeLevelPatch},
 					},
 				},
 				{
@@ -248,9 +247,9 @@ func Test_next(t *testing.T) {
 					Owner: "willabides", Repo: "semver-next", Sha: sha1,
 					Result: []internal.BasePull{
 						{Number: 1, Labels: []string{"something else"}},
-						{Number: 2, Labels: []string{internal.ChangeLevelPatch.String()}},
+						{Number: 2, Labels: []string{internal.LabelPatch}},
 						{Number: 3},
-						{Number: 4, Labels: []string{internal.ChangeLevelPatch.String()}},
+						{Number: 4, Labels: []string{internal.LabelPatch}},
 					},
 				},
 				{
@@ -279,9 +278,9 @@ func Test_next(t *testing.T) {
 					Sha: sha1,
 					Pulls: []internal.Pull{
 						{Number: 1},
-						{Number: 2, LevelLabels: []string{internal.ChangeLevelPatch.String()}, ChangeLevel: internal.ChangeLevelPatch},
+						{Number: 2, LevelLabels: []string{internal.LabelPatch}, ChangeLevel: internal.ChangeLevelPatch},
 						{Number: 3},
-						{Number: 4, LevelLabels: []string{internal.ChangeLevelPatch.String()}, ChangeLevel: internal.ChangeLevelPatch},
+						{Number: 4, LevelLabels: []string{internal.LabelPatch}, ChangeLevel: internal.ChangeLevelPatch},
 					},
 				},
 				{
@@ -306,9 +305,9 @@ func Test_next(t *testing.T) {
 					Owner: "willabides", Repo: "semver-next", Sha: sha1,
 					Result: []internal.BasePull{
 						{Number: 1, Labels: []string{"something else"}},
-						{Number: 2, Labels: []string{internal.ChangeLevelNone.String()}},
+						{Number: 2, Labels: []string{internal.LabelNone}},
 						{Number: 3},
-						{Number: 4, Labels: []string{internal.ChangeLevelNone.String()}},
+						{Number: 4, Labels: []string{internal.LabelNone}},
 					},
 				},
 				{
@@ -337,9 +336,9 @@ func Test_next(t *testing.T) {
 					Sha: sha1,
 					Pulls: []internal.Pull{
 						{Number: 1},
-						{Number: 2, LevelLabels: []string{internal.ChangeLevelNone.String()}, ChangeLevel: internal.ChangeLevelNone},
+						{Number: 2, LevelLabels: []string{internal.LabelNone}, ChangeLevel: internal.ChangeLevelNone},
 						{Number: 3},
-						{Number: 4, LevelLabels: []string{internal.ChangeLevelNone.String()}, ChangeLevel: internal.ChangeLevelNone},
+						{Number: 4, LevelLabels: []string{internal.LabelNone}, ChangeLevel: internal.ChangeLevelNone},
 					},
 				},
 				{
@@ -363,7 +362,7 @@ func Test_next(t *testing.T) {
 				{
 					Owner: "willabides", Repo: "semver-next", Sha: sha1,
 					Result: []internal.BasePull{
-						{Number: 1, Labels: []string{"patch"}},
+						{Number: 1, Labels: []string{internal.LabelPatch}},
 					},
 				},
 				{
@@ -450,9 +449,9 @@ func Test_next(t *testing.T) {
 					Owner: "willabides", Repo: "semver-next", Sha: sha1,
 					Result: []internal.BasePull{
 						{Number: 1, Labels: []string{"something else"}},
-						{Number: 2, Labels: []string{internal.ChangeLevelPatch.String()}},
+						{Number: 2, Labels: []string{internal.LabelPatch}},
 						{Number: 3},
-						{Number: 4, Labels: []string{internal.ChangeLevelPatch.String()}},
+						{Number: 4, Labels: []string{internal.LabelPatch}},
 					},
 				},
 				{
@@ -482,9 +481,9 @@ func Test_next(t *testing.T) {
 					Sha: sha1,
 					Pulls: []internal.Pull{
 						{Number: 1},
-						{Number: 2, LevelLabels: []string{internal.ChangeLevelPatch.String()}, ChangeLevel: internal.ChangeLevelPatch},
+						{Number: 2, LevelLabels: []string{internal.LabelPatch}, ChangeLevel: internal.ChangeLevelPatch},
 						{Number: 3},
-						{Number: 4, LevelLabels: []string{internal.ChangeLevelPatch.String()}, ChangeLevel: internal.ChangeLevelPatch},
+						{Number: 4, LevelLabels: []string{internal.LabelPatch}, ChangeLevel: internal.ChangeLevelPatch},
 					},
 				},
 				{
