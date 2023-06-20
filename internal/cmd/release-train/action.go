@@ -9,6 +9,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/sethvargo/go-githubactions"
+	"github.com/willabides/release-train-action/v3/internal"
 	"github.com/willabides/release-train-action/v3/internal/action"
 	"github.com/willabides/release-train-action/v3/internal/actionlogger"
 	"github.com/willabides/release-train-action/v3/internal/labelcheck"
@@ -144,7 +145,7 @@ func (cmd *actionRunCmd) setOutput(name, value string) {
 	cmd.ghAction.SetOutput(name, value)
 }
 
-func (cmd *actionRunCmd) Run(ctx context.Context) (errOut error) {
+func (cmd *actionRunCmd) Run(ctx context.Context, root *rootCmd) (errOut error) {
 	defer func() {
 		if errOut != nil {
 			cmd.logger.Error(errOut.Error())
@@ -153,7 +154,11 @@ func (cmd *actionRunCmd) Run(ctx context.Context) (errOut error) {
 	if cmd.getInput(inputCheckPRLabels) == "true" {
 		return cmd.runLabelCheck(ctx)
 	}
-	return cmd.runRelease(ctx)
+	ghClient, err := root.GithubClient(ctx)
+	if err != nil {
+		return err
+	}
+	return cmd.runRelease(ctx, ghClient)
 }
 
 func (cmd *actionRunCmd) runLabelCheck(ctx context.Context) error {
@@ -170,11 +175,7 @@ func (cmd *actionRunCmd) runLabelCheck(ctx context.Context) error {
 		return fmt.Errorf("event pull request has no number")
 	}
 	prNumber := int(prNumberFloat)
-	ghClientConfig := &githubClientConfig{
-		GithubToken:  cmd.getInput(inputGithubToken),
-		GithubApiUrl: cmd.context.APIURL,
-	}
-	ghClient, err := ghClientConfig.Client(ctx)
+	ghClient, err := internal.NewGithubClient(ctx, cmd.context.APIURL, cmd.getInput(inputGithubToken), fmt.Sprintf("release-train/%s", getVersion(ctx)))
 	if err != nil {
 		return err
 	}
@@ -193,7 +194,7 @@ func (cmd *actionRunCmd) runLabelCheck(ctx context.Context) error {
 	return labelcheck.Check(ctx, &opts)
 }
 
-func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
+func (cmd *actionRunCmd) runRelease(ctx context.Context, ghClient internal.GithubClient) error {
 	if cmd.getInput(inputNoRelease) == "true" {
 		cmd.logger.Info("skipping release because no-release is true")
 		return nil
@@ -213,15 +214,6 @@ func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
 			//nolint:errcheck // ignore error
 			_ = os.RemoveAll(tmpDir)
 		}()
-	}
-
-	ghClientConfig := &githubClientConfig{
-		GithubToken:  cmd.getInput(inputGithubToken),
-		GithubApiUrl: cmd.context.APIURL,
-	}
-	ghClient, err := ghClientConfig.Client(ctx)
-	if err != nil {
-		return err
 	}
 
 	labelAliases, err := cmd.getMapInput(inputLabels)

@@ -12,23 +12,22 @@ import (
 )
 
 type releaseCmd struct {
-	Repo               string   `kong:"arg,help='Github repository in the form of owner/repo.'"`
-	Ref                string   `kong:"default=HEAD,help=${ref_help}"`
-	CreateTag          bool     `kong:"help=${create_tag_help}"`
-	CreateRelease      bool     `kong:"help=${create_release_help}"`
-	ReleaseRef         []string `kong:"placeholder=<branch>,help=${release_ref_help}"`
-	GoModFile          []string `kong:"placeholder=<filepath>,help=${go_mod_file_help}"`
-	InitialTag         string   `kong:"help=${initial_tag_help},default=${initial_tag_default}"`
-	PreReleaseHook     string   `kong:"placeholder=<command>,help=${pre_release_hook_help}"`
-	TagPrefix          string   `kong:"default=v,help=${tag_prefix_help}"`
-	V0                 bool     `kong:"name=v0,help=${v0_help}"`
-	PushRemote         string   `kong:"default=origin,help='The git remote to push to.'"`
-	Tempdir            string   `kong:"help='The prefix to use with mktemp to create a temporary directory.'"`
-	githubClientConfig `kong:",embed"`
+	Repo           string   `kong:"arg,help='Github repository in the form of owner/repo.'"`
+	Ref            string   `kong:"default=HEAD,help=${ref_help}"`
+	CreateTag      bool     `kong:"help=${create_tag_help}"`
+	CreateRelease  bool     `kong:"help=${create_release_help}"`
+	ReleaseRef     []string `kong:"placeholder=<branch>,help=${release_ref_help}"`
+	GoModFile      []string `kong:"placeholder=<filepath>,help=${go_mod_file_help}"`
+	InitialTag     string   `kong:"help=${initial_tag_help},default=${initial_tag_default}"`
+	PreReleaseHook string   `kong:"placeholder=<command>,help=${pre_release_hook_help}"`
+	TagPrefix      string   `kong:"default=v,help=${tag_prefix_help}"`
+	V0             bool     `kong:"name=v0,help=${v0_help}"`
+	PushRemote     string   `kong:"default=origin,help='The git remote to push to.'"`
+	Tempdir        string   `kong:"help='The prefix to use with mktemp to create a temporary directory.'"`
 }
 
 func (cmd *releaseCmd) Run(ctx context.Context, root *rootCmd) (errOut error) {
-	ghClient, err := cmd.githubClientConfig.Client(ctx)
+	ghClient, err := root.GithubClient(ctx)
 	if err != nil {
 		return err
 	}
@@ -67,7 +66,7 @@ func (cmd *releaseCmd) Run(ctx context.Context, root *rootCmd) (errOut error) {
 		CheckoutDir:    root.CheckoutDir,
 		LabelAliases:   root.Label,
 		Ref:            cmd.Ref,
-		GithubToken:    cmd.GithubToken,
+		GithubToken:    root.GithubToken,
 		CreateTag:      createTag,
 		CreateRelease:  cmd.CreateRelease,
 		TagPrefix:      cmd.TagPrefix,
