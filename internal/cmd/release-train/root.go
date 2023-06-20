@@ -6,11 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/alecthomas/kong"
 	"github.com/sethvargo/go-githubactions"
 	"github.com/willabides/release-train-action/v3/internal"
 	"github.com/willabides/release-train-action/v3/internal/actionlogger"
+	"github.com/willabides/release-train-action/v3/internal/labelcheck"
 	"github.com/willabides/release-train-action/v3/internal/release"
 	"golang.org/x/exp/slog"
 	"gopkg.in/yaml.v3"
@@ -20,6 +22,7 @@ type rootCmd struct {
 	Version        kong.VersionFlag
 	Action         bool              `kong:"help=${action_help}"`
 	GenerateAction bool              `kong:"hidden,help=${generate_action_help}"`
+	CheckPR        int               `kong:"help=${check_pr_help}"`
 	CheckoutDir    string            `kong:"short=C,default='.',help=${checkout_dir_help}"`
 	Label          map[string]string `kong:"help=${label_help}"`
 	Repo           string            `kong:"help='Github repository in the form of owner/repo.'"`
@@ -49,6 +52,9 @@ func (c *rootCmd) Run(ctx context.Context, kongCtx *kong.Context) error {
 	}
 	if c.Action {
 		return c.runAction(ctx, kongCtx)
+	}
+	if c.CheckPR != 0 {
+		return c.runCheckPR(ctx)
 	}
 	return c.runRelease(ctx)
 }
@@ -136,4 +142,27 @@ func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	return enc.Encode(result)
+}
+
+func (c *rootCmd) runCheckPR(ctx context.Context) error {
+	ghClient, err := c.GithubClient(ctx)
+	if err != nil {
+		return err
+	}
+	repo := c.Repo
+	if repo == "" {
+		repo, err = internal.GetGithubRepoFromRemote(c.CheckoutDir, c.PushRemote)
+		if err != nil {
+			return fmt.Errorf("could not determine github repo: %w", err)
+		}
+	}
+	repoOwner, repoName, _ := strings.Cut(repo, "/")
+	opts := labelcheck.Options{
+		GhClient:     ghClient,
+		PrNumber:     c.CheckPR,
+		RepoOwner:    repoOwner,
+		RepoName:     repoName,
+		LabelAliases: c.Label,
+	}
+	return labelcheck.Check(ctx, &opts)
 }
