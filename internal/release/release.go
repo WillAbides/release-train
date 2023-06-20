@@ -124,6 +124,7 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 		Base:         prevRef,
 		Head:         head,
 		MaxBump:      maxBump.String(),
+		LabelAliases: o.LabelAliases,
 	})
 	if err != nil {
 		return nil, err

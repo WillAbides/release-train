@@ -2,6 +2,8 @@ package internal
 
 import (
 	"strings"
+
+	"golang.org/x/exp/maps"
 )
 
 const (
@@ -20,27 +22,36 @@ var LabelLevels = map[string]ChangeLevel{
 	LabelNone:     ChangeLevelNone,
 }
 
+func normalizeAliases(aliases map[string]string) map[string]string {
+	clone := maps.Clone(aliases)
+	for k, v := range clone {
+		clone[strings.ToLower(k)] = v
+	}
+	return clone
+}
+
 // CheckPrereleaseLabel returns true if the label is a prerelease label and the prerelease prefix (the part after the final colon)
 func CheckPrereleaseLabel(label string, aliases map[string]string) (pre bool, prefix string) {
-	if label == LabelPrerelease {
+	downcased := strings.ToLower(label)
+	if downcased == LabelPrerelease {
 		return true, ""
 	}
 	preLabel := ""
-	if strings.HasPrefix(label, LabelPrerelease+":") {
+	if strings.HasPrefix(downcased, LabelPrerelease+":") {
 		preLabel = LabelPrerelease + ":"
-	}
-	for k, v := range aliases {
-		if preLabel != "" {
-			break
-		}
-		if v != LabelPrerelease {
-			continue
-		}
-		if label == k {
-			return true, ""
-		}
-		if strings.HasPrefix(label, k+":") {
-			preLabel = k + ":"
+	} else {
+		for alias, target := range aliases {
+			alias = strings.ToLower(alias)
+			if target != LabelPrerelease {
+				continue
+			}
+			if downcased == alias {
+				return true, ""
+			}
+			if strings.HasPrefix(label, alias+":") {
+				preLabel = alias + ":"
+				break
+			}
 		}
 	}
 	if preLabel == "" {
@@ -50,6 +61,7 @@ func CheckPrereleaseLabel(label string, aliases map[string]string) (pre bool, pr
 }
 
 func ResolveLabel(label string, aliases map[string]string) string {
+	label = strings.ToLower(label)
 	_, ok := LabelLevels[label]
 	if ok {
 		return label
@@ -60,21 +72,9 @@ func ResolveLabel(label string, aliases map[string]string) string {
 	if aliases == nil {
 		return ""
 	}
-	v := aliases[label]
-	if v != "" && v != LabelPrerelease {
-		return v
+	v := normalizeAliases(aliases)[label]
+	if v == LabelPrerelease {
+		v = ""
 	}
-	return ""
-}
-
-func CheckStableLabel(label string, aliases map[string]string) bool {
-	if label == LabelStable {
-		return true
-	}
-	for k, v := range aliases {
-		if v == LabelStable && label == k {
-			return true
-		}
-	}
-	return false
+	return v
 }

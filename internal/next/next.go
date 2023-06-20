@@ -20,14 +20,14 @@ type Result struct {
 	Commits         []Commit             `json:"commits,omitempty"`
 }
 
-func getCommitPRs(ctx context.Context, gh ghClient, owner, repo, commitSha string) ([]internal.Pull, error) {
+func getCommitPRs(ctx context.Context, gh ghClient, aliases map[string]string, owner, repo, commitSha string) ([]internal.Pull, error) {
 	ghResult, err := gh.ListPullRequestsWithCommit(ctx, owner, repo, commitSha)
 	if err != nil {
 		return nil, err
 	}
 	result := make([]internal.Pull, 0, len(ghResult))
 	for _, r := range ghResult {
-		p, e := internal.NewPull(r.Number, r.Labels...)
+		p, e := internal.NewPull(r.Number, aliases, r.Labels...)
 		if e != nil {
 			return nil, e
 		}
@@ -36,7 +36,7 @@ func getCommitPRs(ctx context.Context, gh ghClient, owner, repo, commitSha strin
 	return result, nil
 }
 
-func compareCommits(ctx context.Context, gh ghClient, owner, repo, baseRef, headRef string) ([]Commit, error) {
+func compareCommits(ctx context.Context, gh ghClient, aliases map[string]string, owner, repo, baseRef, headRef string) ([]Commit, error) {
 	var result []Commit
 	commitShas, err := gh.CompareCommits(ctx, owner, repo, baseRef, headRef)
 	if err != nil {
@@ -51,7 +51,7 @@ func compareCommits(ctx context.Context, gh ghClient, owner, repo, baseRef, head
 		wg.Add(1)
 		go func(idx int) {
 			var e error
-			result[idx].Pulls, e = getCommitPRs(ctx, gh, owner, repo, commitSha)
+			result[idx].Pulls, e = getCommitPRs(ctx, gh, aliases, owner, repo, commitSha)
 			errLock.Lock()
 			err = errors.Join(err, e)
 			errLock.Unlock()
@@ -84,6 +84,7 @@ type Options struct {
 	Head         string
 	MinBump      string
 	MaxBump      string
+	LabelAliases map[string]string
 }
 
 func GetNext(ctx context.Context, opts *Options) (*Result, error) {
@@ -122,7 +123,7 @@ func GetNext(ctx context.Context, opts *Options) (*Result, error) {
 		return nil, fmt.Errorf("repo must be in the form owner/name")
 	}
 	owner, repo := repoParts[0], repoParts[1]
-	resultCommits, err := compareCommits(ctx, opts.GithubClient, owner, repo, opts.Base, opts.Head)
+	resultCommits, err := compareCommits(ctx, opts.GithubClient, opts.LabelAliases, owner, repo, opts.Base, opts.Head)
 	if err != nil {
 		return nil, err
 	}

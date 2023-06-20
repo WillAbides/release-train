@@ -100,7 +100,7 @@ git tag head
 				assert.Equal(t, "repoName", repo)
 				switch sha {
 				case repos.taggedCommits["fourth"]:
-					return []internal.BasePull{{Number: 1, Labels: []string{internal.LabelMinor}}}, nil
+					return []internal.BasePull{{Number: 1, Labels: []string{"MinorAlias"}}}, nil
 				case repos.taggedCommits["head"]:
 					return []internal.BasePull{}, nil
 				default:
@@ -189,6 +189,9 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			GoModFiles:     []string{"src/go/go.mod"},
 			TempDir:        t.TempDir(),
 			ReleaseRefs:    []string{"first", "fake", "sixth"},
+			LabelAliases: map[string]string{
+				"MINORALIAS": internal.LabelMinor,
+			},
 		}
 		got, err := runner.Run(ctx)
 		require.NoError(t, err)

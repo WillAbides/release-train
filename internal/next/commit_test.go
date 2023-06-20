@@ -11,7 +11,7 @@ func testCommit(t *testing.T, pulls ...internal.BasePull) Commit {
 	t.Helper()
 	c := Commit{Sha: "deadbeef"}
 	for i := range pulls {
-		p, err := internal.NewPull(pulls[i].Number, pulls[i].Labels...)
+		p, err := internal.NewPull(pulls[i].Number, nil, pulls[i].Labels...)
 		require.NoError(t, err)
 		c.Pulls = append(c.Pulls, *p)
 	}
