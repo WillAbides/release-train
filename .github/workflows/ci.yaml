@@ -51,6 +51,8 @@ jobs:
         name: release-train
         uses: './'
         with:
+          labels: |
+            enhancement=semver:minor
           create-release: true
           validate-go-module: go.mod
           release-refs: |
