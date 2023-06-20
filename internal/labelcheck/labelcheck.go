@@ -34,10 +34,7 @@ func Check(ctx context.Context, opts *Options) error {
 			return nil
 		}
 	}
-	labelNames := maps.Keys(internal.LabelLevels)
-	slices.Sort(labelNames)
-	aliasNames := maps.Keys(opts.LabelAliases)
-	slices.Sort(aliasNames)
-	wantLabels := append(labelNames, aliasNames...)
+	wantLabels := append(maps.Keys(internal.LabelLevels), maps.Keys(opts.LabelAliases)...)
+	slices.Sort(wantLabels)
 	return fmt.Errorf("pull request is missing a label. wanted one of: %s", strings.Join(wantLabels, ", "))
 }
