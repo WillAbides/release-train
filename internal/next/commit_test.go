@@ -11,7 +11,7 @@ func testCommit(t *testing.T, pulls ...internal.BasePull) Commit {
 	t.Helper()
 	c := Commit{Sha: "deadbeef"}
 	for i := range pulls {
-		p, err := internal.NewPull(pulls[i].Number, pulls[i].Labels...)
+		p, err := internal.NewPull(pulls[i].Number, nil, pulls[i].Labels...)
 		require.NoError(t, err)
 		c.Pulls = append(c.Pulls, *p)
 	}
@@ -37,7 +37,7 @@ func TestCommit_validate(t *testing.T) {
 		},
 		{
 			name:   "all labeled",
-			commit: testCommit(t, basePull(1, "semver:major"), basePull(2, "semver:none")),
+			commit: testCommit(t, basePull(1, internal.LabelBreaking), basePull(2, internal.LabelNone)),
 		},
 		{
 			name:   "unlabeled",
@@ -51,41 +51,41 @@ func TestCommit_validate(t *testing.T) {
 		},
 		{
 			name:   "unlabeled with prerelease",
-			commit: testCommit(t, basePull(1, "semver:pre")),
+			commit: testCommit(t, basePull(1, internal.LabelPrerelease)),
 			err:    `commit deadbeef has no labels on associated pull requests: [#1]`,
 		},
 		{
 			name:   "prerelease",
-			commit: testCommit(t, basePull(1, "semver:pre", "semver:minor")),
+			commit: testCommit(t, basePull(1, internal.LabelPrerelease, internal.LabelMinor)),
 		},
 		{
 			name:   "one prerelease",
-			commit: testCommit(t, basePull(1, "semver:pre", "semver:minor"), basePull(2, "semver:minor")),
+			commit: testCommit(t, basePull(1, internal.LabelPrerelease, internal.LabelMinor), basePull(2, internal.LabelMinor)),
 		},
 		{
 			name:   "stable",
-			commit: testCommit(t, basePull(1, "semver:stable", "semver:minor")),
+			commit: testCommit(t, basePull(1, internal.LabelStable, internal.LabelMinor)),
 		},
 		{
 			name:   "one stable",
-			commit: testCommit(t, basePull(1, "semver:stable", "semver:minor"), basePull(2, "semver:minor")),
+			commit: testCommit(t, basePull(1, internal.LabelStable, internal.LabelMinor), basePull(2, internal.LabelMinor)),
 		},
 		{
 			name:   "stable and prerelease",
-			commit: testCommit(t, basePull(1, "semver:stable", "semver:none"), basePull(2, "semver:pre", "semver:minor")),
+			commit: testCommit(t, basePull(1, internal.LabelStable, internal.LabelNone), basePull(2, internal.LabelPrerelease, internal.LabelMinor)),
 			err:    `commit deadbeef has both stable and prerelease labels: stable PR: [#1], prerelease PR: [#2]`,
 		},
 		{
 			name:   "prerelease prefix",
-			commit: testCommit(t, basePull(1, "semver:minor", "semver:pre:foo")),
+			commit: testCommit(t, basePull(1, internal.LabelMinor, internal.LabelPrerelease+":foo")),
 		},
 		{
 			name:   "prerelease with and without prefix",
-			commit: testCommit(t, basePull(1, "semver:minor", "semver:pre:foo", "semver:pre")),
+			commit: testCommit(t, basePull(1, internal.LabelMinor, internal.LabelPrerelease+":foo", internal.LabelPrerelease)),
 		},
 		{
 			name:   "conflicting prefixes",
-			commit: testCommit(t, basePull(1, "semver:pre:foo"), basePull(2, "semver:pre:bar")),
+			commit: testCommit(t, basePull(1, internal.LabelPrerelease+":foo"), basePull(2, internal.LabelPrerelease+":bar")),
 			err:    `commit deadbeef has pull requests with conflicting prefixes: #1 and #2`,
 		},
 	} {

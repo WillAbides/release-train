@@ -12,7 +12,7 @@ type Commit struct {
 }
 
 func (c Commit) changeLevel() internal.ChangeLevel {
-	level := internal.ChangeLevelNoChange
+	level := internal.ChangeLevelNone
 	for _, pull := range c.Pulls {
 		if pull.ChangeLevel > level {
 			level = pull.ChangeLevel

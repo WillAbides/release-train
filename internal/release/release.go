@@ -34,6 +34,7 @@ type Runner struct {
 	PushRemote     string
 	TempDir        string
 	ReleaseRefs    []string
+	LabelAliases   map[string]string
 	GithubClient   internal.GithubClient
 }
 
@@ -88,7 +89,7 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 		result := Result{
 			FirstRelease: true,
 			ReleaseTag:   o.InitialTag,
-			ChangeLevel:  internal.ChangeLevelNoChange,
+			ChangeLevel:  internal.ChangeLevelNone,
 		}
 		if o.InitialTag != "" {
 			result.ReleaseVersion, err = semver.NewVersion(strings.TrimPrefix(o.InitialTag, o.TagPrefix))
@@ -123,6 +124,7 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 		Base:         prevRef,
 		Head:         head,
 		MaxBump:      maxBump.String(),
+		LabelAliases: o.LabelAliases,
 	})
 	if err != nil {
 		return nil, err
@@ -240,7 +242,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	if result.ReleaseVersion == nil || !createTag {
 		return result, nil
 	}
-	if !result.FirstRelease && result.ChangeLevel == internal.ChangeLevelNoChange {
+	if !result.FirstRelease && result.ChangeLevel == internal.ChangeLevelNone {
 		return result, nil
 	}
 

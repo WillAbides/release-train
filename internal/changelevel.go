@@ -8,7 +8,7 @@ import (
 type ChangeLevel int
 
 const (
-	ChangeLevelNoChange ChangeLevel = iota
+	ChangeLevelNone ChangeLevel = iota
 	ChangeLevelPatch
 	ChangeLevelMinor
 	ChangeLevelMajor
@@ -16,8 +16,8 @@ const (
 
 func (l ChangeLevel) String() string {
 	switch l {
-	case ChangeLevelNoChange:
-		return "no change"
+	case ChangeLevelNone:
+		return "none"
 	case ChangeLevelPatch:
 		return "patch"
 	case ChangeLevelMinor:
@@ -41,9 +41,9 @@ func ParseChangeLevel(v string) (ChangeLevel, error) {
 		return ChangeLevelMinor, nil
 	case "major":
 		return ChangeLevelMajor, nil
-	case "none", "no change":
-		return ChangeLevelNoChange, nil
+	case "none":
+		return ChangeLevelNone, nil
 	default:
-		return ChangeLevelNoChange, fmt.Errorf("invalid change level: %s", v)
+		return 0, fmt.Errorf("invalid change level: %s", v)
 	}
 }

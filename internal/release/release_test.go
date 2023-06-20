@@ -100,7 +100,7 @@ git tag head
 				assert.Equal(t, "repoName", repo)
 				switch sha {
 				case repos.taggedCommits["fourth"]:
-					return []internal.BasePull{{Number: 1, Labels: []string{"semver:minor"}}}, nil
+					return []internal.BasePull{{Number: 1, Labels: []string{"MinorAlias"}}}, nil
 				case repos.taggedCommits["head"]:
 					return []internal.BasePull{}, nil
 				default:
@@ -189,6 +189,9 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			GoModFiles:     []string{"src/go/go.mod"},
 			TempDir:        t.TempDir(),
 			ReleaseRefs:    []string{"first", "fake", "sixth"},
+			LabelAliases: map[string]string{
+				"MINORALIAS": internal.LabelMinor,
+			},
 		}
 		got, err := runner.Run(ctx)
 		require.NoError(t, err)
@@ -263,7 +266,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			FirstRelease:   true,
 			ReleaseTag:     "x1.0.0",
 			ReleaseVersion: semver.MustParse("1.0.0"),
-			ChangeLevel:    internal.ChangeLevelNoChange,
+			ChangeLevel:    internal.ChangeLevelNone,
 			CreatedTag:     true,
 			CreatedRelease: true,
 		}, got)
@@ -289,7 +292,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 				assert.Equal(t, "repoName", repo)
 				switch sha {
 				case repos.taggedCommits["fourth"]:
-					return []internal.BasePull{{Number: 1, Labels: []string{"semver:minor"}}}, nil
+					return []internal.BasePull{{Number: 1, Labels: []string{internal.LabelMinor}}}, nil
 				case repos.taggedCommits["head"]:
 					return []internal.BasePull{}, nil
 				default:
@@ -369,7 +372,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 				assert.Equal(t, "repoName", repo)
 				switch sha {
 				case repos.taggedCommits["fourth"]:
-					return []internal.BasePull{{Number: 1, Labels: []string{"semver:minor"}}}, nil
+					return []internal.BasePull{{Number: 1, Labels: []string{internal.LabelMinor}}}, nil
 				case repos.taggedCommits["head"]:
 					return []internal.BasePull{}, nil
 				default:
@@ -424,7 +427,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
 				return []internal.BasePull{
-					{Number: 1, Labels: []string{"semver:minor"}},
+					{Number: 1, Labels: []string{internal.LabelMinor}},
 				}, nil
 			},
 			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error) {
@@ -531,7 +534,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 				return []string{repos.taggedCommits["head"]}, nil
 			},
 			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
-				return []internal.BasePull{{Number: 2, Labels: []string{"semver:major"}}}, nil
+				return []internal.BasePull{{Number: 2, Labels: []string{internal.LabelBreaking}}}, nil
 			},
 			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error) {
 				return "release notes", nil
@@ -566,7 +569,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 				return []string{repos.taggedCommits["head"]}, nil
 			},
 			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
-				return []internal.BasePull{{Number: 2, Labels: []string{"semver:major"}}}, nil
+				return []internal.BasePull{{Number: 2, Labels: []string{internal.LabelBreaking}}}, nil
 			},
 			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error) {
 				return "release notes", nil
@@ -624,7 +627,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 				return []string{repos.taggedCommits["head"]}, nil
 			},
 			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
-				return []internal.BasePull{{Number: 2, Labels: []string{"semver:major"}}}, nil
+				return []internal.BasePull{{Number: 2, Labels: []string{internal.LabelBreaking}}}, nil
 			},
 		}
 		got, err := (&Runner{
@@ -654,7 +657,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 				return []string{repos.taggedCommits["head"]}, nil
 			},
 			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
-				return []internal.BasePull{{Number: 2, Labels: []string{"semver:major"}}}, nil
+				return []internal.BasePull{{Number: 2, Labels: []string{internal.LabelBreaking}}}, nil
 			},
 		}
 		got, err := (&Runner{
@@ -686,7 +689,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 				return []string{repos.taggedCommits["second"]}, nil
 			},
 			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
-				return []internal.BasePull{{Number: 2, Labels: []string{"semver:major"}}}, nil
+				return []internal.BasePull{{Number: 2, Labels: []string{internal.LabelBreaking}}}, nil
 			},
 		}
 		got, err := (&Runner{
@@ -717,7 +720,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 				return []string{repos.taggedCommits["third"]}, nil
 			},
 			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
-				return []internal.BasePull{{Number: 2, Labels: []string{"semver:minor"}}}, nil
+				return []internal.BasePull{{Number: 2, Labels: []string{internal.LabelMinor}}}, nil
 			},
 		}
 		_, err := (&Runner{
@@ -743,7 +746,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 				return []string{repos.taggedCommits["head"]}, nil
 			},
 			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
-				return []internal.BasePull{{Number: 2, Labels: []string{"semver:minor", "semver:pre"}}}, nil
+				return []internal.BasePull{{Number: 2, Labels: []string{internal.LabelMinor, internal.LabelPrerelease}}}, nil
 			},
 		}
 		got, err := (&Runner{

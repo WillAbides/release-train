@@ -85,7 +85,7 @@ func MockListPullRequestsWithCommit(t *testing.T, calls []ListPullRequestsWithCo
 
 func MustNewPull(t *testing.T, number int, labels ...string) internal.Pull {
 	t.Helper()
-	p, err := internal.NewPull(number, labels...)
+	p, err := internal.NewPull(number, nil, labels...)
 	require.NoError(t, err)
 	return *p
 }

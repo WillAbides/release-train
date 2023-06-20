@@ -3,7 +3,6 @@ package internal
 import (
 	"fmt"
 	"sort"
-	"strings"
 )
 
 type Pull struct {
@@ -15,21 +14,22 @@ type Pull struct {
 	HasStableLabel   bool        `json:"has_stable_label,omitempty"`
 }
 
-func NewPull(number int, labels ...string) (*Pull, error) {
+func NewPull(number int, aliases map[string]string, labels ...string) (*Pull, error) {
 	p := Pull{
 		Number:      number,
-		ChangeLevel: ChangeLevelNoChange,
+		ChangeLevel: ChangeLevelNone,
 	}
 	sort.Strings(labels)
 	for _, label := range labels {
-		level, ok := LabelLevels[strings.ToLower(label)]
+		resolvedLabel := ResolveLabel(label, aliases)
+		level, ok := LabelLevels[resolvedLabel]
 		if ok {
 			p.LevelLabels = append(p.LevelLabels, label)
 			if level > p.ChangeLevel {
 				p.ChangeLevel = level
 			}
 		}
-		pre, prefix := CheckPrereleaseLabel(label)
+		pre, prefix := CheckPrereleaseLabel(label, nil)
 		if pre {
 			p.HasPreLabel = true
 			if prefix != "" {
@@ -39,7 +39,7 @@ func NewPull(number int, labels ...string) (*Pull, error) {
 				p.PreReleasePrefix = prefix
 			}
 		}
-		if CheckStableLabel(label) {
+		if resolvedLabel == LabelStable {
 			p.HasStableLabel = true
 		}
 	}

@@ -3,17 +3,19 @@ package labelcheck
 import (
 	"context"
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/willabides/release-train-action/v3/internal"
+	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 )
 
 type Options struct {
-	GhClient  internal.GithubClient
-	PrNumber  int
-	RepoOwner string
-	RepoName  string
+	GhClient     internal.GithubClient
+	PrNumber     int
+	RepoOwner    string
+	RepoName     string
+	LabelAliases map[string]string
 }
 
 func Check(ctx context.Context, opts *Options) error {
@@ -26,16 +28,13 @@ func Check(ctx context.Context, opts *Options) error {
 	}
 
 	for _, label := range pull.Labels {
-		name := strings.ToLower(label.GetName())
-		_, ok := internal.LabelLevels[name]
+		resolved := internal.ResolveLabel(label.GetName(), opts.LabelAliases)
+		_, ok := internal.LabelLevels[resolved]
 		if ok {
 			return nil
 		}
 	}
-	var wantLabels []string
-	for k := range internal.LabelLevels {
-		wantLabels = append(wantLabels, k)
-	}
-	sort.Strings(wantLabels)
+	wantLabels := append(maps.Keys(internal.LabelLevels), maps.Keys(opts.LabelAliases)...)
+	slices.Sort(wantLabels)
 	return fmt.Errorf("pull request is missing a label. wanted one of: %s", strings.Join(wantLabels, ", "))
 }

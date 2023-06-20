@@ -34,8 +34,11 @@ jobs:
           go build -o bin/release-train .
           echo RELEASE_TRAIN_BIN="$(pwd)"/bin/release-train >> $GITHUB_ENV
       - uses: './'
-        name: release-traing
+        name: release-train
         id: release-train
+        with:
+          labels: |
+            enhancement=semver:minor
       - run: |
           echo "local-action outputs:"
           echo '${{ toJSON(steps.release-train.outputs) }}'

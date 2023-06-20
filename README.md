@@ -19,6 +19,12 @@ Instead of releasing, check that the PR has a label indicating the type of chang
 
 Only literal 'true' will be treated as true.
 
+### labels
+
+PR label alias in the form of "<alias>=<label>" where <label> is a canonical label.
+
+One value per line.
+
 ### checkout-dir
 
 default: `${{ github.workspace }}`
@@ -144,7 +150,7 @@ The tag of the new release. Empty if no release is called for.
 
 ### change-level
 
-The level of change in the release. Either "major", "minor", "patch" or "no change".
+The level of change in the release. Either "major", "minor", "patch" or "none".
 
 ### created-tag
 

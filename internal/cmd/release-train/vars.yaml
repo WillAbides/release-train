@@ -49,3 +49,5 @@ v0_help: |
 release_ref_help: |
   Only allow tags and releases to be created from matching refs. Refs can be patterns accepted by git-show-ref. 
   If undefined, any branch can be used.
+label_help: |
+  PR label alias in the form of "<alias>=<label>" where <label> is a canonical label.
