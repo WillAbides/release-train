@@ -19,7 +19,7 @@ import (
 
 func mustRunCmd(t *testing.T, dir string, env map[string]string, name string, args ...string) string {
 	t.Helper()
-	out, err := runCmd(dir, env, name, args...)
+	out, err := internal.RunCmd(dir, env, name, args...)
 	require.NoError(t, err)
 	return out
 }
@@ -206,7 +206,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			CreatedRelease:       true,
 			PrereleaseHookOutput: "hello to my friends reading stdout\n",
 		}, got)
-		taggedSha, err := runCmd(repos.origin, nil, "git", "rev-parse", "v2.1.0")
+		taggedSha, err := internal.RunCmd(repos.origin, nil, "git", "rev-parse", "v2.1.0")
 		require.NoError(t, err)
 		require.Equal(t, repos.taggedCommits["head"], taggedSha)
 	})

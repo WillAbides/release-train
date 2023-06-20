@@ -70,7 +70,7 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 	if o.Ref == "" {
 		ref = "HEAD"
 	}
-	head, err := runCmd(o.CheckoutDir, nil, "git", "rev-parse", ref)
+	head, err := internal.RunCmd(o.CheckoutDir, nil, "git", "rev-parse", ref)
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +227,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		createTag = false
 		release = false
 	}
-	shallow, err := runCmd(o.CheckoutDir, nil, "git", "rev-parse", "--is-shallow-repository")
+	shallow, err := internal.RunCmd(o.CheckoutDir, nil, "git", "rev-parse", "--is-shallow-repository")
 	if err != nil {
 		return nil, err
 	}
@@ -287,7 +287,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		return nil, err
 	}
 	teardowns = append(teardowns, func() error {
-		_, e := runCmd(o.CheckoutDir, nil, "git", "push", o.PushRemote, "--delete", result.ReleaseTag)
+		_, e := internal.RunCmd(o.CheckoutDir, nil, "git", "push", o.PushRemote, "--delete", result.ReleaseTag)
 		return e
 	})
 
@@ -364,12 +364,12 @@ func (o *Runner) tagRelease(releaseTag string) error {
 			return err
 		}
 
-		_, err = runCmd(o.CheckoutDir, nil, "git", "tag", releaseTag, target)
+		_, err = internal.RunCmd(o.CheckoutDir, nil, "git", "tag", releaseTag, target)
 		if err != nil {
 			return err
 		}
 	}
-	_, err = runCmd(o.CheckoutDir, nil, "git", "push", o.PushRemote, releaseTag)
+	_, err = internal.RunCmd(o.CheckoutDir, nil, "git", "push", o.PushRemote, releaseTag)
 	return err
 }
 
@@ -387,7 +387,7 @@ func runPrereleaseHook(dir string, env map[string]string, hook string) (stdout s
 	cmd.Stdout = &stdoutBuf
 	err := cmd.Run()
 	if err != nil {
-		exitErr := asExitErr(err)
+		exitErr := internal.AsExitErr(err)
 		if exitErr != nil {
 			err = errors.Join(err, errors.New(string(exitErr.Stderr)))
 			if exitErr.ExitCode() == 10 {
@@ -399,45 +399,18 @@ func runPrereleaseHook(dir string, env map[string]string, hook string) (stdout s
 	return stdoutBuf.String(), false, nil
 }
 
-func runCmd(dir string, env map[string]string, command string, args ...string) (string, error) {
-	cmd := exec.Command(command, args...)
-	cmd.Dir = dir
-	cmd.Env = os.Environ()
-	for k, v := range env {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
-	}
-	out, err := cmd.Output()
-	if err != nil {
-		exitErr := asExitErr(err)
-		if exitErr != nil {
-			err = errors.Join(err, errors.New(string(exitErr.Stderr)))
-		}
-		return "", err
-	}
-
-	return strings.TrimSpace(string(out)), nil
-}
-
-func asExitErr(err error) *exec.ExitError {
-	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) {
-		return exitErr
-	}
-	return nil
-}
-
 func gitNameRev(dir, commitish string, refs []string) bool {
 	args := []string{"name-rev", commitish, "--no-undefined"}
 	for _, ref := range refs {
 		args = append(args, "--refs", ref)
 	}
-	_, err := runCmd(dir, nil, "git", args...)
+	_, err := internal.RunCmd(dir, nil, "git", args...)
 	return err == nil
 }
 
 // assertTagNotExists returns an error if tag exists either locally or on remote
 func assertTagNotExists(dir, remote, tag string) error {
-	out, err := runCmd(dir, nil, "git", "ls-remote", "--tags", remote, tag)
+	out, err := internal.RunCmd(dir, nil, "git", "ls-remote", "--tags", remote, tag)
 	if err != nil {
 		return err
 	}
@@ -455,7 +428,7 @@ func assertTagNotExists(dir, remote, tag string) error {
 }
 
 func localTagExists(dir, tag string) (bool, error) {
-	out, err := runCmd(dir, nil, "git", "tag", "--list", tag)
+	out, err := internal.RunCmd(dir, nil, "git", "tag", "--list", tag)
 	if err != nil {
 		return false, err
 	}

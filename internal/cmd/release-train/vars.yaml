@@ -2,6 +2,7 @@
 
 action_help: Ignore all other flags and run as an action.
 generate_action_help: Ignore all other flags and generate a GitHub action.
+check_pr_help: Check that this PR number is properly labeled. Skips tag and release when set.
 ref_help: git ref.
 checkout_dir_help: The directory where the repository is checked out.
 create_tag_help: Whether to create a tag for the release. Implies create-tag.
