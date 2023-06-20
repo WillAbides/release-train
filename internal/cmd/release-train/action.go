@@ -154,11 +154,7 @@ func (cmd *actionRunCmd) Run(ctx context.Context, root *rootCmd) (errOut error) 
 	if cmd.getInput(inputCheckPRLabels) == "true" {
 		return cmd.runLabelCheck(ctx)
 	}
-	ghClient, err := root.GithubClient(ctx)
-	if err != nil {
-		return err
-	}
-	return cmd.runRelease(ctx, ghClient)
+	return cmd.runRelease(ctx)
 }
 
 func (cmd *actionRunCmd) runLabelCheck(ctx context.Context) error {
@@ -194,7 +190,7 @@ func (cmd *actionRunCmd) runLabelCheck(ctx context.Context) error {
 	return labelcheck.Check(ctx, &opts)
 }
 
-func (cmd *actionRunCmd) runRelease(ctx context.Context, ghClient internal.GithubClient) error {
+func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
 	if cmd.getInput(inputNoRelease) == "true" {
 		cmd.logger.Info("skipping release because no-release is true")
 		return nil
@@ -214,6 +210,11 @@ func (cmd *actionRunCmd) runRelease(ctx context.Context, ghClient internal.Githu
 			//nolint:errcheck // ignore error
 			_ = os.RemoveAll(tmpDir)
 		}()
+	}
+
+	ghClient, err := internal.NewGithubClient(ctx, cmd.context.APIURL, cmd.getInput(inputGithubToken), fmt.Sprintf("release-train/%s", getVersion(ctx)))
+	if err != nil {
+		return err
 	}
 
 	labelAliases, err := cmd.getMapInput(inputLabels)
