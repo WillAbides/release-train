@@ -120,7 +120,7 @@ runs:
   steps:
     - id: release
       shell: sh
-      working-directory: ${{ inputs.checkout_dir }}
+      working-directory: ${{ inputs.checkout-dir }}
       env:
         GITHUB_REPOSITORY: ${{ github.repository }}
         INPUT_CHECK_PR_LABELS: ${{ inputs.check-pr-labels }}
@@ -144,4 +144,4 @@ runs:
           RELEASE_TRAIN_BIN="$ACTION_DIR"/bin/release-train
         fi
 
-        "$RELEASE_TRAIN_BIN" action run
+        "$RELEASE_TRAIN_BIN" --action
