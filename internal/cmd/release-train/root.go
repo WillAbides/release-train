@@ -15,7 +15,7 @@ type rootCmd struct {
 	Action      actionCmd         `kong:"cmd"`
 	Version     kong.VersionFlag
 
-	GithubToken  string `kong:"hidden,required,env=GITHUB_TOKEN,help=${github_token_help}"`
+	GithubToken  string `kong:"hidden,env=GITHUB_TOKEN,help=${github_token_help}"`
 	GithubApiUrl string `kong:"help=${github_api_url_help},default=${github_api_url_default}"`
 }
 
