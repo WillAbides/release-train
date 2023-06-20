@@ -65,6 +65,7 @@ func (cmd *releaseCmd) Run(ctx context.Context, root *rootCmd) (errOut error) {
 
 	runner := &release.Runner{
 		CheckoutDir:    root.CheckoutDir,
+		LabelAliases:   root.Label,
 		Ref:            cmd.Ref,
 		GithubToken:    cmd.GithubToken,
 		CreateTag:      createTag,

@@ -10,6 +10,11 @@ inputs:
 
       Only literal 'true' will be treated as true.
     default: ${{ github.event_name == 'pull_request' }}
+  labels:
+    description: |-
+      PR label alias in the form of "<alias>=<label>" where <label> is a canonical label.
+
+      One value per line.
   checkout-dir:
     description: The directory where the repository is checked out.
     default: ${{ github.workspace }}
@@ -119,6 +124,7 @@ runs:
       env:
         GITHUB_REPOSITORY: ${{ github.repository }}
         INPUT_CHECK_PR_LABELS: ${{ inputs.check-pr-labels }}
+        INPUT_LABELS: ${{ inputs.labels }}
         INPUT_CHECKOUT_DIR: ${{ inputs.checkout-dir }}
         INPUT_REF: ${{ inputs.ref }}
         INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}

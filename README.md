@@ -19,6 +19,12 @@ Instead of releasing, check that the PR has a label indicating the type of chang
 
 Only literal 'true' will be treated as true.
 
+### labels
+
+PR label alias in the form of "<alias>=<label>" where <label> is a canonical label.
+
+One value per line.
+
 ### checkout-dir
 
 default: `${{ github.workspace }}`

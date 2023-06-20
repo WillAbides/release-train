@@ -29,7 +29,7 @@ func NewPull(number int, labels ...string) (*Pull, error) {
 				p.ChangeLevel = level
 			}
 		}
-		pre, prefix := CheckPrereleaseLabel(label)
+		pre, prefix := CheckPrereleaseLabel(label, nil)
 		if pre {
 			p.HasPreLabel = true
 			if prefix != "" {
@@ -39,7 +39,7 @@ func NewPull(number int, labels ...string) (*Pull, error) {
 				p.PreReleasePrefix = prefix
 			}
 		}
-		if CheckStableLabel(label) {
+		if CheckStableLabel(label, nil) {
 			p.HasStableLabel = true
 		}
 	}

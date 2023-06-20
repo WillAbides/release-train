@@ -37,6 +37,7 @@ const (
 	inputValidateGoMod  = "validate-go-module"
 	inputReleaseRefs    = "release-refs"
 	inputNoRelease      = "no-release"
+	inputLabels         = "labels"
 )
 
 const (
@@ -109,6 +110,26 @@ func (cmd *actionRunCmd) getSliceInput(name string) []string {
 	return val
 }
 
+func (cmd *actionRunCmd) getMapInput(name string) (map[string]string, error) {
+	sl := cmd.getSliceInput(name)
+	if len(sl) == 0 {
+		return nil, nil
+	}
+	val := make(map[string]string, len(sl))
+	for _, line := range sl {
+		if strings.Count(line, "=") != 1 {
+			return nil, fmt.Errorf("invalid input for %s. each line must have exacly one '=': %q", name, line)
+		}
+		k, v, _ := strings.Cut(line, "=")
+		_, exists := val[k]
+		if exists {
+			return nil, fmt.Errorf("duplicate key %q in input %s", k, name)
+		}
+		val[k] = v
+	}
+	return val, nil
+}
+
 func (cmd *actionRunCmd) getBoolInput(name string) bool {
 	input := strings.TrimSpace(cmd.getInput(name))
 	return input == "true"
@@ -158,11 +179,16 @@ func (cmd *actionRunCmd) runLabelCheck(ctx context.Context) error {
 		return err
 	}
 	repoOwner, repoName := cmd.context.Repo()
+	labelAliases, err := cmd.getMapInput(inputLabels)
+	if err != nil {
+		return err
+	}
 	opts := labelcheck.Options{
-		GhClient:  ghClient,
-		PrNumber:  prNumber,
-		RepoOwner: repoOwner,
-		RepoName:  repoName,
+		GhClient:     ghClient,
+		PrNumber:     prNumber,
+		RepoOwner:    repoOwner,
+		RepoName:     repoName,
+		LabelAliases: labelAliases,
 	}
 	return labelcheck.Check(ctx, &opts)
 }
@@ -198,6 +224,11 @@ func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
 		return err
 	}
 
+	labelAliases, err := cmd.getMapInput(inputLabels)
+	if err != nil {
+		return err
+	}
+
 	runner := &release.Runner{
 		CheckoutDir:    cmd.getInput(inputCheckoutDir),
 		Ref:            cmd.getInput(inputRef),
@@ -213,6 +244,7 @@ func (cmd *actionRunCmd) runRelease(ctx context.Context) error {
 		PushRemote:     "origin",
 		Repo:           fmt.Sprintf("%s/%s", ownerName, repoName),
 		TempDir:        tmpDir,
+		LabelAliases:   labelAliases,
 
 		GithubClient: ghClient,
 	}
@@ -262,6 +294,10 @@ func getAction(kongCtx *kong.Context) *action.CompositeAction {
 			Description: `Instead of releasing, check that the PR has a label indicating the type of change.` +
 				"\n\n" + actionBoolSuffix,
 			Default: "${{ github.event_name == 'pull_request' }}",
+		}),
+
+		orderedmap.Pair(inputLabels, action.Input{
+			Description: getVar("label_help") + "\n" + actionSliceSuffix,
 		}),
 
 		orderedmap.Pair(inputCheckoutDir, action.Input{

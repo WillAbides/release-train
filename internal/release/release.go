@@ -34,6 +34,7 @@ type Runner struct {
 	PushRemote     string
 	TempDir        string
 	ReleaseRefs    []string
+	LabelAliases   map[string]string
 	GithubClient   internal.GithubClient
 }
 
