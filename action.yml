@@ -4,17 +4,19 @@ branding:
   icon: send
   color: yellow
 inputs:
-  check-pr-labels:
-    description: |-
-      Instead of releasing, check that the PR has a label indicating the type of change.
-
-      Only literal 'true' will be treated as true.
-    default: ${{ github.event_name == 'pull_request' }}
+  release-train-bin:
+    description: Path to release-train binary. Only needed if you're using a custom release-train binary.
+  repo:
+    description: Github repository in the form of owner/repo.
+    default: ${{ github.repository }}
+  check-pr:
+    description: Check that this PR number is properly labeled. Skips tag and release when set.
+    default: ${{ github.event.number }}
   labels:
     description: |-
       PR label alias in the form of "<alias>=<label>" where <label> is a canonical label.
 
-      One value per line.
+      Accepts multiple values. One value per line.
   checkout-dir:
     description: The directory where the repository is checked out.
     default: ${{ github.workspace }}
@@ -38,12 +40,12 @@ inputs:
     description: The prefix to use for the tag.
     default: v
   v0:
-    description: "Assert that current major version is 0 and treat breaking changes as minor changes. \nErrors if the major version is not 0.\n\n\nOnly literal 'true' will be treated as true."
+    description: "Assert that current major version is 0 and treat breaking changes as minor changes. \nErrors if the major version is not 0.\n\nOnly literal 'true' will be treated as true."
   initial-release-tag:
     description: The tag to use if no previous version can be found. Set to "" to cause an error instead.
     default: v0.0.0
   pre-release-hook:
-    description: |
+    description: |-
       Command to run before creating the release. You may abort the release by exiting with a non-zero exit code.
 
       Exit code 0 will continue the release. Exit code 10 will skip the release without error. Any other exit code will
@@ -75,15 +77,15 @@ inputs:
       Validates that the name of the go module at the given path matches the major version of the release. For example,
       validation will fail when releasing v3.0.0 when the module name is "my_go_module/v2".
 
-      One value per line.
+      Accepts multiple values. One value per line.
   release-refs:
-    description: "Only allow tags and releases to be created from matching refs. Refs can be patterns accepted by git-show-ref. \nIf undefined, any branch can be used.\n\nOne value per line."
-  no-release:
     description: |-
-      If set to true, this will be a no-op. This is useful for creating a new repository or branch that isn't ready for
-      release yet.
+      Only allow tags and releases to be created from matching refs. Refs can be patterns accepted by git-show-ref.
+      If undefined, any branch can be used.
 
-      Only literal 'true' will be treated as true.
+      Accepts multiple values. One value per line.
+  tempdir:
+    description: The prefix to use with mktemp to create a temporary directory.
 outputs:
   previous-ref:
     value: ${{ steps.release.outputs.previous-ref }}
@@ -118,30 +120,113 @@ outputs:
 runs:
   using: composite
   steps:
-    - id: release
+    - name: release
+      id: release
       shell: sh
-      working-directory: ${{ inputs.checkout-dir }}
-      env:
-        GITHUB_REPOSITORY: ${{ github.repository }}
-        INPUT_CHECK_PR_LABELS: ${{ inputs.check-pr-labels }}
-        INPUT_LABELS: ${{ inputs.labels }}
-        INPUT_CHECKOUT_DIR: ${{ inputs.checkout-dir }}
-        INPUT_REF: ${{ inputs.ref }}
-        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
-        INPUT_CREATE_TAG: ${{ inputs.create-tag }}
-        INPUT_CREATE_RELEASE: ${{ inputs.create-release }}
-        INPUT_TAG_PREFIX: ${{ inputs.tag-prefix }}
-        INPUT_V0: ${{ inputs.v0 }}
-        INPUT_INITIAL_RELEASE_TAG: ${{ inputs.initial-release-tag }}
-        INPUT_PRE_RELEASE_HOOK: ${{ inputs.pre-release-hook }}
-        INPUT_VALIDATE_GO_MODULE: ${{ inputs.validate-go-module }}
-        INPUT_RELEASE_REFS: ${{ inputs.release-refs }}
-        INPUT_NO_RELEASE: ${{ inputs.no-release }}
-      run: |-
+      run: |
+        #!/bin/sh
+        set -e
+
         ACTION_DIR="${{ github.action_path }}"
-        if [ -z "$RELEASE_TRAIN_BIN" ]; then
-          "$ACTION_DIR"/script/bindown -q install release-train --allow-missing-checksum
-          RELEASE_TRAIN_BIN="$ACTION_DIR"/bin/release-train
+        RELEASE_TRAIN_BIN="$ACTION_DIR"/bin/release-train
+
+        if [ -n "${{ inputs.release-train-bin }}" ]; then
+          RELEASE_TRAIN_BIN="${{ inputs.release-train-bin }}"
         fi
 
-        "$RELEASE_TRAIN_BIN" --action
+        set --
+
+        if [ -n "${{ inputs.repo }}" ]; then
+          set -- "$@" --repo "${{ inputs.repo }}"
+        fi
+
+        if [ -n "${{ inputs.check-pr }}" ]; then
+          set -- "$@" --check-pr "${{ inputs.check-pr }}"
+        fi
+
+        while IFS= read -r line; do
+          [ -n "$line" ] || continue
+          set -- "$@" --label "$line"
+        done <<EOF
+        ${{ inputs.labels }}
+        EOF
+
+        if [ -n "${{ inputs.checkout-dir }}" ]; then
+          set -- "$@" --checkout-dir "${{ inputs.checkout-dir }}"
+        fi
+
+        if [ -n "${{ inputs.ref }}" ]; then
+          set -- "$@" --ref "${{ inputs.ref }}"
+        fi
+
+        if [ -n "${{ inputs.github-token }}" ]; then
+          set -- "$@" --github-token "${{ inputs.github-token }}"
+        fi
+
+        case "${{ inputs.create-tag }}":
+          true)
+            set -- "$@" --create-tag
+            ;;
+          false) ;;
+          "") ;;
+          *)
+            echo "Input $create-tag must be 'true' or 'false'. Got '${{ inputs.create-tag }}'." >&2
+            exit 1
+        	;;
+        esac
+
+        case "${{ inputs.create-release }}":
+          true)
+            set -- "$@" --create-release
+            ;;
+          false) ;;
+          "") ;;
+          *)
+            echo "Input $create-release must be 'true' or 'false'. Got '${{ inputs.create-release }}'." >&2
+            exit 1
+        	;;
+        esac
+
+        if [ -n "${{ inputs.tag-prefix }}" ]; then
+          set -- "$@" --tag-prefix "${{ inputs.tag-prefix }}"
+        fi
+
+        case "${{ inputs.v0 }}":
+          true)
+            set -- "$@" --v0
+            ;;
+          false) ;;
+          "") ;;
+          *)
+            echo "Input $v0 must be 'true' or 'false'. Got '${{ inputs.v0 }}'." >&2
+            exit 1
+        	;;
+        esac
+
+        if [ -n "${{ inputs.initial-release-tag }}" ]; then
+          set -- "$@" --initial-tag "${{ inputs.initial-release-tag }}"
+        fi
+
+        if [ -n "${{ inputs.pre-release-hook }}" ]; then
+          set -- "$@" --pre-release-hook "${{ inputs.pre-release-hook }}"
+        fi
+
+        while IFS= read -r line; do
+          [ -n "$line" ] || continue
+          set -- "$@" --go-mod-file "$line"
+        done <<EOF
+        ${{ inputs.validate-go-module }}
+        EOF
+
+        while IFS= read -r line; do
+          [ -n "$line" ] || continue
+          set -- "$@" --release-ref "$line"
+        done <<EOF
+        ${{ inputs.release-refs }}
+        EOF
+
+        if [ -n "${{ inputs.tempdir }}" ]; then
+          set -- "$@" --tempdir "${{ inputs.tempdir }}"
+        fi
+
+        "$RELEASE_TRAIN_BIN" "$@"
