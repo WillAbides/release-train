@@ -9,6 +9,7 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/willabides/release-train-action/v3/internal/actions"
 	"github.com/willabides/release-train-action/v3/internal/orderedmap"
+	"github.com/willabides/release-train-action/v3/internal/release"
 )
 
 const (
@@ -16,18 +17,62 @@ const (
 	actionSliceSuffix = "Accepts multiple values. One value per line."
 )
 
-const (
-	outputPreviousRef           = "previous-ref"
-	outputPreviousVersion       = "previous-version"
-	outputFirstRelease          = "first-release"
-	outputReleaseVersion        = "release-version"
-	outputReleaseTag            = "release-tag"
-	outputChangeLevel           = "change-level"
-	outputCreatedTag            = "created-tag"
-	outputCreatedRelease        = "created-release"
-	outputPreReleaseHookOutput  = "pre-release-hook-output"
-	outputPreReleaseHookAborted = "pre-release-hook-aborted"
-)
+var outputItems = []struct {
+	name        string
+	description string
+	value       func(*release.Result) string
+}{
+	{
+		name:        "previous-ref",
+		description: `A git ref pointing to the previous release, or the current ref if no previous release can be found.`,
+		value:       func(r *release.Result) string { return r.PreviousRef },
+	},
+	{
+		name:        "previous-version",
+		description: `The previous version on the release branch.`,
+		value:       func(r *release.Result) string { return r.PreviousVersion },
+	},
+	{
+		name:        "first-release",
+		description: `Whether this is the first release on the release branch. Either "true" or "false".`,
+		value:       func(r *release.Result) string { return fmt.Sprintf("%t", r.FirstRelease) },
+	},
+	{
+		name:        "release-version",
+		description: `The version of the new release. Empty if no release is called for.`,
+		value:       func(r *release.Result) string { return r.ReleaseVersion.String() },
+	},
+	{
+		name:        "release-tag",
+		description: `The tag of the new release. Empty if no release is called for.`,
+		value:       func(r *release.Result) string { return r.ReleaseTag },
+	},
+	{
+		name:        "change-level",
+		description: `The level of change in the release. Either "major", "minor", "patch" or "none".`,
+		value:       func(r *release.Result) string { return r.ChangeLevel.String() },
+	},
+	{
+		name:        "created-tag",
+		description: `Whether a tag was created. Either "true" or "false".`,
+		value:       func(r *release.Result) string { return fmt.Sprintf("%t", r.CreatedTag) },
+	},
+	{
+		name:        "created-release",
+		description: `Whether a release was created. Either "true" or "false".`,
+		value:       func(r *release.Result) string { return fmt.Sprintf("%t", r.CreatedRelease) },
+	},
+	{
+		name:        "pre-release-hook-output",
+		description: `The stdout of the pre_release_hook. Empty if pre_release_hook is not set or if the hook returned an exit other than 0 or 10.`,
+		value:       func(r *release.Result) string { return r.PrereleaseHookOutput },
+	},
+	{
+		name:        "pre-release-hook-aborted",
+		description: `Whether pre_release_hook issued an abort by exiting 10. Either "true" or "false".`,
+		value:       func(r *release.Result) string { return fmt.Sprintf("%t", r.PrereleaseHookAborted) },
+	},
+}
 
 type actionInputHelper struct {
 	Name string
@@ -78,13 +123,9 @@ if [ -n "${{ inputs.release-train-bin }}" ]; then
   RELEASE_TRAIN_BIN="${{ inputs.release-train-bin }}"
 fi
 
-set --
+set -- --output-format action
 `
-	inputs := orderedmap.NewOrderedMap(
-		orderedmap.Pair("release-train-bin", actions.Input{
-			Description: "Path to release-train binary. Only needed if you're using a custom release-train binary.",
-		}),
-	)
+	inputs := orderedmap.NewOrderedMap[actions.Input]()
 
 	for _, flag := range kongCtx.Flags() {
 		if flag.Name == "help" {
@@ -139,62 +180,23 @@ set --
 	script += `
 "$RELEASE_TRAIN_BIN" "$@"
 `
+	inputs.AddPairs(
+		orderedmap.Pair("release-train-bin", actions.Input{
+			Description: "Path to release-train binary. Only needed if you're using a custom release-train binary.",
+		}),
+	)
 
 	releaseOutput := func(s string) string {
 		return fmt.Sprintf("${{ steps.release.outputs.%s }}", s)
 	}
 
-	outputs := orderedmap.NewOrderedMap(
-		orderedmap.Pair(outputPreviousRef, actions.CompositeOutput{
-			Value:       releaseOutput(outputPreviousRef),
-			Description: "A git ref pointing to the previous release, or the current ref if no previous release can be found.",
-		}),
-
-		orderedmap.Pair(outputPreviousVersion, actions.CompositeOutput{
-			Value:       releaseOutput(outputPreviousVersion),
-			Description: "The previous version on the release branch.",
-		}),
-
-		orderedmap.Pair(outputFirstRelease, actions.CompositeOutput{
-			Value:       releaseOutput(outputFirstRelease),
-			Description: "Whether this is the first release on the release branch. Either \"true\" or \"false\".",
-		}),
-
-		orderedmap.Pair(outputReleaseVersion, actions.CompositeOutput{
-			Value:       releaseOutput(outputReleaseVersion),
-			Description: "The version of the new release. Empty if no release is called for.",
-		}),
-
-		orderedmap.Pair(outputReleaseTag, actions.CompositeOutput{
-			Value:       releaseOutput(outputReleaseTag),
-			Description: "The tag of the new release. Empty if no release is called for.",
-		}),
-
-		orderedmap.Pair(outputChangeLevel, actions.CompositeOutput{
-			Value:       releaseOutput(outputChangeLevel),
-			Description: "The level of change in the release. Either \"major\", \"minor\", \"patch\" or \"none\".",
-		}),
-
-		orderedmap.Pair(outputCreatedTag, actions.CompositeOutput{
-			Value:       releaseOutput(outputCreatedTag),
-			Description: "Whether a tag was created. Either \"true\" or \"false\".",
-		}),
-
-		orderedmap.Pair(outputCreatedRelease, actions.CompositeOutput{
-			Value:       releaseOutput(outputCreatedRelease),
-			Description: "Whether a release was created. Either \"true\" or \"false\".",
-		}),
-
-		orderedmap.Pair(outputPreReleaseHookOutput, actions.CompositeOutput{
-			Value:       releaseOutput(outputPreReleaseHookOutput),
-			Description: "The stdout of the pre_release_hook. Empty if pre_release_hook is not set or if the hook returned an exit other than 0 or 10.",
-		}),
-
-		orderedmap.Pair(outputPreReleaseHookAborted, actions.CompositeOutput{
-			Value:       releaseOutput(outputPreReleaseHookAborted),
-			Description: "Whether pre_release_hook issued an abort by exiting 10. Either \"true\" or \"false\".",
-		}),
-	)
+	outputs := orderedmap.NewOrderedMap[actions.CompositeOutput]()
+	for _, item := range outputItems {
+		outputs.Set(item.name, actions.CompositeOutput{
+			Value:       releaseOutput(item.name),
+			Description: item.description,
+		})
+	}
 
 	action := actions.CompositeAction{
 		Name:        kongCtx.Model.Name,

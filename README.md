@@ -11,10 +11,6 @@ release-train keeps a-rollin' down to San Antone
 
 ## Inputs
 
-### release-train-bin
-
-Path to release-train binary. Only needed if you're using a custom release-train binary.
-
 ### repo
 
 default: `${{ github.repository }}`
@@ -128,6 +124,10 @@ Accepts multiple values. One value per line.
 ### tempdir
 
 The prefix to use with mktemp to create a temporary directory.
+
+### release-train-bin
+
+Path to release-train binary. Only needed if you're using a custom release-train binary.
 
 ## Outputs
 

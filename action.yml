@@ -4,8 +4,6 @@ branding:
   icon: send
   color: yellow
 inputs:
-  release-train-bin:
-    description: Path to release-train binary. Only needed if you're using a custom release-train binary.
   repo:
     description: Github repository in the form of owner/repo.
     default: ${{ github.repository }}
@@ -86,6 +84,8 @@ inputs:
       Accepts multiple values. One value per line.
   tempdir:
     description: The prefix to use with mktemp to create a temporary directory.
+  release-train-bin:
+    description: Path to release-train binary. Only needed if you're using a custom release-train binary.
 outputs:
   previous-ref:
     value: ${{ steps.release.outputs.previous-ref }}
@@ -134,7 +134,8 @@ runs:
           RELEASE_TRAIN_BIN="${{ inputs.release-train-bin }}"
         fi
 
-        set --
+        set -- --output-format action
+
 
         if [ -n "${{ inputs.repo }}" ]; then
           set -- "$@" --repo "${{ inputs.repo }}"

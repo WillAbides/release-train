@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kong"
+	"github.com/sethvargo/go-githubactions"
 	"github.com/willabides/release-train-action/v3/internal"
 	"github.com/willabides/release-train-action/v3/internal/labelcheck"
 	"github.com/willabides/release-train-action/v3/internal/release"
@@ -35,6 +36,7 @@ type rootCmd struct {
 	PushRemote     string            `action:"-" default:"origin" help:"The git remote to push to."`
 	Tempdir        string            `help:"The prefix to use with mktemp to create a temporary directory."`
 	GithubApiUrl   string            `action:"-" help:"${github_api_url_help}" default:"${github_api_url_default}"`
+	OutputFormat   string            `action:"-" default:"json" help:"${output_format_help}" enum:"json,action"`
 }
 
 func (c *rootCmd) GithubClient(ctx context.Context) (internal.GithubClient, error) {
@@ -110,9 +112,17 @@ func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
 		return err
 	}
 
-	enc := json.NewEncoder(os.Stdout)
-	enc.SetIndent("", "  ")
-	return enc.Encode(result)
+	if c.OutputFormat == "json" {
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		return enc.Encode(result)
+	}
+
+	action := githubactions.New()
+	for _, item := range outputItems {
+		action.SetOutput(item.name, item.value(result))
+	}
+	return nil
 }
 
 func (c *rootCmd) runCheckPR(ctx context.Context) error {
