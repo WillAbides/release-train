@@ -102,7 +102,7 @@ func (h *ActionHandler) Handle(ctx context.Context, record slog.Record) error {
 			}
 		}
 	}
-	_, err = h.w.Write([]byte("::" + record.Message + " "))
+	err = writeEscaped(h.w, "::"+record.Message+" ")
 	if err != nil {
 		return err
 	}
@@ -139,10 +139,6 @@ func writeEscaped(w io.Writer, val string) error {
 			_, err = w.Write([]byte("%0D"))
 		case '%':
 			_, err = w.Write([]byte("%25"))
-		case ':':
-			_, err = w.Write([]byte("%3A"))
-		case ',':
-			_, err = w.Write([]byte("%2C"))
 		default:
 			_, err = w.Write([]byte{byte(r)})
 		}
