@@ -27,7 +27,7 @@ type RepoRelease struct {
 type GithubClient interface {
 	ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string) ([]BasePull, error)
 	CompareCommits(ctx context.Context, owner, repo, base, head string) ([]string, error)
-	GenerateReleaseNotes(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error)
+	GenerateReleaseNotes(ctx context.Context, owner, repo, tag, prevTag string) (string, error)
 	CreateRelease(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*RepoRelease, error)
 	UploadAsset(ctx context.Context, uploadURL, filename string) error
 	DeleteRelease(ctx context.Context, owner, repo string, id int64) error
@@ -153,8 +153,11 @@ func (g *ghClient) CompareCommits(ctx context.Context, owner, repo, base, head s
 	return result, nil
 }
 
-func (g *ghClient) GenerateReleaseNotes(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error) {
-	comp, _, err := g.Client.Repositories.GenerateReleaseNotes(ctx, owner, repo, opts)
+func (g *ghClient) GenerateReleaseNotes(ctx context.Context, owner, repo, tag, prevTag string) (string, error) {
+	comp, _, err := g.Client.Repositories.GenerateReleaseNotes(ctx, owner, repo, &github.GenerateNotesOptions{
+		TagName:         tag,
+		PreviousTagName: &prevTag,
+	})
 	if err != nil {
 		return "", err
 	}
