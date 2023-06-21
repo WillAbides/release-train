@@ -7,10 +7,6 @@ release-train uses a number of scripts to automate common tasks. They are found 
 
 <!--- start script descriptions --->
 
-### adhoc
-
-script/test runs tests.
-
 ### bindown
 
 script/bindown runs bindown

@@ -9,18 +9,14 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kong"
-	"github.com/sethvargo/go-githubactions"
 	"github.com/willabides/release-train-action/v3/internal"
-	"github.com/willabides/release-train-action/v3/internal/actionlogger"
 	"github.com/willabides/release-train-action/v3/internal/labelcheck"
 	"github.com/willabides/release-train-action/v3/internal/release"
-	"golang.org/x/exp/slog"
 	"gopkg.in/yaml.v3"
 )
 
 type rootCmd struct {
 	Version        kong.VersionFlag  `action:"-"`
-	Action         bool              `action:"-" help:"${action_help}"`
 	GenerateAction bool              `hidden:"true" help:"${generate_action_help}"`
 	Repo           string            `action:",${{ github.repository }}" help:"Github repository in the form of owner/repo."`
 	CheckPR        int               `action:"check-pr,${{ github.event.number }}" help:"${check_pr_help}"`
@@ -49,9 +45,6 @@ func (c *rootCmd) Run(ctx context.Context, kongCtx *kong.Context) error {
 	if c.GenerateAction {
 		return c.generateAction(kongCtx)
 	}
-	if c.Action {
-		return c.runAction(ctx, kongCtx)
-	}
 	if c.CheckPR != 0 {
 		return c.runCheckPR(ctx)
 	}
@@ -61,36 +54,11 @@ func (c *rootCmd) Run(ctx context.Context, kongCtx *kong.Context) error {
 func (c *rootCmd) generateAction(kongCtx *kong.Context) error {
 	enc := yaml.NewEncoder(os.Stdout)
 	enc.SetIndent(2)
-	got, err := getAction2(kongCtx)
+	got, err := getAction(kongCtx)
 	if err != nil {
 		return err
 	}
 	return enc.Encode(got)
-}
-
-func (c *rootCmd) runAction(ctx context.Context, kongCtx *kong.Context) (errOut error) {
-	actionCtx := &actionContext{
-		action:   getAction(kongCtx),
-		ghAction: githubactions.New(),
-		logger: slog.New(actionlogger.NewHandler(os.Stdout, &slog.HandlerOptions{
-			Level: slog.LevelDebug,
-		})),
-	}
-	defer func() {
-		if errOut != nil {
-			actionCtx.logger.Error(errOut.Error())
-		}
-	}()
-	ghContext, err := actionCtx.ghAction.Context()
-	if err != nil {
-		return err
-	}
-	actionCtx.context = ghContext
-
-	if actionCtx.getBoolInput(inputCheckPRLabels) {
-		return runActionLabelCheck(ctx, actionCtx)
-	}
-	return runActionRelease(ctx, actionCtx)
 }
 
 func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
