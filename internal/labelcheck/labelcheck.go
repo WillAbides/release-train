@@ -28,7 +28,7 @@ func Check(ctx context.Context, opts *Options) error {
 	}
 
 	for _, label := range pull.Labels {
-		resolved := internal.ResolveLabel(label.GetName(), opts.LabelAliases)
+		resolved := internal.ResolveLabel(label, opts.LabelAliases)
 		_, ok := internal.LabelLevels[resolved]
 		if ok {
 			return nil

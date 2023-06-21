@@ -32,7 +32,7 @@ type GithubClient interface {
 	UploadAsset(ctx context.Context, uploadURL, filename string) error
 	DeleteRelease(ctx context.Context, owner, repo string, id int64) error
 	PublishRelease(ctx context.Context, owner, repo string, id int64) error
-	GetPullRequest(ctx context.Context, owner, repo string, number int) (*github.PullRequest, error)
+	GetPullRequest(ctx context.Context, owner, repo string, number int) (*BasePull, error)
 }
 
 func NewGithubClient(ctx context.Context, baseUrl, token, userAgent string) (GithubClient, error) {
@@ -194,7 +194,17 @@ func (g *ghClient) PublishRelease(ctx context.Context, owner, repo string, id in
 	return err
 }
 
-func (g *ghClient) GetPullRequest(ctx context.Context, owner, repo string, number int) (*github.PullRequest, error) {
-	pull, _, err := g.Client.PullRequests.Get(ctx, owner, repo, number)
-	return pull, err
+func (g *ghClient) GetPullRequest(ctx context.Context, owner, repo string, number int) (*BasePull, error) {
+	p, _, err := g.Client.PullRequests.Get(ctx, owner, repo, number)
+	if err != nil {
+		return nil, err
+	}
+	pull := BasePull{
+		Number: p.GetNumber(),
+		Labels: make([]string, len(p.Labels)),
+	}
+	for i, label := range p.Labels {
+		pull.Labels[i] = label.GetName()
+	}
+	return &pull, nil
 }
