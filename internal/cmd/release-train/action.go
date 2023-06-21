@@ -108,7 +108,7 @@ EOF
 
 var scalarTemplate = template.Must(template.New("").Parse(`
 if [ -n "{{.Input}}" ]; then
-  set -- "$@" --{{.Flag}} "{{.Input}}"
+  set -- "$@" --{{.Flag}} '{{.Input}}'
 fi
 `))
 
