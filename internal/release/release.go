@@ -211,6 +211,7 @@ func (o *Runner) getReleaseNotes(ctx context.Context, result *Result) (string, e
 }
 
 func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
+	logger := logging.GetLogger(ctx)
 	var teardowns []func() error
 	defer func() {
 		if errOut == nil {
@@ -244,6 +245,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	if err != nil {
 		return nil, fmt.Errorf("error from o.Next: %w", err)
 	}
+	logger.Info("o.Next returned", slog.Any("result", result))
 
 	if result.ReleaseVersion == nil || !createTag {
 		return result, nil
