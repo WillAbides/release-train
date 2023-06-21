@@ -28,7 +28,7 @@ type GithubClient interface {
 	ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string) ([]BasePull, error)
 	CompareCommits(ctx context.Context, owner, repo, base, head string) ([]string, error)
 	GenerateReleaseNotes(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error)
-	CreateRelease(ctx context.Context, owner, repo string, release *github.RepositoryRelease) (*RepoRelease, error)
+	CreateRelease(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*RepoRelease, error)
 	UploadAsset(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error
 	DeleteRelease(ctx context.Context, owner, repo string, id int64) error
 	PublishRelease(ctx context.Context, owner, repo string, id int64) error
@@ -164,8 +164,15 @@ func (g *ghClient) GenerateReleaseNotes(ctx context.Context, owner, repo string,
 	return comp.Body, nil
 }
 
-func (g *ghClient) CreateRelease(ctx context.Context, owner, repo string, release *github.RepositoryRelease) (*RepoRelease, error) {
-	rel, _, err := g.Client.Repositories.CreateRelease(ctx, owner, repo, release)
+func (g *ghClient) CreateRelease(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*RepoRelease, error) {
+	rel, _, err := g.Client.Repositories.CreateRelease(ctx, owner, repo, &github.RepositoryRelease{
+		TagName:    &tag,
+		Name:       &tag,
+		Body:       &body,
+		MakeLatest: github.String("legacy"),
+		Prerelease: &prerelease,
+		Draft:      github.Bool(true),
+	})
 	if err != nil {
 		return nil, err
 	}

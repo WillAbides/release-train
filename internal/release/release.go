@@ -304,14 +304,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	}
 
 	prerelease := result.ReleaseVersion.Prerelease() != ""
-	rel, err := o.GithubClient.CreateRelease(ctx, o.repoOwner(), o.repoName(), &github.RepositoryRelease{
-		TagName:    &result.ReleaseTag,
-		Name:       &result.ReleaseTag,
-		Body:       &releaseNotes,
-		MakeLatest: github.String("legacy"),
-		Prerelease: &prerelease,
-		Draft:      github.Bool(true),
-	})
+	rel, err := o.GithubClient.CreateRelease(ctx, o.repoOwner(), o.repoName(), result.ReleaseTag, releaseNotes, prerelease)
 	if err != nil {
 		return nil, err
 	}
