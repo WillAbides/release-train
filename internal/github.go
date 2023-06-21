@@ -29,7 +29,7 @@ type GithubClient interface {
 	CompareCommits(ctx context.Context, owner, repo, base, head string) ([]string, error)
 	GenerateReleaseNotes(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error)
 	CreateRelease(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*RepoRelease, error)
-	UploadAsset(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error
+	UploadAsset(ctx context.Context, uploadURL, filename string) error
 	DeleteRelease(ctx context.Context, owner, repo string, id int64) error
 	PublishRelease(ctx context.Context, owner, repo string, id int64) error
 	GetPullRequest(ctx context.Context, owner, repo string, number int) (*github.PullRequest, error)
@@ -63,7 +63,7 @@ var _ GithubClient = &ghClient{}
 // UploadAsset is largely copied from github.Client.UploadReleaseAsset. It is modified to use uploadURL instead of
 // building it from releaseID so that we don't need to set upload url. It also accepts a filename instead of an
 // *os.File.
-func (g *ghClient) UploadAsset(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error {
+func (g *ghClient) UploadAsset(ctx context.Context, uploadURL, filename string) error {
 	re := regexp.MustCompile(`^(?P<base>.+/)repos/(?P<owner>[^/]+)/(?P<repo>[^/]+)/releases/(?P<id>\d+)/assets`)
 	matches := re.FindStringSubmatch(uploadURL)
 	if len(matches) != 5 {
@@ -95,14 +95,11 @@ func (g *ghClient) UploadAsset(ctx context.Context, uploadURL, filename string, 
 		return err
 	}
 
-	if opts == nil {
-		opts = &github.UploadOptions{}
-	}
-	if opts.Name == "" {
-		opts.Name = filepath.Base(file.Name())
+	opts := github.UploadOptions{
+		Name: filepath.Base(file.Name()),
 	}
 
-	_, _, err = g.Client.Repositories.UploadReleaseAsset(ctx, owner, repo, idInt, opts, file)
+	_, _, err = g.Client.Repositories.UploadReleaseAsset(ctx, owner, repo, idInt, &opts, file)
 	return err
 }
 
