@@ -14,8 +14,10 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v53/github"
 	"github.com/willabides/release-train-action/v3/internal"
+	"github.com/willabides/release-train-action/v3/internal/logging"
 	"github.com/willabides/release-train-action/v3/internal/next"
 	"github.com/willabides/release-train-action/v3/internal/prev"
+	"golang.org/x/exp/slog"
 	"golang.org/x/mod/modfile"
 )
 
@@ -271,7 +273,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		"ASSETS_DIR":         o.assetsDir(),
 	}
 
-	result.PrereleaseHookOutput, result.PrereleaseHookAborted, err = runPrereleaseHook(o.CheckoutDir, runEnv, o.PrereleaseHook)
+	result.PrereleaseHookOutput, result.PrereleaseHookAborted, err = runPrereleaseHook(ctx, o.CheckoutDir, runEnv, o.PrereleaseHook)
 	if err != nil {
 		return nil, fmt.Errorf("error from prerelease hook: %w", err)
 	}
@@ -377,7 +379,9 @@ func (o *Runner) tagRelease(releaseTag string) error {
 	return err
 }
 
-func runPrereleaseHook(dir string, env map[string]string, hook string) (stdout string, abort bool, _ error) {
+func runPrereleaseHook(ctx context.Context, dir string, env map[string]string, hook string) (stdout string, abort bool, _ error) {
+	logger := logging.GetLogger(ctx)
+	logger.Info("running prerelease hook")
 	if hook == "" {
 		return "", false, nil
 	}
@@ -391,8 +395,13 @@ func runPrereleaseHook(dir string, env map[string]string, hook string) (stdout s
 	cmd.Stdout = &stdoutBuf
 	err := cmd.Run()
 	if err != nil {
+		logger.Error("prerelease hook errored", slog.String("err", err.Error()))
 		exitErr := internal.AsExitErr(err)
 		if exitErr != nil {
+			logger.Error("prerelease hook exited with exitErr",
+				slog.String("stderr", string(exitErr.Stderr)),
+			)
+			logger.Error("prerelease has stdout", slog.String("stdout", stdoutBuf.String()))
 			err = errors.Join(err, errors.New(string(exitErr.Stderr)))
 			if exitErr.ExitCode() == 10 {
 				return stdoutBuf.String(), true, nil
