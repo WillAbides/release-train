@@ -39,14 +39,14 @@ func (a *actionInputHelper) Input() string {
 }
 
 var boolTemplate = template.Must(template.New("").Parse(`
-case "{{.Input}}":
+case "{{.Input}}" in
   true)
     set -- "$@" --{{.Flag}}
     ;;
   false) ;;
   "") ;;
   *)
-    echo "Input ${{.Name}} must be 'true' or 'false'. Got '{{.Input}}'." >&2
+    echo "Input {{.Name}} must be 'true' or 'false'. Got '{{.Input}}'." >&2
     exit 1
 	;;
 esac
