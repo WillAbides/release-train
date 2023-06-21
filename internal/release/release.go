@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/google/go-github/v53/github"
 	"github.com/willabides/release-train-action/v3/internal"
 	"github.com/willabides/release-train-action/v3/internal/next"
 	"github.com/willabides/release-train-action/v3/internal/prev"
@@ -203,10 +202,7 @@ func (o *Runner) getReleaseNotes(ctx context.Context, result *Result) (string, e
 	if result.FirstRelease {
 		return "", nil
 	}
-	return o.GithubClient.GenerateReleaseNotes(ctx, o.repoOwner(), o.repoName(), &github.GenerateNotesOptions{
-		TagName:         result.ReleaseTag,
-		PreviousTagName: &result.PreviousRef,
-	})
+	return o.GithubClient.GenerateReleaseNotes(ctx, o.repoOwner(), o.repoName(), result.ReleaseTag, result.PreviousRef)
 }
 
 func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {

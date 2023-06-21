@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/google/go-github/v53/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/willabides/release-train-action/v3/internal"
@@ -223,7 +222,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 				assert.Equal(t, repos.taggedCommits["third"], head)
 				return []string{repos.taggedCommits["first"], repos.taggedCommits["third"]}, nil
 			},
-			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error) {
+			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo, tag, prevTag string) (string, error) {
 				panic("GenerateReleaseNotes should not be called")
 			},
 			StubCreateRelease: func(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*internal.RepoRelease, error) {
@@ -427,12 +426,12 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 					{Number: 1, Labels: []string{internal.LabelMinor}},
 				}, nil
 			},
-			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error) {
+			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo, tag, prevTag string) (string, error) {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
-				assert.Equal(t, "v2.1.0", opts.TagName)
-				assert.Equal(t, "v2.0.0", *opts.PreviousTagName)
+				assert.Equal(t, "v2.1.0", tag)
+				assert.Equal(t, "v2.0.0", prevTag)
 				return "release notes", nil
 			},
 			StubCreateRelease: func(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*internal.RepoRelease, error) {
@@ -532,7 +531,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
 				return []internal.BasePull{{Number: 2, Labels: []string{internal.LabelBreaking}}}, nil
 			},
-			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error) {
+			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo, tag, prevTag string) (string, error) {
 				return "release notes", nil
 			},
 			StubCreateRelease: func(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*internal.RepoRelease, error) {
@@ -567,7 +566,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
 				return []internal.BasePull{{Number: 2, Labels: []string{internal.LabelBreaking}}}, nil
 			},
-			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error) {
+			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo, tag, prevTag string) (string, error) {
 				return "release notes", nil
 			},
 			StubCreateRelease: func(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*internal.RepoRelease, error) {
