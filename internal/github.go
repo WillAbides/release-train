@@ -26,7 +26,7 @@ type GithubClient interface {
 	CreateRelease(ctx context.Context, owner, repo string, release *github.RepositoryRelease) (*github.RepositoryRelease, error)
 	UploadAsset(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error
 	DeleteRelease(ctx context.Context, owner, repo string, id int64) error
-	EditRelease(ctx context.Context, owner, repo string, id int64, opts *github.RepositoryRelease) error
+	PublishRelease(ctx context.Context, owner, repo string, id int64) error
 	GetPullRequest(ctx context.Context, owner, repo string, number int) (*github.PullRequest, error)
 }
 
@@ -172,8 +172,10 @@ func (g *ghClient) DeleteRelease(ctx context.Context, owner, repo string, id int
 	return err
 }
 
-func (g *ghClient) EditRelease(ctx context.Context, owner, repo string, id int64, opts *github.RepositoryRelease) error {
-	_, _, err := g.Client.Repositories.EditRelease(ctx, owner, repo, id, opts)
+func (g *ghClient) PublishRelease(ctx context.Context, owner, repo string, id int64) error {
+	_, _, err := g.Client.Repositories.EditRelease(ctx, owner, repo, id, &github.RepositoryRelease{
+		Draft: github.Bool(false),
+	})
 	return err
 }
 
