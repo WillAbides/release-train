@@ -121,7 +121,7 @@ git tag head
 					UploadURL: "localhost",
 				}, nil
 			},
-			StubUploadAsset: func(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error {
+			StubUploadAsset: func(ctx context.Context, uploadURL, filename string) error {
 				t.Helper()
 				content, err := os.ReadFile(filename)
 				if !assert.NoError(t, err) {
@@ -576,7 +576,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 					UploadURL: "localhost",
 				}, nil
 			},
-			StubUploadAsset: func(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error {
+			StubUploadAsset: func(ctx context.Context, uploadURL, filename string) error {
 				return errors.New("upload error")
 			},
 			StubDeleteRelease: func(ctx context.Context, owner, repo string, id int64) error {

@@ -16,7 +16,7 @@ type GithubStub struct {
 	StubCompareCommits             func(ctx context.Context, owner, repo, base, head string) ([]string, error)
 	StubGenerateReleaseNotes       func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error)
 	StubCreateRelease              func(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*internal.RepoRelease, error)
-	StubUploadAsset                func(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error
+	StubUploadAsset                func(ctx context.Context, uploadURL, filename string) error
 	StubDeleteRelease              func(ctx context.Context, owner, repo string, id int64) error
 	StubPublishRelease             func(ctx context.Context, owner, repo string, id int64) error
 	StubGetPullRequest             func(ctx context.Context, owner, repo string, number int) (*github.PullRequest, error)
@@ -40,8 +40,8 @@ func (w *GithubStub) CreateRelease(ctx context.Context, owner, repo, tag, body s
 	return w.StubCreateRelease(ctx, owner, repo, tag, body, prerelease)
 }
 
-func (w *GithubStub) UploadAsset(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error {
-	return w.StubUploadAsset(ctx, uploadURL, filename, opts)
+func (w *GithubStub) UploadAsset(ctx context.Context, uploadURL, filename string) error {
+	return w.StubUploadAsset(ctx, uploadURL, filename)
 }
 
 func (w *GithubStub) DeleteRelease(ctx context.Context, owner, repo string, id int64) error {

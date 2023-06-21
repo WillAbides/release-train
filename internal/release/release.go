@@ -336,7 +336,7 @@ func (o *Runner) uploadAssets(ctx context.Context, uploadURL string) error {
 		return err
 	}
 	for _, asset := range assets {
-		err = o.GithubClient.UploadAsset(ctx, uploadURL, asset, nil)
+		err = o.GithubClient.UploadAsset(ctx, uploadURL, asset)
 		if err != nil {
 			return err
 		}
