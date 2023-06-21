@@ -19,11 +19,16 @@ type BasePull struct {
 	Labels []string
 }
 
+type RepoRelease struct {
+	ID        int64
+	UploadURL string
+}
+
 type GithubClient interface {
 	ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string) ([]BasePull, error)
 	CompareCommits(ctx context.Context, owner, repo, base, head string) ([]string, error)
 	GenerateReleaseNotes(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error)
-	CreateRelease(ctx context.Context, owner, repo string, release *github.RepositoryRelease) (*github.RepositoryRelease, error)
+	CreateRelease(ctx context.Context, owner, repo string, release *github.RepositoryRelease) (*RepoRelease, error)
 	UploadAsset(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error
 	DeleteRelease(ctx context.Context, owner, repo string, id int64) error
 	PublishRelease(ctx context.Context, owner, repo string, id int64) error
@@ -159,12 +164,15 @@ func (g *ghClient) GenerateReleaseNotes(ctx context.Context, owner, repo string,
 	return comp.Body, nil
 }
 
-func (g *ghClient) CreateRelease(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) (*github.RepositoryRelease, error) {
-	rel, _, err := g.Client.Repositories.CreateRelease(ctx, owner, repo, opts)
+func (g *ghClient) CreateRelease(ctx context.Context, owner, repo string, release *github.RepositoryRelease) (*RepoRelease, error) {
+	rel, _, err := g.Client.Repositories.CreateRelease(ctx, owner, repo, release)
 	if err != nil {
 		return nil, err
 	}
-	return rel, nil
+	return &RepoRelease{
+		ID:        rel.GetID(),
+		UploadURL: rel.GetUploadURL(),
+	}, nil
 }
 
 func (g *ghClient) DeleteRelease(ctx context.Context, owner, repo string, id int64) error {

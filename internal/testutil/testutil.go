@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/go-github/v53/github"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/willabides/release-train-action/v3/internal"
 )
 
@@ -16,7 +15,7 @@ type GithubStub struct {
 	StubListPullRequestsWithCommit func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error)
 	StubCompareCommits             func(ctx context.Context, owner, repo, base, head string) ([]string, error)
 	StubGenerateReleaseNotes       func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error)
-	StubCreateRelease              func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) (*github.RepositoryRelease, error)
+	StubCreateRelease              func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) (*internal.RepoRelease, error)
 	StubUploadAsset                func(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error
 	StubDeleteRelease              func(ctx context.Context, owner, repo string, id int64) error
 	StubPublishRelease             func(ctx context.Context, owner, repo string, id int64) error
@@ -37,7 +36,7 @@ func (w *GithubStub) GenerateReleaseNotes(ctx context.Context, owner, repo strin
 	return w.StubGenerateReleaseNotes(ctx, owner, repo, opts)
 }
 
-func (w *GithubStub) CreateRelease(ctx context.Context, owner, repo string, release *github.RepositoryRelease) (*github.RepositoryRelease, error) {
+func (w *GithubStub) CreateRelease(ctx context.Context, owner, repo string, release *github.RepositoryRelease) (*internal.RepoRelease, error) {
 	return w.StubCreateRelease(ctx, owner, repo, release)
 }
 
@@ -81,11 +80,4 @@ func MockListPullRequestsWithCommit(t *testing.T, calls []ListPullRequestsWithCo
 		calls = append(calls[:idx], calls[idx+1:]...)
 		return call.Result, call.Err
 	}
-}
-
-func MustNewPull(t *testing.T, number int, labels ...string) internal.Pull {
-	t.Helper()
-	p, err := internal.NewPull(number, nil, labels...)
-	require.NoError(t, err)
-	return *p
 }
