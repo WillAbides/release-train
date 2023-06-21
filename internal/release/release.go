@@ -257,7 +257,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 
 	err = os.MkdirAll(o.assetsDir(), 0o700)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create assets dir: %w", err)
 	}
 
 	runEnv := map[string]string{
@@ -273,7 +273,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 
 	result.PrereleaseHookOutput, result.PrereleaseHookAborted, err = runPrereleaseHook(o.CheckoutDir, runEnv, o.PrereleaseHook)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error from prerelease hook: %w", err)
 	}
 	if result.PrereleaseHookAborted {
 		return result, nil
@@ -282,13 +282,13 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	for _, mf := range o.GoModFiles {
 		err = o.runGoValidation(mf, result)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error from runGoValidation: %w", err)
 		}
 	}
 
 	err = o.tagRelease(result.ReleaseTag)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error from tagRelease: %w", err)
 	}
 	teardowns = append(teardowns, func() error {
 		_, e := internal.RunCmd(o.CheckoutDir, nil, "git", "push", o.PushRemote, "--delete", result.ReleaseTag)
@@ -303,7 +303,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 
 	releaseNotes, err := o.getReleaseNotes(ctx, result)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error from getReleaseNotes: %w", err)
 	}
 
 	prerelease := result.ReleaseVersion.Prerelease() != ""
@@ -316,7 +316,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		Draft:      github.Bool(true),
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error from CreateRelease: %w", err)
 	}
 
 	teardowns = append(teardowns, func() error {
@@ -325,14 +325,14 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 
 	err = o.uploadAssets(ctx, *rel.UploadURL)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error from uploadAssets: %w", err)
 	}
 
 	err = o.GithubClient.EditRelease(ctx, o.repoOwner(), o.repoName(), *rel.ID, &github.RepositoryRelease{
 		Draft: github.Bool(false),
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error from EditRelease: %w", err)
 	}
 
 	result.CreatedRelease = true
