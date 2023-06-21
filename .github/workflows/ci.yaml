@@ -62,6 +62,8 @@ jobs:
           pre-release-hook: |
             #!/bin/sh
             set -ex
+            echo RELEASE_VERSION="$RELEASE_VERSION"
+            echo RELEASE_TAG="$RELEASE_TAG"
             script/bindown dependency update-vars release-train \
               --set version="$RELEASE_VERSION" \
               --skipchecksums
