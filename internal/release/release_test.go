@@ -522,7 +522,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			Repo:         "orgName/repoName",
 			GithubClient: &githubClient,
 		}).Run(ctx)
-		require.ErrorContains(t, err, "api error")
+		require.EqualError(t, err, "api error")
 	})
 
 	t.Run("release error deletes tag", func(t *testing.T) {
@@ -553,7 +553,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			CreateRelease: true,
 		}
 		_, err := runner.Run(ctx)
-		require.ErrorContains(t, err, "release error")
+		require.EqualError(t, err, "release error")
 		ok, err := localTagExists(repos.origin, "v3.0.0")
 		require.NoError(t, err)
 		require.False(t, ok)
@@ -731,7 +731,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			GithubClient: &githubClient,
 			V0:           true,
 		}).Run(ctx)
-		require.ErrorContains(t, err, `v0 flag is set, but previous version "1.0.0" has major version > 0`)
+		require.EqualError(t, err, `v0 flag is set, but previous version "1.0.0" has major version > 0`)
 	})
 
 	t.Run("iterates prerelease", func(t *testing.T) {

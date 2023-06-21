@@ -14,10 +14,8 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v53/github"
 	"github.com/willabides/release-train-action/v3/internal"
-	"github.com/willabides/release-train-action/v3/internal/logging"
 	"github.com/willabides/release-train-action/v3/internal/next"
 	"github.com/willabides/release-train-action/v3/internal/prev"
-	"golang.org/x/exp/slog"
 	"golang.org/x/mod/modfile"
 )
 
@@ -211,18 +209,13 @@ func (o *Runner) getReleaseNotes(ctx context.Context, result *Result) (string, e
 }
 
 func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
-	logger := logging.GetLogger(ctx)
 	var teardowns []func() error
 	defer func() {
 		if errOut == nil {
 			return
 		}
 		for i := len(teardowns) - 1; i >= 0; i-- {
-			e := teardowns[i]()
-			if e == nil {
-				continue
-			}
-			errOut = errors.Join(errOut, fmt.Errorf("teardown failed: %w", e))
+			errOut = errors.Join(errOut, teardowns[i]())
 		}
 	}()
 	createTag := o.CreateTag
@@ -236,16 +229,15 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	}
 	shallow, err := internal.RunCmd(o.CheckoutDir, nil, "git", "rev-parse", "--is-shallow-repository")
 	if err != nil {
-		return nil, fmt.Errorf("git rev-parse --is-shallow-repository: %w", err)
+		return nil, err
 	}
 	if shallow == "true" {
 		return nil, fmt.Errorf("shallow clones are not supported")
 	}
 	result, err := o.Next(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("error from o.Next: %w", err)
+		return nil, err
 	}
-	logger.Info("o.Next returned", slog.Any("result", result))
 
 	if result.ReleaseVersion == nil || !createTag {
 		return result, nil
@@ -261,7 +253,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 
 	err = os.MkdirAll(o.assetsDir(), 0o700)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create assets dir: %w", err)
+		return nil, err
 	}
 
 	runEnv := map[string]string{
@@ -275,9 +267,9 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		"ASSETS_DIR":         o.assetsDir(),
 	}
 
-	result.PrereleaseHookOutput, result.PrereleaseHookAborted, err = runPrereleaseHook(ctx, o.CheckoutDir, runEnv, o.PrereleaseHook)
+	result.PrereleaseHookOutput, result.PrereleaseHookAborted, err = runPrereleaseHook(o.CheckoutDir, runEnv, o.PrereleaseHook)
 	if err != nil {
-		return nil, fmt.Errorf("error from prerelease hook: %w", err)
+		return nil, err
 	}
 	if result.PrereleaseHookAborted {
 		return result, nil
@@ -286,13 +278,13 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	for _, mf := range o.GoModFiles {
 		err = o.runGoValidation(mf, result)
 		if err != nil {
-			return nil, fmt.Errorf("error from runGoValidation: %w", err)
+			return nil, err
 		}
 	}
 
 	err = o.tagRelease(result.ReleaseTag)
 	if err != nil {
-		return nil, fmt.Errorf("error from tagRelease: %w", err)
+		return nil, err
 	}
 	teardowns = append(teardowns, func() error {
 		_, e := internal.RunCmd(o.CheckoutDir, nil, "git", "push", o.PushRemote, "--delete", result.ReleaseTag)
@@ -307,7 +299,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 
 	releaseNotes, err := o.getReleaseNotes(ctx, result)
 	if err != nil {
-		return nil, fmt.Errorf("error from getReleaseNotes: %w", err)
+		return nil, err
 	}
 
 	prerelease := result.ReleaseVersion.Prerelease() != ""
@@ -320,7 +312,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		Draft:      github.Bool(true),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error from CreateRelease: %w", err)
+		return nil, err
 	}
 
 	teardowns = append(teardowns, func() error {
@@ -329,14 +321,14 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 
 	err = o.uploadAssets(ctx, *rel.UploadURL)
 	if err != nil {
-		return nil, fmt.Errorf("error from uploadAssets: %w", err)
+		return nil, err
 	}
 
 	err = o.GithubClient.EditRelease(ctx, o.repoOwner(), o.repoName(), *rel.ID, &github.RepositoryRelease{
 		Draft: github.Bool(false),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error from EditRelease: %w", err)
+		return nil, err
 	}
 
 	result.CreatedRelease = true
@@ -381,30 +373,22 @@ func (o *Runner) tagRelease(releaseTag string) error {
 	return err
 }
 
-func runPrereleaseHook(ctx context.Context, dir string, env map[string]string, hook string) (stdout string, abort bool, _ error) {
-	logger := logging.GetLogger(ctx)
-	logger.Info("running prerelease hook", slog.Any("env", env))
+func runPrereleaseHook(dir string, env map[string]string, hook string) (stdout string, abort bool, _ error) {
 	if hook == "" {
 		return "", false, nil
 	}
-	var stdoutBuf, stderrBuf bytes.Buffer
+	var stdoutBuf bytes.Buffer
 	cmd := exec.Command("sh", "-c", hook)
 	cmd.Dir = dir
 	cmd.Env = os.Environ()
 	for k, v := range env {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
-	cmd.Stderr = &stderrBuf
 	cmd.Stdout = &stdoutBuf
 	err := cmd.Run()
 	if err != nil {
-		logger.Error("prerelease hook errored", slog.String("err", err.Error()))
 		exitErr := internal.AsExitErr(err)
 		if exitErr != nil {
-			logger.Error("prerelease hook exited with exitErr",
-				slog.String("stderr", stderrBuf.String()),
-			)
-			logger.Error("prerelease has stdout", slog.String("stdout", stdoutBuf.String()))
 			err = errors.Join(err, errors.New(string(exitErr.Stderr)))
 			if exitErr.ExitCode() == 10 {
 				return stdoutBuf.String(), true, nil
