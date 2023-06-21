@@ -6,7 +6,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/google/go-github/v53/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/willabides/release-train-action/v3/internal"
 )
@@ -19,7 +18,7 @@ type GithubStub struct {
 	StubUploadAsset                func(ctx context.Context, uploadURL, filename string) error
 	StubDeleteRelease              func(ctx context.Context, owner, repo string, id int64) error
 	StubPublishRelease             func(ctx context.Context, owner, repo string, id int64) error
-	StubGetPullRequest             func(ctx context.Context, owner, repo string, number int) (*github.PullRequest, error)
+	StubGetPullRequest             func(ctx context.Context, owner, repo string, number int) (*internal.BasePull, error)
 }
 
 var _ internal.GithubClient = &GithubStub{}
@@ -52,7 +51,7 @@ func (w *GithubStub) PublishRelease(ctx context.Context, owner, repo string, id 
 	return w.StubPublishRelease(ctx, owner, repo, id)
 }
 
-func (w *GithubStub) GetPullRequest(ctx context.Context, owner, repo string, number int) (*github.PullRequest, error) {
+func (w *GithubStub) GetPullRequest(ctx context.Context, owner, repo string, number int) (*internal.BasePull, error) {
 	return w.StubGetPullRequest(ctx, owner, repo, number)
 }
 
