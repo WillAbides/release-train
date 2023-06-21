@@ -11,8 +11,10 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/sethvargo/go-githubactions"
 	"github.com/willabides/release-train-action/v3/internal"
+	"github.com/willabides/release-train-action/v3/internal/logging"
 	"github.com/willabides/release-train-action/v3/internal/labelcheck"
 	"github.com/willabides/release-train-action/v3/internal/release"
+	"golang.org/x/exp/slog"
 	"gopkg.in/yaml.v3"
 )
 
@@ -37,6 +39,7 @@ type rootCmd struct {
 	Tempdir        string            `help:"The prefix to use with mktemp to create a temporary directory."`
 	GithubApiUrl   string            `action:"-" help:"${github_api_url_help}" default:"${github_api_url_default}"`
 	OutputFormat   string            `action:"-" default:"json" help:"${output_format_help}" enum:"json,action"`
+	Debug          bool              `action:"-" help:"${debug_help}"`
 }
 
 func (c *rootCmd) GithubClient(ctx context.Context) (internal.GithubClient, error) {
@@ -44,6 +47,17 @@ func (c *rootCmd) GithubClient(ctx context.Context) (internal.GithubClient, erro
 }
 
 func (c *rootCmd) Run(ctx context.Context, kongCtx *kong.Context) error {
+	slogOpts := slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}
+	if c.Debug {
+		slogOpts.Level = slog.LevelDebug
+	}
+	var logHandler slog.Handler = slog.NewTextHandler(os.Stderr, &slogOpts)
+	if c.OutputFormat == "action" {
+		logHandler = logging.NewActionHandler(os.Stdout, &slogOpts)
+	}
+	ctx = logging.WithLogger(ctx, slog.New(logHandler))
 	if c.GenerateAction {
 		return c.generateAction(kongCtx)
 	}
@@ -64,6 +78,8 @@ func (c *rootCmd) generateAction(kongCtx *kong.Context) error {
 }
 
 func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
+	logger := logging.GetLogger(ctx)
+	logger.Info("starting runRelease")
 	ghClient, err := c.GithubClient(ctx)
 	if err != nil {
 		return err
