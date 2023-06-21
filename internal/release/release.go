@@ -383,7 +383,7 @@ func (o *Runner) tagRelease(releaseTag string) error {
 
 func runPrereleaseHook(ctx context.Context, dir string, env map[string]string, hook string) (stdout string, abort bool, _ error) {
 	logger := logging.GetLogger(ctx)
-	logger.Info("running prerelease hook")
+	logger.Info("running prerelease hook", slog.Any("env", env))
 	if hook == "" {
 		return "", false, nil
 	}

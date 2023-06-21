@@ -62,7 +62,6 @@ jobs:
           pre-release-hook: |
             #!/bin/sh
             set -ex
-            env
             script/bindown dependency update-vars release-train \
               --set version="$RELEASE_VERSION" \
               --skipchecksums
