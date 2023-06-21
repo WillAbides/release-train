@@ -55,3 +55,4 @@ release_ref_help: |
 label_help: |
   PR label alias in the form of "<alias>=<label>" where <label> is a canonical label.
 output_format_help: Output either json our GitHub action output.
+debug_help: Enable debug logging.
