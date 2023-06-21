@@ -140,12 +140,11 @@ git tag head
 				}
 				return nil
 			},
-			StubEditRelease: func(ctx context.Context, owner, repo string, id int64, opts *github.RepositoryRelease) error {
+			StubPublishRelease: func(ctx context.Context, owner, repo string, id int64) error {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
 				assert.Equal(t, int64(1), id)
-				assert.Equal(t, false, *opts.Draft)
 				return nil
 			},
 		}
@@ -240,12 +239,11 @@ echo bar > "$ASSETS_DIR/bar.txt"
 					UploadURL: github.String("localhost"),
 				}, nil
 			},
-			StubEditRelease: func(ctx context.Context, owner, repo string, id int64, opts *github.RepositoryRelease) error {
+			StubPublishRelease: func(ctx context.Context, owner, repo string, id int64) error {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
 				assert.Equal(t, int64(1), id)
-				assert.Equal(t, false, *opts.Draft)
 				return nil
 			},
 		}
@@ -450,12 +448,11 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 					UploadURL: github.String("localhost"),
 				}, nil
 			},
-			StubEditRelease: func(ctx context.Context, owner, repo string, id int64, opts *github.RepositoryRelease) error {
+			StubPublishRelease: func(ctx context.Context, owner, repo string, id int64) error {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
 				assert.Equal(t, int64(1), id)
-				assert.Equal(t, false, *opts.Draft)
 				return nil
 			},
 		}

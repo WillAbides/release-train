@@ -124,6 +124,7 @@ func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
 		TempDir:        tempDir,
 		V0:             c.V0,
 		ReleaseRefs:    c.ReleaseRef,
+		CheckPR:        c.CheckPR,
 
 		GithubClient: ghClient,
 	}

@@ -35,6 +35,7 @@ type Runner struct {
 	TempDir        string
 	ReleaseRefs    []string
 	LabelAliases   map[string]string
+	CheckPR        int
 	GithubClient   internal.GithubClient
 }
 
@@ -324,9 +325,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		return nil, err
 	}
 
-	err = o.GithubClient.EditRelease(ctx, o.repoOwner(), o.repoName(), *rel.ID, &github.RepositoryRelease{
-		Draft: github.Bool(false),
-	})
+	err = o.GithubClient.PublishRelease(ctx, o.repoOwner(), o.repoName(), *rel.ID)
 	if err != nil {
 		return nil, err
 	}

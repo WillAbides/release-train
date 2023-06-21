@@ -19,7 +19,7 @@ type GithubStub struct {
 	StubCreateRelease              func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) (*github.RepositoryRelease, error)
 	StubUploadAsset                func(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error
 	StubDeleteRelease              func(ctx context.Context, owner, repo string, id int64) error
-	StubEditRelease                func(ctx context.Context, owner, repo string, id int64, opts *github.RepositoryRelease) error
+	StubPublishRelease             func(ctx context.Context, owner, repo string, id int64) error
 	StubGetPullRequest             func(ctx context.Context, owner, repo string, number int) (*github.PullRequest, error)
 }
 
@@ -49,8 +49,8 @@ func (w *GithubStub) DeleteRelease(ctx context.Context, owner, repo string, id i
 	return w.StubDeleteRelease(ctx, owner, repo, id)
 }
 
-func (w *GithubStub) EditRelease(ctx context.Context, owner, repo string, id int64, opts *github.RepositoryRelease) error {
-	return w.StubEditRelease(ctx, owner, repo, id, opts)
+func (w *GithubStub) PublishRelease(ctx context.Context, owner, repo string, id int64) error {
+	return w.StubPublishRelease(ctx, owner, repo, id)
 }
 
 func (w *GithubStub) GetPullRequest(ctx context.Context, owner, repo string, number int) (*github.PullRequest, error) {
