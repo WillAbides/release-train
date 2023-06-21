@@ -385,13 +385,14 @@ func runPrereleaseHook(ctx context.Context, dir string, env map[string]string, h
 	if hook == "" {
 		return "", false, nil
 	}
-	var stdoutBuf bytes.Buffer
+	var stdoutBuf, stderrBuf bytes.Buffer
 	cmd := exec.Command("sh", "-c", hook)
 	cmd.Dir = dir
 	cmd.Env = os.Environ()
 	for k, v := range env {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
+	cmd.Stderr = &stderrBuf
 	cmd.Stdout = &stdoutBuf
 	err := cmd.Run()
 	if err != nil {
@@ -399,7 +400,7 @@ func runPrereleaseHook(ctx context.Context, dir string, env map[string]string, h
 		exitErr := internal.AsExitErr(err)
 		if exitErr != nil {
 			logger.Error("prerelease hook exited with exitErr",
-				slog.String("stderr", string(exitErr.Stderr)),
+				slog.String("stderr", stderrBuf.String()),
 			)
 			logger.Error("prerelease has stdout", slog.String("stdout", stdoutBuf.String()))
 			err = errors.Join(err, errors.New(string(exitErr.Stderr)))
