@@ -11,7 +11,23 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-type Handler struct {
+type contextKey string
+
+const loggerKey contextKey = "logger"
+
+func WithLogger(ctx context.Context, logger *slog.Logger) context.Context {
+	return context.WithValue(ctx, loggerKey, logger)
+}
+
+func GetLogger(ctx context.Context) *slog.Logger {
+	logger, ok := ctx.Value(loggerKey).(*slog.Logger)
+	if !ok {
+		return slog.New(slog.NewTextHandler(io.Discard, nil))
+	}
+	return logger
+}
+
+type ActionHandler struct {
 	opts    slog.HandlerOptions
 	mux     sync.Mutex
 	w       io.Writer
@@ -19,7 +35,7 @@ type Handler struct {
 	handler slog.Handler
 }
 
-func NewHandler(w io.Writer, opts *slog.HandlerOptions) *Handler {
+func NewActionHandler(w io.Writer, opts *slog.HandlerOptions) *ActionHandler {
 	if opts == nil {
 		opts = &slog.HandlerOptions{}
 	}
@@ -38,7 +54,7 @@ func NewHandler(w io.Writer, opts *slog.HandlerOptions) *Handler {
 		Level:       opts.Level,
 		ReplaceAttr: replace,
 	})
-	return &Handler{
+	return &ActionHandler{
 		opts:    *opts,
 		w:       w,
 		buf:     &buf,
@@ -46,12 +62,12 @@ func NewHandler(w io.Writer, opts *slog.HandlerOptions) *Handler {
 	}
 }
 
-func (h *Handler) Enabled(ctx context.Context, level slog.Level) bool {
+func (h *ActionHandler) Enabled(ctx context.Context, level slog.Level) bool {
 	return h.handler.Enabled(ctx, level)
 }
 
 //nolint:gocritic // implementation of slog.Handler
-func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
+func (h *ActionHandler) Handle(ctx context.Context, record slog.Record) error {
 	h.mux.Lock()
 	defer h.mux.Unlock()
 	var err error
@@ -99,15 +115,15 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 	return err
 }
 
-func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return &Handler{
+func (h *ActionHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return &ActionHandler{
 		opts:    h.opts,
 		handler: h.handler.WithAttrs(attrs),
 	}
 }
 
-func (h *Handler) WithGroup(name string) slog.Handler {
-	return &Handler{
+func (h *ActionHandler) WithGroup(name string) slog.Handler {
+	return &ActionHandler{
 		opts:    h.opts,
 		handler: h.handler.WithGroup(name),
 	}
