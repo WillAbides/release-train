@@ -84,7 +84,7 @@ func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
 			logger.Error(errOut.Error())
 		}
 	}()
-	logger.Info("starting runRelease")
+	logger.Debug("starting runRelease")
 	ghClient, err := c.GithubClient(ctx)
 	if err != nil {
 		return err
