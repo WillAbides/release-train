@@ -215,7 +215,11 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 			return
 		}
 		for i := len(teardowns) - 1; i >= 0; i-- {
-			errOut = errors.Join(errOut, teardowns[i]())
+			e := teardowns[i]()
+			if e == nil {
+				continue
+			}
+			errOut = errors.Join(errOut, fmt.Errorf("teardown failed: %w", e))
 		}
 	}()
 	createTag := o.CreateTag
@@ -229,7 +233,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	}
 	shallow, err := internal.RunCmd(o.CheckoutDir, nil, "git", "rev-parse", "--is-shallow-repository")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("git rev-parse --is-shallow-repository: %w", err)
 	}
 	if shallow == "true" {
 		return nil, fmt.Errorf("shallow clones are not supported")

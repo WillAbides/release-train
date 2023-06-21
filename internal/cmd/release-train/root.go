@@ -128,6 +128,8 @@ func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
 		GithubClient: ghClient,
 	}
 
+	logger.Info("running runner.Run", slog.Any("runner", runner))
+
 	result, err := runner.Run(ctx)
 	if err != nil {
 		return err
