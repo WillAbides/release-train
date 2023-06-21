@@ -79,6 +79,11 @@ func (c *rootCmd) generateAction(kongCtx *kong.Context) error {
 
 func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
 	logger := logging.GetLogger(ctx)
+	defer func() {
+		if errOut != nil {
+			logger.Error(errOut.Error())
+		}
+	}()
 	logger.Info("starting runRelease")
 	ghClient, err := c.GithubClient(ctx)
 	if err != nil {
