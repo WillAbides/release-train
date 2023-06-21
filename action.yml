@@ -137,11 +137,11 @@ runs:
         set -- --output-format action --debug
 
         if [ -n "${{ inputs.repo }}" ]; then
-          set -- "$@" --repo "${{ inputs.repo }}"
+          set -- "$@" --repo '${{ inputs.repo }}'
         fi
 
         if [ -n "${{ inputs.check-pr }}" ]; then
-          set -- "$@" --check-pr "${{ inputs.check-pr }}"
+          set -- "$@" --check-pr '${{ inputs.check-pr }}'
         fi
 
         while IFS= read -r line; do
@@ -152,15 +152,15 @@ runs:
         EOF
 
         if [ -n "${{ inputs.checkout-dir }}" ]; then
-          set -- "$@" --checkout-dir "${{ inputs.checkout-dir }}"
+          set -- "$@" --checkout-dir '${{ inputs.checkout-dir }}'
         fi
 
         if [ -n "${{ inputs.ref }}" ]; then
-          set -- "$@" --ref "${{ inputs.ref }}"
+          set -- "$@" --ref '${{ inputs.ref }}'
         fi
 
         if [ -n "${{ inputs.github-token }}" ]; then
-          set -- "$@" --github-token "${{ inputs.github-token }}"
+          set -- "$@" --github-token '${{ inputs.github-token }}'
         fi
 
         case "${{ inputs.create-tag }}" in
@@ -188,7 +188,7 @@ runs:
         esac
 
         if [ -n "${{ inputs.tag-prefix }}" ]; then
-          set -- "$@" --tag-prefix "${{ inputs.tag-prefix }}"
+          set -- "$@" --tag-prefix '${{ inputs.tag-prefix }}'
         fi
 
         case "${{ inputs.v0 }}" in
@@ -204,11 +204,11 @@ runs:
         esac
 
         if [ -n "${{ inputs.initial-release-tag }}" ]; then
-          set -- "$@" --initial-tag "${{ inputs.initial-release-tag }}"
+          set -- "$@" --initial-tag '${{ inputs.initial-release-tag }}'
         fi
 
         if [ -n "${{ inputs.pre-release-hook }}" ]; then
-          set -- "$@" --pre-release-hook "${{ inputs.pre-release-hook }}"
+          set -- "$@" --pre-release-hook '${{ inputs.pre-release-hook }}'
         fi
 
         while IFS= read -r line; do
@@ -226,7 +226,7 @@ runs:
         EOF
 
         if [ -n "${{ inputs.tempdir }}" ]; then
-          set -- "$@" --tempdir "${{ inputs.tempdir }}"
+          set -- "$@" --tempdir '${{ inputs.tempdir }}'
         fi
 
         "$RELEASE_TRAIN_BIN" "$@"
