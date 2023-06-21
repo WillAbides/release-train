@@ -317,15 +317,15 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	}
 
 	teardowns = append(teardowns, func() error {
-		return o.GithubClient.DeleteRelease(ctx, o.repoOwner(), o.repoName(), *rel.ID)
+		return o.GithubClient.DeleteRelease(ctx, o.repoOwner(), o.repoName(), rel.ID)
 	})
 
-	err = o.uploadAssets(ctx, *rel.UploadURL)
+	err = o.uploadAssets(ctx, rel.UploadURL)
 	if err != nil {
 		return nil, err
 	}
 
-	err = o.GithubClient.PublishRelease(ctx, o.repoOwner(), o.repoName(), *rel.ID)
+	err = o.GithubClient.PublishRelease(ctx, o.repoOwner(), o.repoName(), rel.ID)
 	if err != nil {
 		return nil, err
 	}
