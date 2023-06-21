@@ -87,11 +87,11 @@ func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
 	logger.Info("starting runRelease")
 	ghClient, err := c.GithubClient(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("error creating github client: %w", err)
 	}
 	tempDir, err := os.MkdirTemp(c.Tempdir, "release-train-*")
 	if err != nil {
-		return err
+		return fmt.Errorf("error creating temp dir: %w", err)
 	}
 	defer func() {
 		errOut = errors.Join(errOut, os.RemoveAll(tempDir))
