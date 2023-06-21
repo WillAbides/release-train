@@ -240,7 +240,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	}
 	result, err := o.Next(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error from o.Next: %w", err)
 	}
 
 	if result.ReleaseVersion == nil || !createTag {
