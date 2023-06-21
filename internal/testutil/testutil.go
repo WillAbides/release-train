@@ -15,7 +15,7 @@ type GithubStub struct {
 	StubListPullRequestsWithCommit func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error)
 	StubCompareCommits             func(ctx context.Context, owner, repo, base, head string) ([]string, error)
 	StubGenerateReleaseNotes       func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error)
-	StubCreateRelease              func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) (*internal.RepoRelease, error)
+	StubCreateRelease              func(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*internal.RepoRelease, error)
 	StubUploadAsset                func(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error
 	StubDeleteRelease              func(ctx context.Context, owner, repo string, id int64) error
 	StubPublishRelease             func(ctx context.Context, owner, repo string, id int64) error
@@ -36,8 +36,8 @@ func (w *GithubStub) GenerateReleaseNotes(ctx context.Context, owner, repo strin
 	return w.StubGenerateReleaseNotes(ctx, owner, repo, opts)
 }
 
-func (w *GithubStub) CreateRelease(ctx context.Context, owner, repo string, release *github.RepositoryRelease) (*internal.RepoRelease, error) {
-	return w.StubCreateRelease(ctx, owner, repo, release)
+func (w *GithubStub) CreateRelease(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*internal.RepoRelease, error) {
+	return w.StubCreateRelease(ctx, owner, repo, tag, body, prerelease)
 }
 
 func (w *GithubStub) UploadAsset(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error {
