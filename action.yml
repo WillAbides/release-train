@@ -163,26 +163,26 @@ runs:
           set -- "$@" --github-token "${{ inputs.github-token }}"
         fi
 
-        case "${{ inputs.create-tag }}":
+        case "${{ inputs.create-tag }}" in
           true)
             set -- "$@" --create-tag
             ;;
           false) ;;
           "") ;;
           *)
-            echo "Input $create-tag must be 'true' or 'false'. Got '${{ inputs.create-tag }}'." >&2
+            echo "Input create-tag must be 'true' or 'false'. Got '${{ inputs.create-tag }}'." >&2
             exit 1
         	;;
         esac
 
-        case "${{ inputs.create-release }}":
+        case "${{ inputs.create-release }}" in
           true)
             set -- "$@" --create-release
             ;;
           false) ;;
           "") ;;
           *)
-            echo "Input $create-release must be 'true' or 'false'. Got '${{ inputs.create-release }}'." >&2
+            echo "Input create-release must be 'true' or 'false'. Got '${{ inputs.create-release }}'." >&2
             exit 1
         	;;
         esac
@@ -191,14 +191,14 @@ runs:
           set -- "$@" --tag-prefix "${{ inputs.tag-prefix }}"
         fi
 
-        case "${{ inputs.v0 }}":
+        case "${{ inputs.v0 }}" in
           true)
             set -- "$@" --v0
             ;;
           false) ;;
           "") ;;
           *)
-            echo "Input $v0 must be 'true' or 'false'. Got '${{ inputs.v0 }}'." >&2
+            echo "Input v0 must be 'true' or 'false'. Got '${{ inputs.v0 }}'." >&2
             exit 1
         	;;
         esac
