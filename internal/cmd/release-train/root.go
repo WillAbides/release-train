@@ -11,35 +11,32 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/sethvargo/go-githubactions"
 	"github.com/willabides/release-train-action/v3/internal"
-	"github.com/willabides/release-train-action/v3/internal/actionlogger"
 	"github.com/willabides/release-train-action/v3/internal/labelcheck"
 	"github.com/willabides/release-train-action/v3/internal/release"
-	"golang.org/x/exp/slog"
 	"gopkg.in/yaml.v3"
 )
 
 type rootCmd struct {
-	Version        kong.VersionFlag
-	Action         bool              `kong:"help=${action_help}"`
-	GenerateAction bool              `kong:"hidden,help=${generate_action_help}"`
-	CheckPR        int               `kong:"help=${check_pr_help}"`
-	CheckoutDir    string            `kong:"short=C,default='.',help=${checkout_dir_help}"`
-	Label          map[string]string `kong:"help=${label_help}"`
-	Repo           string            `kong:"help='Github repository in the form of owner/repo.'"`
-	Ref            string            `kong:"default=HEAD,help=${ref_help}"`
-	CreateTag      bool              `kong:"help=${create_tag_help}"`
-	CreateRelease  bool              `kong:"help=${create_release_help}"`
-	ReleaseRef     []string          `kong:"placeholder=<branch>,help=${release_ref_help}"`
-	GoModFile      []string          `kong:"placeholder=<filepath>,help=${go_mod_file_help}"`
-	InitialTag     string            `kong:"help=${initial_tag_help},default=${initial_tag_default}"`
-	PreReleaseHook string            `kong:"placeholder=<command>,help=${pre_release_hook_help}"`
-	TagPrefix      string            `kong:"default=v,help=${tag_prefix_help}"`
-	V0             bool              `kong:"name=v0,help=${v0_help}"`
-	PushRemote     string            `kong:"default=origin,help='The git remote to push to.'"`
-	Tempdir        string            `kong:"help='The prefix to use with mktemp to create a temporary directory.'"`
-
-	GithubToken  string `kong:"hidden,env=GITHUB_TOKEN,help=${github_token_help}"`
-	GithubApiUrl string `kong:"help=${github_api_url_help},default=${github_api_url_default}"`
+	Version        kong.VersionFlag  `action:"-"`
+	GenerateAction bool              `hidden:"true" help:"${generate_action_help}"`
+	Repo           string            `action:",${{ github.repository }}" help:"Github repository in the form of owner/repo."`
+	CheckPR        int               `action:"check-pr,${{ github.event.number }}" help:"${check_pr_help}"`
+	Label          map[string]string `action:"labels" help:"${label_help}" placeholder:"<alias>=<label>;..."`
+	CheckoutDir    string            `action:",${{ github.workspace }}" short:"C" default:"." help:"${checkout_dir_help}"`
+	Ref            string            `action:",${{ github.ref }}" default:"HEAD" help:"${ref_help}"`
+	GithubToken    string            `action:"github-token,${{ github.token }}" hidden:"true" env:"GITHUB_TOKEN" help:"${github_token_help}"`
+	CreateTag      bool              `help:"${create_tag_help}"`
+	CreateRelease  bool              `help:"${create_release_help}"`
+	TagPrefix      string            `default:"v" help:"${tag_prefix_help}"`
+	V0             bool              `name:"v0" help:"${v0_help}"`
+	InitialTag     string            `action:"initial-release-tag" help:"${initial_tag_help}" default:"${initial_tag_default}"`
+	PreReleaseHook string            `placeholder:"<command>" help:"${pre_release_hook_help}"`
+	GoModFile      []string          `action:"validate-go-module" placeholder:"<filepath>" help:"${go_mod_file_help}"`
+	ReleaseRef     []string          `action:"release-refs" placeholder:"<branch>" help:"${release_ref_help}"`
+	PushRemote     string            `action:"-" default:"origin" help:"The git remote to push to."`
+	Tempdir        string            `help:"The prefix to use with mktemp to create a temporary directory."`
+	GithubApiUrl   string            `action:"-" help:"${github_api_url_help}" default:"${github_api_url_default}"`
+	OutputFormat   string            `action:"-" default:"json" help:"${output_format_help}" enum:"json,action"`
 }
 
 func (c *rootCmd) GithubClient(ctx context.Context) (internal.GithubClient, error) {
@@ -50,9 +47,6 @@ func (c *rootCmd) Run(ctx context.Context, kongCtx *kong.Context) error {
 	if c.GenerateAction {
 		return c.generateAction(kongCtx)
 	}
-	if c.Action {
-		return c.runAction(ctx, kongCtx)
-	}
 	if c.CheckPR != 0 {
 		return c.runCheckPR(ctx)
 	}
@@ -62,32 +56,11 @@ func (c *rootCmd) Run(ctx context.Context, kongCtx *kong.Context) error {
 func (c *rootCmd) generateAction(kongCtx *kong.Context) error {
 	enc := yaml.NewEncoder(os.Stdout)
 	enc.SetIndent(2)
-	return enc.Encode(getAction(kongCtx))
-}
-
-func (c *rootCmd) runAction(ctx context.Context, kongCtx *kong.Context) (errOut error) {
-	actionCtx := &actionContext{
-		action:   getAction(kongCtx),
-		ghAction: githubactions.New(),
-		logger: slog.New(actionlogger.NewHandler(os.Stdout, &slog.HandlerOptions{
-			Level: slog.LevelDebug,
-		})),
-	}
-	defer func() {
-		if errOut != nil {
-			actionCtx.logger.Error(errOut.Error())
-		}
-	}()
-	ghContext, err := actionCtx.ghAction.Context()
+	got, err := getAction(kongCtx)
 	if err != nil {
 		return err
 	}
-	actionCtx.context = ghContext
-
-	if actionCtx.getBoolInput(inputCheckPRLabels) {
-		return runActionLabelCheck(ctx, actionCtx)
-	}
-	return runActionRelease(ctx, actionCtx)
+	return enc.Encode(got)
 }
 
 func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
@@ -139,9 +112,17 @@ func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
 		return err
 	}
 
-	enc := json.NewEncoder(os.Stdout)
-	enc.SetIndent("", "  ")
-	return enc.Encode(result)
+	if c.OutputFormat == "json" {
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		return enc.Encode(result)
+	}
+
+	action := githubactions.New()
+	for _, item := range outputItems {
+		action.SetOutput(item.name, item.value(result))
+	}
+	return nil
 }
 
 func (c *rootCmd) runCheckPR(ctx context.Context) error {

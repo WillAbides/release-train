@@ -42,6 +42,7 @@ func Run(ctx context.Context, version string, args []string) {
 	parser, err := kong.New(
 		&root,
 		kong.BindTo(ctx, (*context.Context)(nil)),
+		kong.Description("release-train keeps a-rollin' down to San Antone"),
 		vars,
 	)
 	if err != nil {

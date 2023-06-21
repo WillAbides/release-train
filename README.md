@@ -11,19 +11,23 @@ release-train keeps a-rollin' down to San Antone
 
 ## Inputs
 
-### check-pr-labels
+### repo
 
-default: `${{ github.event_name == 'pull_request' }}`
+default: `${{ github.repository }}`
 
-Instead of releasing, check that the PR has a label indicating the type of change.
+Github repository in the form of owner/repo.
 
-Only literal 'true' will be treated as true.
+### check-pr
+
+default: `${{ github.event.number }}`
+
+Check that this PR number is properly labeled. Skips tag and release when set.
 
 ### labels
 
 PR label alias in the form of "<alias>=<label>" where <label> is a canonical label.
 
-One value per line.
+Accepts multiple values. One value per line.
 
 ### checkout-dir
 
@@ -66,7 +70,6 @@ The prefix to use for the tag.
 Assert that current major version is 0 and treat breaking changes as minor changes. 
 Errors if the major version is not 0.
 
-
 Only literal 'true' will be treated as true.
 
 ### initial-release-tag
@@ -104,27 +107,27 @@ Any files written to $ASSETS_DIR will be uploaded as release assets.
 The environment variables RELEASE_VERSION, RELEASE_TAG, PREVIOUS_VERSION, FIRST_RELEASE, GITHUB_TOKEN,
 RELEASE_NOTES_FILE, RELEASE_TARGET and ASSETS_DIR will be set.
 
-
 ### validate-go-module
 
 Validates that the name of the go module at the given path matches the major version of the release. For example,
 validation will fail when releasing v3.0.0 when the module name is "my_go_module/v2".
 
-One value per line.
+Accepts multiple values. One value per line.
 
 ### release-refs
 
-Only allow tags and releases to be created from matching refs. Refs can be patterns accepted by git-show-ref. 
+Only allow tags and releases to be created from matching refs. Refs can be patterns accepted by git-show-ref.
 If undefined, any branch can be used.
 
-One value per line.
+Accepts multiple values. One value per line.
 
-### no-release
+### tempdir
 
-If set to true, this will be a no-op. This is useful for creating a new repository or branch that isn't ready for
-release yet.
+The prefix to use with mktemp to create a temporary directory.
 
-Only literal 'true' will be treated as true.
+### release-train-bin
+
+Path to release-train binary. Only needed if you're using a custom release-train binary.
 
 ## Outputs
 

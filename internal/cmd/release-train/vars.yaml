@@ -50,7 +50,8 @@ v0_help: |
   Assert that current major version is 0 and treat breaking changes as minor changes. 
   Errors if the major version is not 0.
 release_ref_help: |
-  Only allow tags and releases to be created from matching refs. Refs can be patterns accepted by git-show-ref. 
+  Only allow tags and releases to be created from matching refs. Refs can be patterns accepted by git-show-ref.
   If undefined, any branch can be used.
 label_help: |
   PR label alias in the form of "<alias>=<label>" where <label> is a canonical label.
+output_format_help: Output either json our GitHub action output.
