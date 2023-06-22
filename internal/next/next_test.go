@@ -685,7 +685,7 @@ func Test_bumpVersion(t *testing.T) {
 	} {
 		t.Run(td.name, func(t *testing.T) {
 			prev := semver.MustParse(td.prev)
-			got, err := bumpVersion(*prev, td.minBump, td.maxBump, td.commits)
+			got, err := bumpVersion(context.Background(), *prev, td.minBump, td.maxBump, td.commits)
 			if td.wantErr != "" {
 				require.EqualError(t, err, td.wantErr)
 				return

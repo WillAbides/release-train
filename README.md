@@ -38,7 +38,7 @@ The directory where the repository is checked out.
 
 ### ref
 
-default: `${{ github.ref }}`
+default: `HEAD`
 
 git ref.
 

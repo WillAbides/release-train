@@ -27,17 +27,23 @@ func GetLogger(ctx context.Context) *slog.Logger {
 	return logger
 }
 
+type ActionHandlerOptions struct {
+	slog.HandlerOptions
+	// write debug to ::notice instead of ::debug
+	DebugToNotice bool
+}
+
 type ActionHandler struct {
-	opts    slog.HandlerOptions
+	opts    ActionHandlerOptions
 	mux     sync.Mutex
 	w       io.Writer
 	buf     *bytes.Buffer
 	handler slog.Handler
 }
 
-func NewActionHandler(w io.Writer, opts *slog.HandlerOptions) *ActionHandler {
+func NewActionHandler(w io.Writer, opts *ActionHandlerOptions) *ActionHandler {
 	if opts == nil {
-		opts = &slog.HandlerOptions{}
+		opts = &ActionHandlerOptions{}
 	}
 	replace := func(groups []string, attr slog.Attr) slog.Attr {
 		if opts.ReplaceAttr != nil {
@@ -72,7 +78,11 @@ func (h *ActionHandler) Handle(ctx context.Context, record slog.Record) error {
 	var err error
 	switch {
 	case record.Level < slog.LevelInfo:
-		_, err = h.w.Write([]byte("::debug"))
+		prefix := "::debug"
+		if h.opts.DebugToNotice {
+			prefix = "::notice"
+		}
+		_, err = h.w.Write([]byte(prefix))
 	case record.Level < slog.LevelWarn:
 		_, err = h.w.Write([]byte("::notice"))
 	case record.Level < slog.LevelError:

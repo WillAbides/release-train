@@ -11,6 +11,8 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/willabides/release-train-action/v3/internal"
+	"github.com/willabides/release-train-action/v3/internal/logging"
+	"golang.org/x/exp/slog"
 )
 
 type Result struct {
@@ -93,9 +95,17 @@ func (o *Options) owner() string {
 }
 
 func GetNext(ctx context.Context, opts *Options) (*Result, error) {
+	logger := logging.GetLogger(ctx)
 	if opts == nil {
 		opts = &Options{}
 	}
+	logger.Debug(
+		"starting GetNext",
+		slog.String("repo", opts.Repo),
+		slog.String("base", opts.Base),
+		slog.String("head", opts.Head),
+		slog.Int("check_pr", opts.CheckPR),
+	)
 	minBump := internal.ChangeLevelNone
 	if opts.MinBump != nil {
 		minBump = *opts.MinBump
@@ -128,7 +138,7 @@ func GetNext(ctx context.Context, opts *Options) (*Result, error) {
 			return nil, err
 		}
 	}
-	return bumpVersion(*prev, minBump, maxBump, commits)
+	return bumpVersion(ctx, *prev, minBump, maxBump, commits)
 }
 
 func includePullInResults(ctx context.Context, opts *Options, commits []Commit) ([]Commit, error) {
@@ -158,7 +168,9 @@ func includePullInResults(ctx context.Context, opts *Options, commits []Commit) 
 	return result, nil
 }
 
-func bumpVersion(prev semver.Version, minBump, maxBump internal.ChangeLevel, commits []Commit) (*Result, error) {
+func bumpVersion(ctx context.Context, prev semver.Version, minBump, maxBump internal.ChangeLevel, commits []Commit) (*Result, error) {
+	logger := logging.GetLogger(ctx)
+	logger.Debug("starting bumpVersion", slog.String("prev", prev.String()))
 	if maxBump == 0 {
 		maxBump = internal.ChangeLevelMajor
 	}

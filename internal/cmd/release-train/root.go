@@ -6,12 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/alecthomas/kong"
 	"github.com/sethvargo/go-githubactions"
 	"github.com/willabides/release-train-action/v3/internal"
-	"github.com/willabides/release-train-action/v3/internal/labelcheck"
 	"github.com/willabides/release-train-action/v3/internal/logging"
 	"github.com/willabides/release-train-action/v3/internal/release"
 	"golang.org/x/exp/slog"
@@ -25,7 +23,7 @@ type rootCmd struct {
 	CheckPR        int               `action:"check-pr,${{ github.event.number }}" help:"${check_pr_help}"`
 	Label          map[string]string `action:"labels" help:"${label_help}" placeholder:"<alias>=<label>;..."`
 	CheckoutDir    string            `action:",${{ github.workspace }}" short:"C" default:"." help:"${checkout_dir_help}"`
-	Ref            string            `action:",${{ github.ref }}" default:"HEAD" help:"${ref_help}"`
+	Ref            string            `default:"HEAD" help:"${ref_help}"`
 	GithubToken    string            `action:"github-token,${{ github.token }}" hidden:"true" env:"GITHUB_TOKEN" help:"${github_token_help}"`
 	CreateTag      bool              `help:"${create_tag_help}"`
 	CreateRelease  bool              `help:"${create_release_help}"`
@@ -55,14 +53,17 @@ func (c *rootCmd) Run(ctx context.Context, kongCtx *kong.Context) error {
 	}
 	var logHandler slog.Handler = slog.NewTextHandler(os.Stderr, &slogOpts)
 	if c.OutputFormat == "action" {
-		logHandler = logging.NewActionHandler(os.Stdout, &slogOpts)
+		options := logging.ActionHandlerOptions{
+			HandlerOptions: slogOpts,
+		}
+		if os.Getenv("LOG_DEBUG_AS_NOTICE") != "" {
+			options.DebugToNotice = true
+		}
+		logHandler = logging.NewActionHandler(os.Stdout, &options)
 	}
 	ctx = logging.WithLogger(ctx, slog.New(logHandler))
 	if c.GenerateAction {
 		return c.generateAction(kongCtx)
-	}
-	if c.CheckPR != 0 {
-		return c.runCheckPR(ctx)
 	}
 	return c.runRelease(ctx)
 }
@@ -145,27 +146,4 @@ func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
 		action.SetOutput(item.name, item.value(result))
 	}
 	return nil
-}
-
-func (c *rootCmd) runCheckPR(ctx context.Context) error {
-	ghClient, err := c.GithubClient(ctx)
-	if err != nil {
-		return err
-	}
-	repo := c.Repo
-	if repo == "" {
-		repo, err = internal.GetGithubRepoFromRemote(c.CheckoutDir, c.PushRemote)
-		if err != nil {
-			return fmt.Errorf("could not determine github repo: %w", err)
-		}
-	}
-	repoOwner, repoName, _ := strings.Cut(repo, "/")
-	opts := labelcheck.Options{
-		GhClient:     ghClient,
-		PrNumber:     c.CheckPR,
-		RepoOwner:    repoOwner,
-		RepoName:     repoName,
-		LabelAliases: c.Label,
-	}
-	return labelcheck.Check(ctx, &opts)
 }

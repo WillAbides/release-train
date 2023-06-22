@@ -13,6 +13,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/willabides/release-train-action/v3/internal"
+	"github.com/willabides/release-train-action/v3/internal/logging"
 	"github.com/willabides/release-train-action/v3/internal/next"
 	"github.com/willabides/release-train-action/v3/internal/prev"
 	"golang.org/x/mod/modfile"
@@ -66,6 +67,8 @@ type Result struct {
 }
 
 func (o *Runner) Next(ctx context.Context) (*Result, error) {
+	logger := logging.GetLogger(ctx)
+	logger.Debug("starting release Next")
 	ref := o.Ref
 	if o.Ref == "" {
 		ref = "HEAD"
@@ -207,6 +210,8 @@ func (o *Runner) getReleaseNotes(ctx context.Context, result *Result) (string, e
 }
 
 func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
+	logger := logging.GetLogger(ctx)
+	logger.Debug("starting Run")
 	var teardowns []func() error
 	defer func() {
 		if errOut == nil {

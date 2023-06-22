@@ -50,6 +50,8 @@ jobs:
       - id: release-train
         name: release-train
         uses: './'
+        env:
+          LOG_DEBUG_AS_NOTICE: 1
         with:
           labels: |
             enhancement=semver:minor
@@ -71,6 +73,12 @@ jobs:
             git tag "$RELEASE_TAG"
             bin/goreleaser release --clean --skip-publish
             cp dist/checksums.txt dist/release-train_*.tar.gz "$ASSETS_DIR"
+      - name: echo output
+        if: always()
+        run: |
+          cat <<EOF
+          ${{ toJSON(steps.release-train.outputs) }}
+          EOF
       - if: steps.release-train.outputs.pre-release-hook-aborted == 'true'
         name: create release pr
         id: create-release-pr
