@@ -109,7 +109,7 @@ func Test_incrPre(t *testing.T) {
 	}
 }
 
-func Test_next(t *testing.T) {
+func TestGetNext(t *testing.T) {
 	ctx := context.Background()
 
 	sha1 := "1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -157,21 +157,6 @@ func Test_next(t *testing.T) {
 			NextVersion:     *semver.MustParse("1.0.0"),
 			PreviousVersion: *semver.MustParse("0.15.0"),
 			ChangeLevel:     internal.ChangeLevelMajor,
-			Commits: []Commit{
-				{
-					Sha: sha1,
-					Pulls: []internal.Pull{
-						{Number: 1, LevelLabels: []string{"SEMVER:BREAKING"}, ChangeLevel: internal.ChangeLevelMajor},
-						{Number: 2},
-						{Number: 3},
-						{Number: 4, LevelLabels: []string{internal.LabelMinor}, ChangeLevel: internal.ChangeLevelMinor},
-					},
-				},
-				{
-					Sha:   sha2,
-					Pulls: []internal.Pull{},
-				},
-			},
 		}
 		require.Equal(t, &want, got)
 	})
@@ -215,21 +200,6 @@ func Test_next(t *testing.T) {
 			NextVersion:     *semver.MustParse("0.16.0"),
 			PreviousVersion: *semver.MustParse("0.15.0"),
 			ChangeLevel:     internal.ChangeLevelMinor,
-			Commits: []Commit{
-				{
-					Sha: sha1,
-					Pulls: []internal.Pull{
-						{Number: 1},
-						{Number: 2, LevelLabels: []string{internal.LabelMinor}, ChangeLevel: internal.ChangeLevelMinor},
-						{Number: 3},
-						{Number: 4, LevelLabels: []string{internal.LabelPatch}, ChangeLevel: internal.ChangeLevelPatch},
-					},
-				},
-				{
-					Sha:   sha2,
-					Pulls: []internal.Pull{},
-				},
-			},
 		}
 		require.Equal(t, &want, got)
 	})
@@ -273,21 +243,65 @@ func Test_next(t *testing.T) {
 			NextVersion:     *semver.MustParse("0.15.1"),
 			PreviousVersion: *semver.MustParse("0.15.0"),
 			ChangeLevel:     internal.ChangeLevelPatch,
-			Commits: []Commit{
+		}
+		require.Equal(t, &want, got)
+	})
+
+	t.Run("check pr", func(t *testing.T) {
+		gh := testutil.GithubStub{
+			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
+				t.Helper()
+				assert.Equal(t, []string{"willabides", "semver-next", "v0.15.0"}, []string{owner, repo, base})
+				assert.Equal(t, sha1, head)
+				return []string{sha1, sha2}, nil
+			},
+			StubListPullRequestsWithCommit: testutil.MockListPullRequestsWithCommit(t, []testutil.ListPullRequestsWithCommitCall{
 				{
-					Sha: sha1,
-					Pulls: []internal.Pull{
-						{Number: 1},
-						{Number: 2, LevelLabels: []string{internal.LabelPatch}, ChangeLevel: internal.ChangeLevelPatch},
+					Owner: "willabides", Repo: "semver-next", Sha: sha1,
+					Result: []internal.BasePull{
+						{Number: 1, Labels: []string{"something else"}},
+						{Number: 2, Labels: []string{internal.LabelPatch}},
 						{Number: 3},
-						{Number: 4, LevelLabels: []string{internal.LabelPatch}, ChangeLevel: internal.ChangeLevelPatch},
+						{Number: 4, Labels: []string{internal.LabelPatch}},
 					},
 				},
 				{
-					Sha:   sha2,
-					Pulls: []internal.Pull{},
+					Owner: "willabides", Repo: "semver-next", Sha: sha2,
+					Result: []internal.BasePull{},
 				},
+			}),
+			StubGetPullRequest: func(ctx context.Context, owner, repo string, number int) (*internal.BasePull, error) {
+				t.Helper()
+				assert.Equal(t, []string{"willabides", "semver-next"}, []string{owner, repo})
+				assert.Equal(t, 14, number)
+				return &internal.BasePull{
+					Number: 14,
+					Labels: []string{internal.LabelMinor},
+				}, nil
 			},
+			StubGetPullRequestCommits: func(ctx context.Context, owner, repo string, number int) ([]string, error) {
+				t.Helper()
+				assert.Equal(t, []string{"willabides", "semver-next"}, []string{owner, repo})
+				assert.Equal(t, 14, number)
+				return []string{sha1}, nil
+			},
+		}
+		got, err := GetNext(
+			ctx,
+			&Options{
+				Repo:         "willabides/semver-next",
+				Base:         "v0.15.0",
+				PrevVersion:  "0.15.0",
+				Head:         sha1,
+				GithubClient: &gh,
+				CheckPR:      14,
+			},
+		)
+		require.NoError(t, err)
+		want := Result{
+			NextVersion:     *semver.MustParse("0.16.0"),
+			PreviousVersion: *semver.MustParse("0.15.0"),
+			ChangeLevel:     internal.ChangeLevelMinor,
 		}
 		require.Equal(t, &want, got)
 	})
@@ -331,21 +345,6 @@ func Test_next(t *testing.T) {
 			NextVersion:     *semver.MustParse("0.15.0"),
 			PreviousVersion: *semver.MustParse("0.15.0"),
 			ChangeLevel:     internal.ChangeLevelNone,
-			Commits: []Commit{
-				{
-					Sha: sha1,
-					Pulls: []internal.Pull{
-						{Number: 1},
-						{Number: 2, LevelLabels: []string{internal.LabelNone}, ChangeLevel: internal.ChangeLevelNone},
-						{Number: 3},
-						{Number: 4, LevelLabels: []string{internal.LabelNone}, ChangeLevel: internal.ChangeLevelNone},
-					},
-				},
-				{
-					Sha:   sha2,
-					Pulls: []internal.Pull{},
-				},
-			},
 		}
 		require.Equal(t, &want, got)
 	})
@@ -404,7 +403,6 @@ func Test_next(t *testing.T) {
 			NextVersion:     *semver.MustParse("0.15.0"),
 			PreviousVersion: *semver.MustParse("0.15.0"),
 			ChangeLevel:     internal.ChangeLevelNone,
-			Commits:         []Commit{},
 		}
 		require.Equal(t, &want, got)
 	})
@@ -423,7 +421,7 @@ func Test_next(t *testing.T) {
 			Base:         "v0.15.0",
 			PrevVersion:  "0.15.0",
 			Head:         sha1,
-			MinBump:      internal.ChangeLevelPatch.String(),
+			MinBump:      internal.Ptr(internal.ChangeLevelPatch),
 			GithubClient: &gh,
 		})
 		require.NoError(t, err)
@@ -431,7 +429,6 @@ func Test_next(t *testing.T) {
 			NextVersion:     *semver.MustParse("0.15.0"),
 			PreviousVersion: *semver.MustParse("0.15.0"),
 			ChangeLevel:     internal.ChangeLevelNone,
-			Commits:         []Commit{},
 		}
 		require.Equal(t, &want, got)
 	})
@@ -467,7 +464,7 @@ func Test_next(t *testing.T) {
 				Base:         "v0.15.0",
 				PrevVersion:  "0.15.0",
 				Head:         sha1,
-				MinBump:      internal.ChangeLevelMinor.String(),
+				MinBump:      internal.Ptr(internal.ChangeLevelMinor),
 				GithubClient: &gh,
 			},
 		)
@@ -476,21 +473,6 @@ func Test_next(t *testing.T) {
 			NextVersion:     *semver.MustParse("0.16.0"),
 			PreviousVersion: *semver.MustParse("0.15.0"),
 			ChangeLevel:     internal.ChangeLevelMinor,
-			Commits: []Commit{
-				{
-					Sha: sha1,
-					Pulls: []internal.Pull{
-						{Number: 1},
-						{Number: 2, LevelLabels: []string{internal.LabelPatch}, ChangeLevel: internal.ChangeLevelPatch},
-						{Number: 3},
-						{Number: 4, LevelLabels: []string{internal.LabelPatch}, ChangeLevel: internal.ChangeLevelPatch},
-					},
-				},
-				{
-					Sha:   sha2,
-					Pulls: []internal.Pull{},
-				},
-			},
 		}
 		require.Equal(t, &want, got)
 	})
@@ -536,16 +518,6 @@ func Test_next(t *testing.T) {
 		require.EqualError(t, err, errors.Join(assert.AnError, assert.AnError).Error())
 	})
 
-	t.Run("invalid minBump", func(t *testing.T) {
-		_, err := GetNext(ctx, &Options{MinBump: "foo"})
-		require.EqualError(t, err, "invalid change level: foo")
-	})
-
-	t.Run("invalid maxBump", func(t *testing.T) {
-		_, err := GetNext(ctx, &Options{MaxBump: "foo"})
-		require.EqualError(t, err, "invalid change level: foo")
-	})
-
 	t.Run("prev version not valid semver", func(t *testing.T) {
 		_, err := GetNext(ctx, &Options{PrevVersion: "foo"})
 		require.EqualError(t, err, `invalid previous version "foo": Invalid Semantic Version`)
@@ -557,7 +529,10 @@ func Test_next(t *testing.T) {
 	})
 
 	t.Run("minBump > maxBump", func(t *testing.T) {
-		_, err := GetNext(ctx, &Options{MinBump: "major", MaxBump: "minor"})
+		_, err := GetNext(ctx, &Options{
+			MinBump: internal.Ptr(internal.ChangeLevelMajor),
+			MaxBump: internal.Ptr(internal.ChangeLevelMinor),
+		})
 		require.EqualError(t, err, "minBump must be less than or equal to maxBump")
 	})
 }
@@ -714,9 +689,6 @@ func Test_bumpVersion(t *testing.T) {
 			if td.wantErr != "" {
 				require.EqualError(t, err, td.wantErr)
 				return
-			}
-			if got != nil {
-				got.Commits = nil
 			}
 			require.NoError(t, err)
 			require.Equal(t, td.want, got)

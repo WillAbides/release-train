@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/google/go-github/v53/github"
 	"github.com/willabides/release-train-action/v3/internal"
 	"github.com/willabides/release-train-action/v3/internal/next"
 	"github.com/willabides/release-train-action/v3/internal/prev"
@@ -35,6 +34,7 @@ type Runner struct {
 	TempDir        string
 	ReleaseRefs    []string
 	LabelAliases   map[string]string
+	CheckPR        int
 	GithubClient   internal.GithubClient
 }
 
@@ -123,8 +123,9 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 		PrevVersion:  prevVersion.String(),
 		Base:         prevRef,
 		Head:         head,
-		MaxBump:      maxBump.String(),
+		MaxBump:      &maxBump,
 		LabelAliases: o.LabelAliases,
+		CheckPR:      o.CheckPR,
 	})
 	if err != nil {
 		return nil, err
@@ -202,10 +203,7 @@ func (o *Runner) getReleaseNotes(ctx context.Context, result *Result) (string, e
 	if result.FirstRelease {
 		return "", nil
 	}
-	return o.GithubClient.GenerateReleaseNotes(ctx, o.repoOwner(), o.repoName(), &github.GenerateNotesOptions{
-		TagName:         result.ReleaseTag,
-		PreviousTagName: &result.PreviousRef,
-	})
+	return o.GithubClient.GenerateReleaseNotes(ctx, o.repoOwner(), o.repoName(), result.ReleaseTag, result.PreviousRef)
 }
 
 func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
@@ -223,7 +221,13 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	if release {
 		createTag = true
 	}
+	// no tag or release if release-refs is defined and the ref is not in the list
 	if len(o.ReleaseRefs) > 0 && !gitNameRev(o.CheckoutDir, o.Ref, o.ReleaseRefs) {
+		createTag = false
+		release = false
+	}
+	// no tag or release if check-pr is set
+	if o.CheckPR != 0 {
 		createTag = false
 		release = false
 	}
@@ -303,30 +307,21 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	}
 
 	prerelease := result.ReleaseVersion.Prerelease() != ""
-	rel, err := o.GithubClient.CreateRelease(ctx, o.repoOwner(), o.repoName(), &github.RepositoryRelease{
-		TagName:    &result.ReleaseTag,
-		Name:       &result.ReleaseTag,
-		Body:       &releaseNotes,
-		MakeLatest: github.String("legacy"),
-		Prerelease: &prerelease,
-		Draft:      github.Bool(true),
-	})
+	rel, err := o.GithubClient.CreateRelease(ctx, o.repoOwner(), o.repoName(), result.ReleaseTag, releaseNotes, prerelease)
 	if err != nil {
 		return nil, err
 	}
 
 	teardowns = append(teardowns, func() error {
-		return o.GithubClient.DeleteRelease(ctx, o.repoOwner(), o.repoName(), *rel.ID)
+		return o.GithubClient.DeleteRelease(ctx, o.repoOwner(), o.repoName(), rel.ID)
 	})
 
-	err = o.uploadAssets(ctx, *rel.UploadURL)
+	err = o.uploadAssets(ctx, rel.UploadURL)
 	if err != nil {
 		return nil, err
 	}
 
-	err = o.GithubClient.EditRelease(ctx, o.repoOwner(), o.repoName(), *rel.ID, &github.RepositoryRelease{
-		Draft: github.Bool(false),
-	})
+	err = o.GithubClient.PublishRelease(ctx, o.repoOwner(), o.repoName(), rel.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -344,7 +339,7 @@ func (o *Runner) uploadAssets(ctx context.Context, uploadURL string) error {
 		return err
 	}
 	for _, asset := range assets {
-		err = o.GithubClient.UploadAsset(ctx, uploadURL, asset, nil)
+		err = o.GithubClient.UploadAsset(ctx, uploadURL, asset)
 		if err != nil {
 			return err
 		}

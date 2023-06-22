@@ -17,17 +17,16 @@ type Result struct {
 	NextVersion     semver.Version       `json:"next_version"`
 	PreviousVersion semver.Version       `json:"previous_version"`
 	ChangeLevel     internal.ChangeLevel `json:"change_level"`
-	Commits         []Commit             `json:"commits,omitempty"`
 }
 
-func getCommitPRs(ctx context.Context, gh ghClient, aliases map[string]string, owner, repo, commitSha string) ([]internal.Pull, error) {
-	ghResult, err := gh.ListPullRequestsWithCommit(ctx, owner, repo, commitSha)
+func getCommitPRs(ctx context.Context, opts *Options, commitSha string) ([]internal.Pull, error) {
+	ghResult, err := opts.GithubClient.ListPullRequestsWithCommit(ctx, opts.owner(), opts.repo(), commitSha)
 	if err != nil {
 		return nil, err
 	}
 	result := make([]internal.Pull, 0, len(ghResult))
 	for _, r := range ghResult {
-		p, e := internal.NewPull(r.Number, aliases, r.Labels...)
+		p, e := internal.NewPull(r.Number, opts.LabelAliases, r.Labels...)
 		if e != nil {
 			return nil, e
 		}
@@ -36,9 +35,9 @@ func getCommitPRs(ctx context.Context, gh ghClient, aliases map[string]string, o
 	return result, nil
 }
 
-func compareCommits(ctx context.Context, gh ghClient, aliases map[string]string, owner, repo, baseRef, headRef string) ([]Commit, error) {
+func compareCommits(ctx context.Context, opts *Options) ([]Commit, error) {
 	var result []Commit
-	commitShas, err := gh.CompareCommits(ctx, owner, repo, baseRef, headRef)
+	commitShas, err := opts.GithubClient.CompareCommits(ctx, opts.owner(), opts.repo(), opts.Base, opts.Head)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +50,7 @@ func compareCommits(ctx context.Context, gh ghClient, aliases map[string]string,
 		wg.Add(1)
 		go func(idx int) {
 			var e error
-			result[idx].Pulls, e = getCommitPRs(ctx, gh, aliases, owner, repo, commitSha)
+			result[idx].Pulls, e = getCommitPRs(ctx, opts, commitSha)
 			errLock.Lock()
 			err = errors.Join(err, e)
 			errLock.Unlock()
@@ -71,63 +70,92 @@ func compareCommits(ctx context.Context, gh ghClient, aliases map[string]string,
 	return result, nil
 }
 
-type ghClient interface {
-	ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error)
-	CompareCommits(ctx context.Context, owner, repo, base, head string) ([]string, error)
-}
-
 type Options struct {
-	GithubClient ghClient
+	GithubClient internal.GithubClient
 	Repo         string
 	PrevVersion  string
 	Base         string
 	Head         string
-	MinBump      string
-	MaxBump      string
+	MinBump      *internal.ChangeLevel
+	MaxBump      *internal.ChangeLevel
+	CheckPR      int
 	LabelAliases map[string]string
+}
+
+func (o *Options) repo() string {
+	_, repo, _ := strings.Cut(o.Repo, "/")
+	return repo
+}
+
+func (o *Options) owner() string {
+	owner, _, _ := strings.Cut(o.Repo, "/")
+	return owner
 }
 
 func GetNext(ctx context.Context, opts *Options) (*Result, error) {
 	if opts == nil {
 		opts = &Options{}
 	}
-	minBump := opts.MinBump
-	if minBump == "" {
-		minBump = internal.ChangeLevelNone.String()
+	minBump := internal.ChangeLevelNone
+	if opts.MinBump != nil {
+		minBump = *opts.MinBump
 	}
-	maxBump := opts.MaxBump
-	if maxBump == "" {
-		maxBump = internal.ChangeLevelMajor.String()
-	}
-	minBumpLevel, err := internal.ParseChangeLevel(minBump)
-	if err != nil {
-		return nil, err
-	}
-	maxBumpLevel, err := internal.ParseChangeLevel(maxBump)
-	if err != nil {
-		return nil, err
+	maxBump := internal.ChangeLevelMajor
+	if opts.MaxBump != nil {
+		maxBump = *opts.MaxBump
 	}
 	prevVersion := opts.PrevVersion
 	if prevVersion == "" {
 		prevVersion = opts.Base
 	}
-	if minBumpLevel > maxBumpLevel {
+	if minBump > maxBump {
 		return nil, fmt.Errorf("minBump must be less than or equal to maxBump")
 	}
 	prev, err := semver.NewVersion(prevVersion)
 	if err != nil {
 		return nil, fmt.Errorf("invalid previous version %q: %v", prevVersion, err)
 	}
-	repoParts := strings.Split(opts.Repo, "/")
-	if len(repoParts) != 2 {
+	if opts.repo() == "" {
 		return nil, fmt.Errorf("repo must be in the form owner/name")
 	}
-	owner, repo := repoParts[0], repoParts[1]
-	resultCommits, err := compareCommits(ctx, opts.GithubClient, opts.LabelAliases, owner, repo, opts.Base, opts.Head)
+	commits, err := compareCommits(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
-	return bumpVersion(*prev, minBumpLevel, maxBumpLevel, resultCommits)
+	if opts.CheckPR != 0 {
+		commits, err = includePullInResults(ctx, opts, commits)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return bumpVersion(*prev, minBump, maxBump, commits)
+}
+
+func includePullInResults(ctx context.Context, opts *Options, commits []Commit) ([]Commit, error) {
+	base, err := opts.GithubClient.GetPullRequest(ctx, opts.owner(), opts.repo(), opts.CheckPR)
+	if err != nil {
+		return nil, err
+	}
+	pull, err := internal.NewPull(opts.CheckPR, opts.LabelAliases, base.Labels...)
+	if err != nil {
+		return nil, err
+	}
+	pullCommits, err := opts.GithubClient.GetPullRequestCommits(ctx, opts.owner(), opts.repo(), opts.CheckPR)
+	if err != nil {
+		return nil, err
+	}
+	lookup := make(map[string]bool, len(pullCommits))
+	for _, c := range pullCommits {
+		lookup[c] = true
+	}
+	result := make([]Commit, 0, len(commits))
+	for _, c := range commits {
+		if lookup[c.Sha] {
+			c.Pulls = append(c.Pulls, *pull)
+		}
+		result = append(result, c)
+	}
+	return result, nil
 }
 
 func bumpVersion(prev semver.Version, minBump, maxBump internal.ChangeLevel, commits []Commit) (*Result, error) {
@@ -135,7 +163,6 @@ func bumpVersion(prev semver.Version, minBump, maxBump internal.ChangeLevel, com
 		maxBump = internal.ChangeLevelMajor
 	}
 	result := Result{
-		Commits:         commits,
 		PreviousVersion: prev,
 	}
 	pullsMap := map[int]internal.Pull{}
@@ -190,7 +217,7 @@ func bumpVersion(prev semver.Version, minBump, maxBump internal.ChangeLevel, com
 	if prev.Prerelease() != "" && isStable && len(unstablePulls) > 0 {
 		return nil, fmt.Errorf("in order to release a stable version, all PRs must be labeled as stable. stable PRs: %v, unstable PRs: %v", stablePulls, unstablePulls)
 	}
-	if result.ChangeLevel < minBump && len(result.Commits) > 0 {
+	if result.ChangeLevel < minBump && len(commits) > 0 {
 		result.ChangeLevel = minBump
 	}
 	if result.ChangeLevel > maxBump {

@@ -6,21 +6,20 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/google/go-github/v53/github"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/willabides/release-train-action/v3/internal"
 )
 
 type GithubStub struct {
 	StubListPullRequestsWithCommit func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error)
 	StubCompareCommits             func(ctx context.Context, owner, repo, base, head string) ([]string, error)
-	StubGenerateReleaseNotes       func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error)
-	StubCreateRelease              func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) (*github.RepositoryRelease, error)
-	StubUploadAsset                func(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error
+	StubGenerateReleaseNotes       func(ctx context.Context, owner, repo, tag, prevTag string) (string, error)
+	StubCreateRelease              func(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*internal.RepoRelease, error)
+	StubUploadAsset                func(ctx context.Context, uploadURL, filename string) error
 	StubDeleteRelease              func(ctx context.Context, owner, repo string, id int64) error
-	StubEditRelease                func(ctx context.Context, owner, repo string, id int64, opts *github.RepositoryRelease) error
-	StubGetPullRequest             func(ctx context.Context, owner, repo string, number int) (*github.PullRequest, error)
+	StubPublishRelease             func(ctx context.Context, owner, repo string, id int64) error
+	StubGetPullRequest             func(ctx context.Context, owner, repo string, number int) (*internal.BasePull, error)
+	StubGetPullRequestCommits      func(ctx context.Context, owner, repo string, number int) ([]string, error)
 }
 
 var _ internal.GithubClient = &GithubStub{}
@@ -33,28 +32,32 @@ func (w *GithubStub) CompareCommits(ctx context.Context, owner, repo, base, head
 	return w.StubCompareCommits(ctx, owner, repo, base, head)
 }
 
-func (w *GithubStub) GenerateReleaseNotes(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error) {
-	return w.StubGenerateReleaseNotes(ctx, owner, repo, opts)
+func (w *GithubStub) GenerateReleaseNotes(ctx context.Context, owner, repo, tag, prevTag string) (string, error) {
+	return w.StubGenerateReleaseNotes(ctx, owner, repo, tag, prevTag)
 }
 
-func (w *GithubStub) CreateRelease(ctx context.Context, owner, repo string, release *github.RepositoryRelease) (*github.RepositoryRelease, error) {
-	return w.StubCreateRelease(ctx, owner, repo, release)
+func (w *GithubStub) CreateRelease(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*internal.RepoRelease, error) {
+	return w.StubCreateRelease(ctx, owner, repo, tag, body, prerelease)
 }
 
-func (w *GithubStub) UploadAsset(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error {
-	return w.StubUploadAsset(ctx, uploadURL, filename, opts)
+func (w *GithubStub) UploadAsset(ctx context.Context, uploadURL, filename string) error {
+	return w.StubUploadAsset(ctx, uploadURL, filename)
 }
 
 func (w *GithubStub) DeleteRelease(ctx context.Context, owner, repo string, id int64) error {
 	return w.StubDeleteRelease(ctx, owner, repo, id)
 }
 
-func (w *GithubStub) EditRelease(ctx context.Context, owner, repo string, id int64, opts *github.RepositoryRelease) error {
-	return w.StubEditRelease(ctx, owner, repo, id, opts)
+func (w *GithubStub) PublishRelease(ctx context.Context, owner, repo string, id int64) error {
+	return w.StubPublishRelease(ctx, owner, repo, id)
 }
 
-func (w *GithubStub) GetPullRequest(ctx context.Context, owner, repo string, number int) (*github.PullRequest, error) {
+func (w *GithubStub) GetPullRequest(ctx context.Context, owner, repo string, number int) (*internal.BasePull, error) {
 	return w.StubGetPullRequest(ctx, owner, repo, number)
+}
+
+func (w *GithubStub) GetPullRequestCommits(ctx context.Context, owner, repo string, number int) ([]string, error) {
+	return w.StubGetPullRequestCommits(ctx, owner, repo, number)
 }
 
 type ListPullRequestsWithCommitCall struct {
@@ -81,11 +84,4 @@ func MockListPullRequestsWithCommit(t *testing.T, calls []ListPullRequestsWithCo
 		calls = append(calls[:idx], calls[idx+1:]...)
 		return call.Result, call.Err
 	}
-}
-
-func MustNewPull(t *testing.T, number int, labels ...string) internal.Pull {
-	t.Helper()
-	p, err := internal.NewPull(number, nil, labels...)
-	require.NoError(t, err)
-	return *p
 }

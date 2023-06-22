@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/google/go-github/v53/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/willabides/release-train-action/v3/internal"
@@ -109,20 +108,19 @@ git tag head
 					return nil, e
 				}
 			},
-			StubCreateRelease: func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) (*github.RepositoryRelease, error) {
+			StubCreateRelease: func(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*internal.RepoRelease, error) {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
-				assert.Equal(t, "v2.1.0", *opts.TagName)
-				assert.Equal(t, "v2.1.0", *opts.Name)
-				assert.Equal(t, "I got your release notes right here buddy\n", *opts.Body)
-				assert.Equal(t, "legacy", *opts.MakeLatest)
-				return &github.RepositoryRelease{
-					ID:        github.Int64(1),
-					UploadURL: github.String("localhost"),
+				assert.Equal(t, tag, "v2.1.0")
+				assert.Equal(t, body, "I got your release notes right here buddy\n")
+				assert.Equal(t, prerelease, false)
+				return &internal.RepoRelease{
+					ID:        1,
+					UploadURL: "localhost",
 				}, nil
 			},
-			StubUploadAsset: func(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error {
+			StubUploadAsset: func(ctx context.Context, uploadURL, filename string) error {
 				t.Helper()
 				content, err := os.ReadFile(filename)
 				if !assert.NoError(t, err) {
@@ -140,12 +138,11 @@ git tag head
 				}
 				return nil
 			},
-			StubEditRelease: func(ctx context.Context, owner, repo string, id int64, opts *github.RepositoryRelease) error {
+			StubPublishRelease: func(ctx context.Context, owner, repo string, id int64) error {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
 				assert.Equal(t, int64(1), id)
-				assert.Equal(t, false, *opts.Draft)
 				return nil
 			},
 		}
@@ -225,27 +222,26 @@ echo bar > "$ASSETS_DIR/bar.txt"
 				assert.Equal(t, repos.taggedCommits["third"], head)
 				return []string{repos.taggedCommits["first"], repos.taggedCommits["third"]}, nil
 			},
-			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error) {
+			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo, tag, prevTag string) (string, error) {
 				panic("GenerateReleaseNotes should not be called")
 			},
-			StubCreateRelease: func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) (*github.RepositoryRelease, error) {
+			StubCreateRelease: func(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*internal.RepoRelease, error) {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
-				assert.Equal(t, "x1.0.0", *opts.TagName)
-				assert.Equal(t, "x1.0.0", *opts.Name)
-				assert.Equal(t, "", *opts.Body)
-				return &github.RepositoryRelease{
-					ID:        github.Int64(1),
-					UploadURL: github.String("localhost"),
+				assert.Equal(t, "x1.0.0", tag)
+				assert.Equal(t, "", body)
+				assert.Equal(t, false, prerelease)
+				return &internal.RepoRelease{
+					ID:        1,
+					UploadURL: "localhost",
 				}, nil
 			},
-			StubEditRelease: func(ctx context.Context, owner, repo string, id int64, opts *github.RepositoryRelease) error {
+			StubPublishRelease: func(ctx context.Context, owner, repo string, id int64) error {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
 				assert.Equal(t, int64(1), id)
-				assert.Equal(t, false, *opts.Draft)
 				return nil
 			},
 		}
@@ -430,32 +426,31 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 					{Number: 1, Labels: []string{internal.LabelMinor}},
 				}, nil
 			},
-			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error) {
+			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo, tag, prevTag string) (string, error) {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
-				assert.Equal(t, "v2.1.0", opts.TagName)
-				assert.Equal(t, "v2.0.0", *opts.PreviousTagName)
+				assert.Equal(t, "v2.1.0", tag)
+				assert.Equal(t, "v2.0.0", prevTag)
 				return "release notes", nil
 			},
-			StubCreateRelease: func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) (*github.RepositoryRelease, error) {
+			StubCreateRelease: func(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*internal.RepoRelease, error) {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
-				assert.Equal(t, "v2.1.0", *opts.TagName)
-				assert.Equal(t, "v2.1.0", *opts.Name)
-				assert.Equal(t, "release notes", *opts.Body)
-				return &github.RepositoryRelease{
-					ID:        github.Int64(1),
-					UploadURL: github.String("localhost"),
+				assert.Equal(t, "v2.1.0", tag)
+				assert.Equal(t, "release notes", body)
+				assert.Equal(t, false, prerelease)
+				return &internal.RepoRelease{
+					ID:        1,
+					UploadURL: "localhost",
 				}, nil
 			},
-			StubEditRelease: func(ctx context.Context, owner, repo string, id int64, opts *github.RepositoryRelease) error {
+			StubPublishRelease: func(ctx context.Context, owner, repo string, id int64) error {
 				t.Helper()
 				assert.Equal(t, "orgName", owner)
 				assert.Equal(t, "repoName", repo)
 				assert.Equal(t, int64(1), id)
-				assert.Equal(t, false, *opts.Draft)
 				return nil
 			},
 		}
@@ -536,10 +531,10 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
 				return []internal.BasePull{{Number: 2, Labels: []string{internal.LabelBreaking}}}, nil
 			},
-			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error) {
+			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo, tag, prevTag string) (string, error) {
 				return "release notes", nil
 			},
-			StubCreateRelease: func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) (*github.RepositoryRelease, error) {
+			StubCreateRelease: func(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*internal.RepoRelease, error) {
 				return nil, errors.New("release error")
 			},
 		}
@@ -571,16 +566,16 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
 				return []internal.BasePull{{Number: 2, Labels: []string{internal.LabelBreaking}}}, nil
 			},
-			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo string, opts *github.GenerateNotesOptions) (string, error) {
+			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo, tag, prevTag string) (string, error) {
 				return "release notes", nil
 			},
-			StubCreateRelease: func(ctx context.Context, owner, repo string, opts *github.RepositoryRelease) (*github.RepositoryRelease, error) {
-				return &github.RepositoryRelease{
-					ID:        github.Int64(1),
-					UploadURL: github.String("localhost"),
+			StubCreateRelease: func(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*internal.RepoRelease, error) {
+				return &internal.RepoRelease{
+					ID:        1,
+					UploadURL: "localhost",
 				}, nil
 			},
-			StubUploadAsset: func(ctx context.Context, uploadURL, filename string, opts *github.UploadOptions) error {
+			StubUploadAsset: func(ctx context.Context, uploadURL, filename string) error {
 				return errors.New("upload error")
 			},
 			StubDeleteRelease: func(ctx context.Context, owner, repo string, id int64) error {

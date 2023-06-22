@@ -21,7 +21,8 @@ Github repository in the form of owner/repo.
 
 default: `${{ github.event.number }}`
 
-Check that this PR number is properly labeled. Skips tag and release when set.
+Operates as if the given PR has already been merged. Useful for making sure the PR is properly labeled.
+Skips tag and release.
 
 ### labels
 

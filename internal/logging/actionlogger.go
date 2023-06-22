@@ -66,7 +66,6 @@ func (h *ActionHandler) Enabled(ctx context.Context, level slog.Level) bool {
 	return h.handler.Enabled(ctx, level)
 }
 
-//nolint:gocritic // implementation of slog.Handler
 func (h *ActionHandler) Handle(ctx context.Context, record slog.Record) error {
 	h.mux.Lock()
 	defer h.mux.Unlock()
