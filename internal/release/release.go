@@ -13,6 +13,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/willabides/release-train-action/v3/internal"
+	"github.com/willabides/release-train-action/v3/internal/logging"
 	"github.com/willabides/release-train-action/v3/internal/next"
 	"github.com/willabides/release-train-action/v3/internal/prev"
 	"golang.org/x/mod/modfile"
@@ -66,6 +67,8 @@ type Result struct {
 }
 
 func (o *Runner) Next(ctx context.Context) (*Result, error) {
+	logger := logging.GetLogger(ctx)
+	logger.Info("starting release Next")
 	ref := o.Ref
 	if o.Ref == "" {
 		ref = "HEAD"
