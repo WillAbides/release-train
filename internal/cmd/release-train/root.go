@@ -6,12 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/alecthomas/kong"
 	"github.com/sethvargo/go-githubactions"
 	"github.com/willabides/release-train-action/v3/internal"
-	"github.com/willabides/release-train-action/v3/internal/labelcheck"
 	"github.com/willabides/release-train-action/v3/internal/logging"
 	"github.com/willabides/release-train-action/v3/internal/release"
 	"golang.org/x/exp/slog"
@@ -60,9 +58,6 @@ func (c *rootCmd) Run(ctx context.Context, kongCtx *kong.Context) error {
 	ctx = logging.WithLogger(ctx, slog.New(logHandler))
 	if c.GenerateAction {
 		return c.generateAction(kongCtx)
-	}
-	if c.CheckPR != 0 {
-		return c.runCheckPR(ctx)
 	}
 	return c.runRelease(ctx)
 }
@@ -145,27 +140,4 @@ func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
 		action.SetOutput(item.name, item.value(result))
 	}
 	return nil
-}
-
-func (c *rootCmd) runCheckPR(ctx context.Context) error {
-	ghClient, err := c.GithubClient(ctx)
-	if err != nil {
-		return err
-	}
-	repo := c.Repo
-	if repo == "" {
-		repo, err = internal.GetGithubRepoFromRemote(c.CheckoutDir, c.PushRemote)
-		if err != nil {
-			return fmt.Errorf("could not determine github repo: %w", err)
-		}
-	}
-	repoOwner, repoName, _ := strings.Cut(repo, "/")
-	opts := labelcheck.Options{
-		GhClient:     ghClient,
-		PrNumber:     c.CheckPR,
-		RepoOwner:    repoOwner,
-		RepoName:     repoName,
-		LabelAliases: c.Label,
-	}
-	return labelcheck.Check(ctx, &opts)
 }
