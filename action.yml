@@ -8,7 +8,9 @@ inputs:
     description: Github repository in the form of owner/repo.
     default: ${{ github.repository }}
   check-pr:
-    description: Check that this PR number is properly labeled. Skips tag and release when set.
+    description: |-
+      Operates as if the given PR has already been merged. Useful for making sure the PR is properly labeled.
+      Skips tag and release.
     default: ${{ github.event.number }}
   labels:
     description: |-

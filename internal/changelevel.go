@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"strings"
 )
 
 type ChangeLevel int
@@ -33,17 +32,6 @@ func (l ChangeLevel) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("%q", l.String())), nil
 }
 
-func ParseChangeLevel(v string) (ChangeLevel, error) {
-	switch strings.ToLower(v) {
-	case "patch":
-		return ChangeLevelPatch, nil
-	case "minor":
-		return ChangeLevelMinor, nil
-	case "major":
-		return ChangeLevelMajor, nil
-	case "none":
-		return ChangeLevelNone, nil
-	default:
-		return 0, fmt.Errorf("invalid change level: %s", v)
-	}
+func Ptr[V any](v V) *V {
+	return &v
 }

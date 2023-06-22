@@ -19,6 +19,7 @@ type GithubStub struct {
 	StubDeleteRelease              func(ctx context.Context, owner, repo string, id int64) error
 	StubPublishRelease             func(ctx context.Context, owner, repo string, id int64) error
 	StubGetPullRequest             func(ctx context.Context, owner, repo string, number int) (*internal.BasePull, error)
+	StubGetPullRequestCommits      func(ctx context.Context, owner, repo string, number int) ([]string, error)
 }
 
 var _ internal.GithubClient = &GithubStub{}
@@ -53,6 +54,10 @@ func (w *GithubStub) PublishRelease(ctx context.Context, owner, repo string, id 
 
 func (w *GithubStub) GetPullRequest(ctx context.Context, owner, repo string, number int) (*internal.BasePull, error) {
 	return w.StubGetPullRequest(ctx, owner, repo, number)
+}
+
+func (w *GithubStub) GetPullRequestCommits(ctx context.Context, owner, repo string, number int) ([]string, error) {
+	return w.StubGetPullRequestCommits(ctx, owner, repo, number)
 }
 
 type ListPullRequestsWithCommitCall struct {

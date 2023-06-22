@@ -33,6 +33,7 @@ type GithubClient interface {
 	DeleteRelease(ctx context.Context, owner, repo string, id int64) error
 	PublishRelease(ctx context.Context, owner, repo string, id int64) error
 	GetPullRequest(ctx context.Context, owner, repo string, number int) (*BasePull, error)
+	GetPullRequestCommits(ctx context.Context, owner, repo string, number int) ([]string, error)
 }
 
 func NewGithubClient(ctx context.Context, baseUrl, token, userAgent string) (GithubClient, error) {
@@ -207,4 +208,23 @@ func (g *ghClient) GetPullRequest(ctx context.Context, owner, repo string, numbe
 		pull.Labels[i] = label.GetName()
 	}
 	return &pull, nil
+}
+
+func (g *ghClient) GetPullRequestCommits(ctx context.Context, owner, repo string, number int) ([]string, error) {
+	var commitShas []string
+	opts := &github.ListOptions{PerPage: 100}
+	for {
+		apiCommits, resp, err := g.Client.PullRequests.ListCommits(ctx, owner, repo, number, opts)
+		if err != nil {
+			return nil, err
+		}
+		for _, apiCommit := range apiCommits {
+			commitShas = append(commitShas, apiCommit.GetSHA())
+		}
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+	return commitShas, nil
 }

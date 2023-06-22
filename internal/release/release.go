@@ -123,8 +123,9 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 		PrevVersion:  prevVersion.String(),
 		Base:         prevRef,
 		Head:         head,
-		MaxBump:      maxBump.String(),
+		MaxBump:      &maxBump,
 		LabelAliases: o.LabelAliases,
+		CheckPR:      o.CheckPR,
 	})
 	if err != nil {
 		return nil, err
@@ -220,7 +221,13 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	if release {
 		createTag = true
 	}
+	// no tag or release if release-refs is defined and the ref is not in the list
 	if len(o.ReleaseRefs) > 0 && !gitNameRev(o.CheckoutDir, o.Ref, o.ReleaseRefs) {
+		createTag = false
+		release = false
+	}
+	// no tag or release if check-pr is set
+	if o.CheckPR != 0 {
 		createTag = false
 		release = false
 	}
