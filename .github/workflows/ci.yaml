@@ -74,7 +74,9 @@ jobs:
       - name: echo output
         if: always()
         run: |
-          echo "${{ steps.release-train.outputs }}"
+          cat <<EOF
+          ${{ toJSON(steps.release-train.outputs) }}
+          EOF
       - if: steps.release-train.outputs.pre-release-hook-aborted == 'true'
         name: create release pr
         id: create-release-pr
