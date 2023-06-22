@@ -22,7 +22,7 @@ inputs:
     default: ${{ github.workspace }}
   ref:
     description: git ref.
-    default: ${{ github.ref }}
+    default: HEAD
   github-token:
     description: 'The GitHub token to use for authentication. Must have `contents: write` permission if creating a release or tag.'
     default: ${{ github.token }}
