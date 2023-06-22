@@ -210,6 +210,8 @@ func (o *Runner) getReleaseNotes(ctx context.Context, result *Result) (string, e
 }
 
 func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
+	logger := logging.GetLogger(ctx)
+	logger.Info("starting Run")
 	var teardowns []func() error
 	defer func() {
 		if errOut == nil {
