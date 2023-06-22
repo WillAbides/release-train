@@ -25,7 +25,7 @@ type rootCmd struct {
 	CheckPR        int               `action:"check-pr,${{ github.event.number }}" help:"${check_pr_help}"`
 	Label          map[string]string `action:"labels" help:"${label_help}" placeholder:"<alias>=<label>;..."`
 	CheckoutDir    string            `action:",${{ github.workspace }}" short:"C" default:"." help:"${checkout_dir_help}"`
-	Ref            string            `action:",${{ github.ref }}" default:"HEAD" help:"${ref_help}"`
+	Ref            string            `default:"HEAD" help:"${ref_help}"`
 	GithubToken    string            `action:"github-token,${{ github.token }}" hidden:"true" env:"GITHUB_TOKEN" help:"${github_token_help}"`
 	CreateTag      bool              `help:"${create_tag_help}"`
 	CreateRelease  bool              `help:"${create_release_help}"`
