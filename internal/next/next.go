@@ -96,6 +96,9 @@ func (o *Options) owner() string {
 
 func GetNext(ctx context.Context, opts *Options) (*Result, error) {
 	logger := logging.GetLogger(ctx)
+	if opts == nil {
+		opts = &Options{}
+	}
 	logger.Info(
 		"starting GetNext",
 		slog.String("repo", opts.Repo),
@@ -103,9 +106,6 @@ func GetNext(ctx context.Context, opts *Options) (*Result, error) {
 		slog.String("head", opts.Head),
 		slog.Int("check_pr", opts.CheckPR),
 	)
-	if opts == nil {
-		opts = &Options{}
-	}
 	minBump := internal.ChangeLevelNone
 	if opts.MinBump != nil {
 		minBump = *opts.MinBump
