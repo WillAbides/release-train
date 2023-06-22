@@ -71,10 +71,10 @@ jobs:
             git tag "$RELEASE_TAG"
             bin/goreleaser release --clean --skip-publish
             cp dist/checksums.txt dist/release-train_*.tar.gz "$ASSETS_DIR"
-      - name: output results
+      - name: echo output
         if: always()
         run: |
-          echo "{{ steps.release-train.outputs }}"
+          echo "${{ steps.release-train.outputs }}"
       - if: steps.release-train.outputs.pre-release-hook-aborted == 'true'
         name: create release pr
         id: create-release-pr
