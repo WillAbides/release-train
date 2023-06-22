@@ -53,7 +53,13 @@ func (c *rootCmd) Run(ctx context.Context, kongCtx *kong.Context) error {
 	}
 	var logHandler slog.Handler = slog.NewTextHandler(os.Stderr, &slogOpts)
 	if c.OutputFormat == "action" {
-		logHandler = logging.NewActionHandler(os.Stdout, &slogOpts)
+		options := logging.ActionHandlerOptions{
+			HandlerOptions: slogOpts,
+		}
+		if os.Getenv("LOG_DEBUG_AS_NOTICE") != "" {
+			options.DebugToNotice = true
+		}
+		logHandler = logging.NewActionHandler(os.Stdout, &options)
 	}
 	ctx = logging.WithLogger(ctx, slog.New(logHandler))
 	if c.GenerateAction {
@@ -79,7 +85,7 @@ func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
 			logger.Error(errOut.Error())
 		}
 	}()
-	logger.Info("starting runRelease")
+	logger.Debug("starting runRelease")
 	ghClient, err := c.GithubClient(ctx)
 	if err != nil {
 		return err

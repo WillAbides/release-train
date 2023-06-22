@@ -50,6 +50,8 @@ jobs:
       - id: release-train
         name: release-train
         uses: './'
+        env:
+          LOG_DEBUG_AS_NOTICE: 1
         with:
           labels: |
             enhancement=semver:minor

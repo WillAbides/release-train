@@ -99,7 +99,7 @@ func GetNext(ctx context.Context, opts *Options) (*Result, error) {
 	if opts == nil {
 		opts = &Options{}
 	}
-	logger.Info(
+	logger.Debug(
 		"starting GetNext",
 		slog.String("repo", opts.Repo),
 		slog.String("base", opts.Base),
@@ -170,7 +170,7 @@ func includePullInResults(ctx context.Context, opts *Options, commits []Commit) 
 
 func bumpVersion(ctx context.Context, prev semver.Version, minBump, maxBump internal.ChangeLevel, commits []Commit) (*Result, error) {
 	logger := logging.GetLogger(ctx)
-	logger.Info("starting bumpVersion", slog.String("prev", prev.String()))
+	logger.Debug("starting bumpVersion", slog.String("prev", prev.String()))
 	if maxBump == 0 {
 		maxBump = internal.ChangeLevelMajor
 	}

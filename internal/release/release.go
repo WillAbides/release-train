@@ -68,7 +68,7 @@ type Result struct {
 
 func (o *Runner) Next(ctx context.Context) (*Result, error) {
 	logger := logging.GetLogger(ctx)
-	logger.Info("starting release Next")
+	logger.Debug("starting release Next")
 	ref := o.Ref
 	if o.Ref == "" {
 		ref = "HEAD"
@@ -211,7 +211,7 @@ func (o *Runner) getReleaseNotes(ctx context.Context, result *Result) (string, e
 
 func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	logger := logging.GetLogger(ctx)
-	logger.Info("starting Run")
+	logger.Debug("starting Run")
 	var teardowns []func() error
 	defer func() {
 		if errOut == nil {
