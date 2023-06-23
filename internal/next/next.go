@@ -21,13 +21,16 @@ type Result struct {
 	ChangeLevel     internal.ChangeLevel `json:"change_level"`
 }
 
-func getCommitPRs(ctx context.Context, opts *Options, commitSha string) ([]internal.Pull, error) {
-	ghResult, err := opts.GithubClient.ListPullRequestsWithCommit(ctx, opts.owner(), opts.repo(), commitSha)
+func getCommitPRs(ctx context.Context, opts *Options, commitSha string, checkAncestor func(string) bool) ([]internal.Pull, error) {
+	ghResult, err := opts.GithubClient.ListMergedPullsForCommit(ctx, opts.owner(), opts.repo(), commitSha)
 	if err != nil {
 		return nil, err
 	}
 	result := make([]internal.Pull, 0, len(ghResult))
 	for _, r := range ghResult {
+		if !checkAncestor(r.MergeCommitSha) {
+			continue
+		}
 		p, e := internal.NewPull(r.Number, opts.LabelAliases, r.Labels...)
 		if e != nil {
 			return nil, e
@@ -39,20 +42,47 @@ func getCommitPRs(ctx context.Context, opts *Options, commitSha string) ([]inter
 
 func compareCommits(ctx context.Context, opts *Options) ([]Commit, error) {
 	var result []Commit
-	commitShas, err := opts.GithubClient.CompareCommits(ctx, opts.owner(), opts.repo(), opts.Base, opts.Head)
+	comp, err := opts.GithubClient.CompareCommits(ctx, opts.owner(), opts.repo(), opts.Base, opts.Head, -1)
 	if err != nil {
 		return nil, err
 	}
-	result = make([]Commit, len(commitShas))
+	ancestorLookup := map[string]bool{}
+	var ancestorMux sync.RWMutex
+	var ancestorErr error
+	checkAncestor := func(sha string) bool {
+		ancestorMux.RLock()
+		b, ok := ancestorLookup[sha]
+		ancestorMux.RUnlock()
+		if ok {
+			return b
+		}
+		ancestorMux.Lock()
+		defer ancestorMux.Unlock()
+		if ancestorErr != nil {
+			return false
+		}
+		b, ok = ancestorLookup[sha]
+		if ok {
+			return b
+		}
+		var ancestorComp *internal.CommitComparison
+		ancestorComp, ancestorErr = opts.GithubClient.CompareCommits(ctx, opts.owner(), opts.repo(), sha, opts.Head, 0)
+		if ancestorErr != nil {
+			return false
+		}
+		ancestorLookup[sha] = ancestorComp.BehindBy == 0
+		return ancestorLookup[sha]
+	}
+	result = make([]Commit, len(comp.Commits))
 	var wg sync.WaitGroup
 	var errLock sync.Mutex
-	for i := range commitShas {
-		commitSha := commitShas[i]
+	for i := range comp.Commits {
+		commitSha := comp.Commits[i]
 		result[i].Sha = commitSha
 		wg.Add(1)
 		go func(idx int) {
 			var e error
-			result[idx].Pulls, e = getCommitPRs(ctx, opts, commitSha)
+			result[idx].Pulls, e = getCommitPRs(ctx, opts, commitSha, checkAncestor)
 			errLock.Lock()
 			err = errors.Join(err, e)
 			errLock.Unlock()
@@ -62,6 +92,9 @@ func compareCommits(ctx context.Context, opts *Options) ([]Commit, error) {
 	wg.Wait()
 	if err != nil {
 		return nil, err
+	}
+	if ancestorErr != nil {
+		return nil, ancestorErr
 	}
 	for i := range result {
 		err = result[i].validate()

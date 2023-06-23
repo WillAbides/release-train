@@ -14,9 +14,12 @@ import (
 	"golang.org/x/oauth2"
 )
 
+//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -source=$GOFILE -destination=mock/$GOFILE
+
 type BasePull struct {
-	Number int
-	Labels []string
+	Number         int
+	MergeCommitSha string
+	Labels         []string
 }
 
 type RepoRelease struct {
@@ -24,9 +27,15 @@ type RepoRelease struct {
 	UploadURL string
 }
 
+type CommitComparison struct {
+	AheadBy  int
+	BehindBy int
+	Commits  []string
+}
+
 type GithubClient interface {
-	ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string) ([]BasePull, error)
-	CompareCommits(ctx context.Context, owner, repo, base, head string) ([]string, error)
+	ListMergedPullsForCommit(ctx context.Context, owner, repo, sha string) ([]BasePull, error)
+	CompareCommits(ctx context.Context, owner, repo, base, head string, count int) (*CommitComparison, error)
 	GenerateReleaseNotes(ctx context.Context, owner, repo, tag, prevTag string) (string, error)
 	CreateRelease(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*RepoRelease, error)
 	UploadAsset(ctx context.Context, uploadURL, filename string) error
@@ -104,7 +113,7 @@ func (g *ghClient) UploadAsset(ctx context.Context, uploadURL, filename string) 
 	return err
 }
 
-func (g *ghClient) ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string) ([]BasePull, error) {
+func (g *ghClient) ListMergedPullsForCommit(ctx context.Context, owner, repo, sha string) ([]BasePull, error) {
 	var result []BasePull
 	opts := &github.PullRequestListOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
@@ -115,12 +124,15 @@ func (g *ghClient) ListPullRequestsWithCommit(ctx context.Context, owner, repo, 
 			return nil, err
 		}
 		for _, apiPull := range apiPulls {
-			if apiPull.GetMergedAt().IsZero() {
+			mergeCommitSHA := apiPull.GetMergeCommitSHA()
+			// only include merged PRs
+			if mergeCommitSHA == "" {
 				continue
 			}
 			resultPull := BasePull{
-				Number: apiPull.GetNumber(),
-				Labels: make([]string, len(apiPull.Labels)),
+				Number:         apiPull.GetNumber(),
+				Labels:         make([]string, len(apiPull.Labels)),
+				MergeCommitSha: mergeCommitSHA,
 			}
 			for i, label := range apiPull.Labels {
 				resultPull.Labels[i] = label.GetName()
@@ -135,23 +147,40 @@ func (g *ghClient) ListPullRequestsWithCommit(ctx context.Context, owner, repo, 
 	return result, nil
 }
 
-func (g *ghClient) CompareCommits(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-	var result []string
-	opts := &github.ListOptions{PerPage: 100}
+// CompareCommits returns a commit comparison that includes up to count commits. If count is -1, all commits are
+// included. If count is 0, no commits are included.
+func (g *ghClient) CompareCommits(ctx context.Context, owner, repo, base, head string, count int) (*CommitComparison, error) {
+	var result CommitComparison
+	const maxPerPage = 100
+	opts := &github.ListOptions{PerPage: maxPerPage}
+	if count >= 0 && count < maxPerPage {
+		opts.PerPage = count
+	}
+	if opts.PerPage == 0 {
+		opts.PerPage = 1
+	}
 	for {
 		comp, resp, err := g.Client.Repositories.CompareCommits(ctx, owner, repo, base, head, opts)
 		if err != nil {
 			return nil, err
 		}
-		for _, commit := range comp.Commits {
-			result = append(result, commit.GetSHA())
+		result.AheadBy = comp.GetAheadBy()
+		result.BehindBy = comp.GetBehindBy()
+		if count == 0 {
+			break
 		}
-		if resp.NextPage == 0 {
+		for _, commit := range comp.Commits {
+			result.Commits = append(result.Commits, commit.GetSHA())
+			if len(result.Commits) == count {
+				break
+			}
+		}
+		if len(result.Commits) == count || resp.NextPage == 0 {
 			break
 		}
 		opts.Page = resp.NextPage
 	}
-	return result, nil
+	return &result, nil
 }
 
 func (g *ghClient) GenerateReleaseNotes(ctx context.Context, owner, repo, tag, prevTag string) (string, error) {
