@@ -37,6 +37,7 @@ jobs:
         name: release-train
         id: release-train
         with:
+          release-train-bin: ${{ env.RELEASE_TRAIN_BIN }}
           labels: |
             enhancement=semver:minor
       - run: |
