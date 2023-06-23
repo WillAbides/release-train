@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/willabides/release-train-action/v3/internal"
@@ -115,33 +116,32 @@ func TestGetNext(t *testing.T) {
 	sha1 := "1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	sha2 := "2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	sha3 := "3aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	mergeSha := "4aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 	t.Run("major", func(t *testing.T) {
-		gh := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				t.Helper()
-				assert.Equal(t, []string{"willabides", "semver-next", "v0.15.0", sha1}, []string{owner, repo, base, head})
-				return []string{sha1, sha2}, nil
-			},
-			StubListPullRequestsWithCommit: testutil.MockListPullRequestsWithCommit(t, []testutil.ListPullRequestsWithCommitCall{
-				{
-					Owner: "willabides", Repo: "semver-next", Sha: sha1,
-					Result: []internal.BasePull{
-						// non-standard caps to test case insensitivity
-						{Number: 1, Labels: []string{"SEMVER:BREAKING", "something else"}},
-						{Number: 2, Labels: []string{"something else"}},
-						{Number: 3},
-						{Number: 4, Labels: []string{internal.LabelMinor}},
-					},
-				},
-				{
-					Owner:  "willabides",
-					Repo:   "semver-next",
-					Sha:    sha2,
-					Result: []internal.BasePull{},
-				},
-			}),
-		}
+		gh := testutil.MockGithubClient(t)
+		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
+			&internal.CommitComparison{
+				AheadBy: 2,
+				Commits: []string{sha1, sha2},
+			}, nil,
+		)
+		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", mergeSha, sha1, 0).Return(
+			&internal.CommitComparison{AheadBy: 2}, nil,
+		)
+		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
+			[]internal.BasePull{
+				// non-standard caps to test case insensitivity
+				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"SEMVER:BREAKING", "something else"}},
+				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
+				{Number: 3, MergeCommitSha: mergeSha},
+				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{internal.LabelMinor}},
+			}, nil,
+		)
+		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
+			[]internal.BasePull{}, nil,
+		)
+
 		got, err := GetNext(
 			ctx,
 			&Options{
@@ -149,7 +149,7 @@ func TestGetNext(t *testing.T) {
 				Base:         "v0.15.0",
 				PrevVersion:  "0.15.0",
 				Head:         sha1,
-				GithubClient: &gh,
+				GithubClient: gh,
 			},
 		)
 		require.NoError(t, err)
@@ -162,29 +162,27 @@ func TestGetNext(t *testing.T) {
 	})
 
 	t.Run("minor", func(t *testing.T) {
-		gh := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				t.Helper()
-				assert.Equal(t, []string{"willabides", "semver-next", "v0.15.0"}, []string{owner, repo, base})
-				assert.Equal(t, sha1, head)
-				return []string{sha1, sha2}, nil
-			},
-			StubListPullRequestsWithCommit: testutil.MockListPullRequestsWithCommit(t, []testutil.ListPullRequestsWithCommitCall{
-				{
-					Owner: "willabides", Repo: "semver-next", Sha: sha1,
-					Result: []internal.BasePull{
-						{Number: 1, Labels: []string{"something else"}},
-						{Number: 2, Labels: []string{internal.LabelMinor}},
-						{Number: 3},
-						{Number: 4, Labels: []string{internal.LabelPatch}},
-					},
-				},
-				{
-					Owner: "willabides", Repo: "semver-next", Sha: sha2,
-					Result: []internal.BasePull{},
-				},
-			}),
-		}
+		gh := testutil.MockGithubClient(t)
+		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
+			&internal.CommitComparison{
+				AheadBy: 2,
+				Commits: []string{sha1, sha2},
+			}, nil,
+		)
+		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", mergeSha, sha1, 0).Return(
+			&internal.CommitComparison{AheadBy: 2}, nil,
+		)
+		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
+			[]internal.BasePull{
+				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
+				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{internal.LabelMinor}},
+				{Number: 3, MergeCommitSha: mergeSha},
+				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{internal.LabelPatch}},
+			}, nil,
+		)
+		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
+			[]internal.BasePull{}, nil,
+		)
 		got, err := GetNext(
 			ctx,
 			&Options{
@@ -192,7 +190,7 @@ func TestGetNext(t *testing.T) {
 				Base:         "v0.15.0",
 				PrevVersion:  "0.15.0",
 				Head:         sha1,
-				GithubClient: &gh,
+				GithubClient: gh,
 			},
 		)
 		require.NoError(t, err)
@@ -205,29 +203,27 @@ func TestGetNext(t *testing.T) {
 	})
 
 	t.Run("patch", func(t *testing.T) {
-		gh := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				t.Helper()
-				assert.Equal(t, []string{"willabides", "semver-next", "v0.15.0"}, []string{owner, repo, base})
-				assert.Equal(t, sha1, head)
-				return []string{sha1, sha2}, nil
-			},
-			StubListPullRequestsWithCommit: testutil.MockListPullRequestsWithCommit(t, []testutil.ListPullRequestsWithCommitCall{
-				{
-					Owner: "willabides", Repo: "semver-next", Sha: sha1,
-					Result: []internal.BasePull{
-						{Number: 1, Labels: []string{"something else"}},
-						{Number: 2, Labels: []string{internal.LabelPatch}},
-						{Number: 3},
-						{Number: 4, Labels: []string{internal.LabelPatch}},
-					},
-				},
-				{
-					Owner: "willabides", Repo: "semver-next", Sha: sha2,
-					Result: []internal.BasePull{},
-				},
-			}),
-		}
+		gh := testutil.MockGithubClient(t)
+		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
+			&internal.CommitComparison{
+				AheadBy: 2,
+				Commits: []string{sha1, sha2},
+			}, nil,
+		)
+		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", mergeSha, sha1, 0).Return(
+			&internal.CommitComparison{AheadBy: 2}, nil,
+		)
+		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
+			[]internal.BasePull{
+				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
+				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{internal.LabelPatch}},
+				{Number: 3, MergeCommitSha: mergeSha},
+				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{internal.LabelPatch}},
+			}, nil,
+		)
+		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
+			[]internal.BasePull{}, nil,
+		)
 		got, err := GetNext(
 			ctx,
 			&Options{
@@ -235,7 +231,7 @@ func TestGetNext(t *testing.T) {
 				Base:         "v0.15.0",
 				PrevVersion:  "0.15.0",
 				Head:         sha1,
-				GithubClient: &gh,
+				GithubClient: gh,
 			},
 		)
 		require.NoError(t, err)
@@ -248,44 +244,37 @@ func TestGetNext(t *testing.T) {
 	})
 
 	t.Run("check pr", func(t *testing.T) {
-		gh := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				t.Helper()
-				assert.Equal(t, []string{"willabides", "semver-next", "v0.15.0"}, []string{owner, repo, base})
-				assert.Equal(t, sha1, head)
-				return []string{sha1, sha2}, nil
-			},
-			StubListPullRequestsWithCommit: testutil.MockListPullRequestsWithCommit(t, []testutil.ListPullRequestsWithCommitCall{
-				{
-					Owner: "willabides", Repo: "semver-next", Sha: sha1,
-					Result: []internal.BasePull{
-						{Number: 1, Labels: []string{"something else"}},
-						{Number: 2, Labels: []string{internal.LabelPatch}},
-						{Number: 3},
-						{Number: 4, Labels: []string{internal.LabelPatch}},
-					},
-				},
-				{
-					Owner: "willabides", Repo: "semver-next", Sha: sha2,
-					Result: []internal.BasePull{},
-				},
-			}),
-			StubGetPullRequest: func(ctx context.Context, owner, repo string, number int) (*internal.BasePull, error) {
-				t.Helper()
-				assert.Equal(t, []string{"willabides", "semver-next"}, []string{owner, repo})
-				assert.Equal(t, 14, number)
-				return &internal.BasePull{
-					Number: 14,
-					Labels: []string{internal.LabelMinor},
-				}, nil
-			},
-			StubGetPullRequestCommits: func(ctx context.Context, owner, repo string, number int) ([]string, error) {
-				t.Helper()
-				assert.Equal(t, []string{"willabides", "semver-next"}, []string{owner, repo})
-				assert.Equal(t, 14, number)
-				return []string{sha1}, nil
-			},
-		}
+		gh := testutil.MockGithubClient(t)
+		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
+			&internal.CommitComparison{
+				AheadBy: 2,
+				Commits: []string{sha1, sha2},
+			}, nil,
+		)
+		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", mergeSha, sha1, 0).Return(
+			&internal.CommitComparison{AheadBy: 2}, nil,
+		)
+		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
+			[]internal.BasePull{
+				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
+				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{internal.LabelPatch}},
+				{Number: 3, MergeCommitSha: mergeSha},
+				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{internal.LabelPatch}},
+			}, nil,
+		)
+		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
+			[]internal.BasePull{}, nil,
+		)
+		gh.EXPECT().GetPullRequest(gomock.Any(), "willabides", "semver-next", 14).Return(
+			&internal.BasePull{
+				Number: 14,
+				Labels: []string{internal.LabelMinor},
+			}, nil,
+		)
+		gh.EXPECT().GetPullRequestCommits(gomock.Any(), "willabides", "semver-next", 14).Return(
+			[]string{sha1}, nil,
+		)
+
 		got, err := GetNext(
 			ctx,
 			&Options{
@@ -293,7 +282,7 @@ func TestGetNext(t *testing.T) {
 				Base:         "v0.15.0",
 				PrevVersion:  "0.15.0",
 				Head:         sha1,
-				GithubClient: &gh,
+				GithubClient: gh,
 				CheckPR:      14,
 			},
 		)
@@ -307,29 +296,27 @@ func TestGetNext(t *testing.T) {
 	})
 
 	t.Run("no change", func(t *testing.T) {
-		gh := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				t.Helper()
-				assert.Equal(t, []string{"willabides", "semver-next", "v0.15.0"}, []string{owner, repo, base})
-				assert.Equal(t, sha1, head)
-				return []string{sha1, sha2}, nil
-			},
-			StubListPullRequestsWithCommit: testutil.MockListPullRequestsWithCommit(t, []testutil.ListPullRequestsWithCommitCall{
-				{
-					Owner: "willabides", Repo: "semver-next", Sha: sha1,
-					Result: []internal.BasePull{
-						{Number: 1, Labels: []string{"something else"}},
-						{Number: 2, Labels: []string{internal.LabelNone}},
-						{Number: 3},
-						{Number: 4, Labels: []string{internal.LabelNone}},
-					},
-				},
-				{
-					Owner: "willabides", Repo: "semver-next", Sha: sha2,
-					Result: []internal.BasePull{},
-				},
-			}),
-		}
+		gh := testutil.MockGithubClient(t)
+		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
+			&internal.CommitComparison{
+				AheadBy: 0,
+				Commits: []string{sha1, sha2},
+			}, nil,
+		)
+		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", mergeSha, sha1, 0).Return(
+			&internal.CommitComparison{AheadBy: 2}, nil,
+		)
+		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
+			[]internal.BasePull{
+				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
+				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{internal.LabelNone}},
+				{Number: 3, MergeCommitSha: mergeSha},
+				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{internal.LabelNone}},
+			}, nil,
+		)
+		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
+			[]internal.BasePull{}, nil,
+		)
 		got, err := GetNext(
 			ctx,
 			&Options{
@@ -337,7 +324,7 @@ func TestGetNext(t *testing.T) {
 				Base:         "v0.15.0",
 				PrevVersion:  "0.15.0",
 				Head:         sha1,
-				GithubClient: &gh,
+				GithubClient: gh,
 			},
 		)
 		require.NoError(t, err)
@@ -350,53 +337,47 @@ func TestGetNext(t *testing.T) {
 	})
 
 	t.Run("missing labels", func(t *testing.T) {
-		gh := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				t.Helper()
-				assert.Equal(t, []string{"willabides", "semver-next", "v0.15.0"}, []string{owner, repo, base})
-				assert.Equal(t, sha1, head)
-				return []string{sha1, sha2}, nil
-			},
-			StubListPullRequestsWithCommit: testutil.MockListPullRequestsWithCommit(t, []testutil.ListPullRequestsWithCommitCall{
-				{
-					Owner: "willabides", Repo: "semver-next", Sha: sha1,
-					Result: []internal.BasePull{
-						{Number: 1, Labels: []string{internal.LabelPatch}},
-					},
-				},
-				{
-					Owner: "willabides", Repo: "semver-next", Sha: sha2,
-					Result: []internal.BasePull{
-						{Number: 2, Labels: []string{"something else"}},
-						{Number: 3, Labels: []string{}},
-					},
-				},
-			}),
-		}
+		gh := testutil.MockGithubClient(t)
+		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
+			&internal.CommitComparison{
+				AheadBy: 0,
+				Commits: []string{sha1, sha2},
+			}, nil,
+		)
+		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", mergeSha, sha1, 0).Return(
+			&internal.CommitComparison{AheadBy: 2}, nil,
+		)
+		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
+			[]internal.BasePull{
+				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{internal.LabelPatch}},
+			}, nil,
+		)
+		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
+			[]internal.BasePull{
+				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
+				{Number: 3, MergeCommitSha: mergeSha, Labels: []string{}},
+			}, nil,
+		)
 		_, err := GetNext(ctx, &Options{
 			Repo:         "willabides/semver-next",
 			Base:         "v0.15.0",
 			Head:         sha1,
-			GithubClient: &gh,
+			GithubClient: gh,
 		})
 		require.EqualError(t, err, "commit 2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa has no labels on associated pull requests: [#2 #3]")
 	})
 
 	t.Run("empty diff", func(t *testing.T) {
-		gh := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				t.Helper()
-				assert.Equal(t, []string{"willabides", "semver-next", "v0.15.0"}, []string{owner, repo, base})
-				assert.Equal(t, sha1, head)
-				return []string{}, nil
-			},
-		}
+		gh := testutil.MockGithubClient(t)
+		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
+			&internal.CommitComparison{AheadBy: 0, Commits: []string{}}, nil,
+		)
 		got, err := GetNext(ctx, &Options{
 			Repo:         "willabides/semver-next",
 			Base:         "v0.15.0",
 			PrevVersion:  "0.15.0",
 			Head:         sha1,
-			GithubClient: &gh,
+			GithubClient: gh,
 		})
 		require.NoError(t, err)
 		want := Result{
@@ -408,21 +389,17 @@ func TestGetNext(t *testing.T) {
 	})
 
 	t.Run("empty diff ignores minBump", func(t *testing.T) {
-		gh := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				t.Helper()
-				assert.Equal(t, []string{"willabides", "semver-next", "v0.15.0"}, []string{owner, repo, base})
-				assert.Equal(t, sha1, head)
-				return []string{}, nil
-			},
-		}
+		gh := testutil.MockGithubClient(t)
+		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
+			&internal.CommitComparison{AheadBy: 0, Commits: []string{}}, nil,
+		)
 		got, err := GetNext(ctx, &Options{
 			Repo:         "willabides/semver-next",
 			Base:         "v0.15.0",
 			PrevVersion:  "0.15.0",
 			Head:         sha1,
 			MinBump:      internal.Ptr(internal.ChangeLevelPatch),
-			GithubClient: &gh,
+			GithubClient: gh,
 		})
 		require.NoError(t, err)
 		want := Result{
@@ -434,29 +411,24 @@ func TestGetNext(t *testing.T) {
 	})
 
 	t.Run("minBump", func(t *testing.T) {
-		gh := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				t.Helper()
-				assert.Equal(t, []string{"willabides", "semver-next", "v0.15.0"}, []string{owner, repo, base})
-				assert.Equal(t, sha1, head)
-				return []string{sha1, sha2}, nil
-			},
-			StubListPullRequestsWithCommit: testutil.MockListPullRequestsWithCommit(t, []testutil.ListPullRequestsWithCommitCall{
-				{
-					Owner: "willabides", Repo: "semver-next", Sha: sha1,
-					Result: []internal.BasePull{
-						{Number: 1, Labels: []string{"something else"}},
-						{Number: 2, Labels: []string{internal.LabelPatch}},
-						{Number: 3},
-						{Number: 4, Labels: []string{internal.LabelPatch}},
-					},
-				},
-				{
-					Owner: "willabides", Repo: "semver-next", Sha: sha2,
-					Result: []internal.BasePull{},
-				},
-			}),
-		}
+		gh := testutil.MockGithubClient(t)
+		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
+			&internal.CommitComparison{AheadBy: 0, Commits: []string{sha1, sha2}}, nil,
+		)
+		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", mergeSha, sha1, 0).Return(
+			&internal.CommitComparison{AheadBy: 2}, nil,
+		)
+		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
+			[]internal.BasePull{
+				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
+				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{internal.LabelPatch}},
+				{Number: 3, MergeCommitSha: mergeSha},
+				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{internal.LabelPatch}},
+			}, nil,
+		)
+		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
+			[]internal.BasePull{}, nil,
+		)
 		got, err := GetNext(
 			ctx,
 			&Options{
@@ -465,7 +437,7 @@ func TestGetNext(t *testing.T) {
 				PrevVersion:  "0.15.0",
 				Head:         sha1,
 				MinBump:      internal.Ptr(internal.ChangeLevelMinor),
-				GithubClient: &gh,
+				GithubClient: gh,
 			},
 		)
 		require.NoError(t, err)
@@ -478,42 +450,38 @@ func TestGetNext(t *testing.T) {
 	})
 
 	t.Run("compareCommits error", func(t *testing.T) {
-		gh := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				t.Helper()
-				assert.Equal(t, []string{"willabides", "semver-next", "v0.15.0"}, []string{owner, repo, base})
-				assert.Equal(t, sha1, head)
-				return nil, assert.AnError
-			},
-		}
+		gh := testutil.MockGithubClient(t)
+		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
+			nil, assert.AnError,
+		)
 		_, err := GetNext(ctx, &Options{
 			Repo:         "willabides/semver-next",
 			Base:         "v0.15.0",
 			Head:         sha1,
-			GithubClient: &gh,
+			GithubClient: gh,
 		})
 		require.EqualError(t, err, assert.AnError.Error())
 	})
 
 	t.Run("listPullRequestsWithCommit error", func(t *testing.T) {
-		gh := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				t.Helper()
-				assert.Equal(t, []string{"willabides", "semver-next", "v0.15.0"}, []string{owner, repo, base})
-				assert.Equal(t, sha1, head)
-				return []string{sha1, sha2, sha3}, nil
-			},
-			StubListPullRequestsWithCommit: testutil.MockListPullRequestsWithCommit(t, []testutil.ListPullRequestsWithCommitCall{
-				{Owner: "willabides", Repo: "semver-next", Sha: sha1, Err: assert.AnError},
-				{Owner: "willabides", Repo: "semver-next", Sha: sha2, Result: []internal.BasePull{}},
-				{Owner: "willabides", Repo: "semver-next", Sha: sha3, Err: assert.AnError},
-			}),
-		}
+		gh := testutil.MockGithubClient(t)
+		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
+			&internal.CommitComparison{AheadBy: 0, Commits: []string{sha1, sha2, sha3}}, nil,
+		)
+		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
+			nil, assert.AnError,
+		)
+		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
+			[]internal.BasePull{}, nil,
+		)
+		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha3).Return(
+			nil, assert.AnError,
+		)
 		_, err := GetNext(ctx, &Options{
 			Repo:         "willabides/semver-next",
 			Base:         "v0.15.0",
 			Head:         sha1,
-			GithubClient: &gh,
+			GithubClient: gh,
 		})
 		require.EqualError(t, err, errors.Join(assert.AnError, assert.AnError).Error())
 	})

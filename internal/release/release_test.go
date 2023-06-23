@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/willabides/release-train-action/v3/internal"
@@ -25,6 +26,7 @@ func mustRunCmd(t *testing.T, dir string, env map[string]string, name string, ar
 
 func Test_releaseRunner_run(t *testing.T) {
 	t.Parallel()
+	mergeSha := "4aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	type gitRepos struct {
 		origin        string
 		clone         string
@@ -84,43 +86,30 @@ git tag head
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				t.Helper()
-				assert.Equal(t, "orgName", owner)
-				assert.Equal(t, "repoName", repo)
-				assert.Equal(t, "v2.0.0", base)
-				assert.Equal(t, repos.taggedCommits["head"], head)
-				return []string{repos.taggedCommits["fourth"], repos.taggedCommits["head"]}, nil
-			},
-			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
-				t.Helper()
-				assert.Equal(t, "orgName", owner)
-				assert.Equal(t, "repoName", repo)
-				switch sha {
-				case repos.taggedCommits["fourth"]:
-					return []internal.BasePull{{Number: 1, Labels: []string{"MinorAlias"}}}, nil
-				case repos.taggedCommits["head"]:
-					return []internal.BasePull{}, nil
-				default:
-					e := fmt.Errorf("unexpected sha %s", sha)
-					t.Error(e)
-					return nil, e
-				}
-			},
-			StubCreateRelease: func(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*internal.RepoRelease, error) {
-				t.Helper()
-				assert.Equal(t, "orgName", owner)
-				assert.Equal(t, "repoName", repo)
-				assert.Equal(t, tag, "v2.1.0")
-				assert.Equal(t, body, "I got your release notes right here buddy\n")
-				assert.Equal(t, prerelease, false)
-				return &internal.RepoRelease{
-					ID:        1,
-					UploadURL: "localhost",
-				}, nil
-			},
-			StubUploadAsset: func(ctx context.Context, uploadURL, filename string) error {
+		githubClient := testutil.MockGithubClient(t)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
+			&internal.CommitComparison{
+				AheadBy: 2,
+				Commits: []string{repos.taggedCommits["fourth"], repos.taggedCommits["head"]},
+			}, nil,
+		)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["head"], 0).Return(
+			&internal.CommitComparison{AheadBy: 1}, nil,
+		)
+		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["fourth"]).Return(
+			[]internal.BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"MinorAlias"}}}, nil,
+		)
+		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
+			[]internal.BasePull{}, nil,
+		)
+		githubClient.EXPECT().CreateRelease(gomock.Any(), "orgName", "repoName", "v2.1.0", "I got your release notes right here buddy\n", false).Return(
+			&internal.RepoRelease{
+				ID:        1,
+				UploadURL: "localhost",
+			}, nil,
+		)
+		githubClient.EXPECT().UploadAsset(gomock.Any(), "localhost", gomock.Any()).DoAndReturn(
+			func(ctx context.Context, uploadURL, filename string) error {
 				t.Helper()
 				content, err := os.ReadFile(filename)
 				if !assert.NoError(t, err) {
@@ -138,14 +127,8 @@ git tag head
 				}
 				return nil
 			},
-			StubPublishRelease: func(ctx context.Context, owner, repo string, id int64) error {
-				t.Helper()
-				assert.Equal(t, "orgName", owner)
-				assert.Equal(t, "repoName", repo)
-				assert.Equal(t, int64(1), id)
-				return nil
-			},
-		}
+		).AnyTimes()
+		githubClient.EXPECT().PublishRelease(gomock.Any(), "orgName", "repoName", int64(1)).Return(nil)
 
 		preHook := `
 #!/bin/sh
@@ -179,7 +162,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			TagPrefix:      "v",
 			Repo:           "orgName/repoName",
 			PushRemote:     "origin",
-			GithubClient:   &githubClient,
+			GithubClient:   githubClient,
 			CreateRelease:  true,
 			PrereleaseHook: preHook,
 			GithubToken:    "token",
@@ -213,45 +196,21 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		ctx := context.Background()
 		repos := setupGit(t)
 		mustRunCmd(t, repos.clone, nil, "git", "checkout", "third")
-		githubClient := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				t.Helper()
-				assert.Equal(t, "orgName", owner)
-				assert.Equal(t, "repoName", repo)
-				assert.Equal(t, repos.taggedCommits["first"], base)
-				assert.Equal(t, repos.taggedCommits["third"], head)
-				return []string{repos.taggedCommits["first"], repos.taggedCommits["third"]}, nil
-			},
-			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo, tag, prevTag string) (string, error) {
-				panic("GenerateReleaseNotes should not be called")
-			},
-			StubCreateRelease: func(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*internal.RepoRelease, error) {
-				t.Helper()
-				assert.Equal(t, "orgName", owner)
-				assert.Equal(t, "repoName", repo)
-				assert.Equal(t, "x1.0.0", tag)
-				assert.Equal(t, "", body)
-				assert.Equal(t, false, prerelease)
-				return &internal.RepoRelease{
-					ID:        1,
-					UploadURL: "localhost",
-				}, nil
-			},
-			StubPublishRelease: func(ctx context.Context, owner, repo string, id int64) error {
-				t.Helper()
-				assert.Equal(t, "orgName", owner)
-				assert.Equal(t, "repoName", repo)
-				assert.Equal(t, int64(1), id)
-				return nil
-			},
-		}
+		githubClient := testutil.MockGithubClient(t)
+		githubClient.EXPECT().CreateRelease(gomock.Any(), "orgName", "repoName", "x1.0.0", "", false).Return(
+			&internal.RepoRelease{
+				ID:        1,
+				UploadURL: "localhost",
+			}, nil,
+		)
+		githubClient.EXPECT().PublishRelease(gomock.Any(), "orgName", "repoName", int64(1)).Return(nil)
 		runner := Runner{
 			CheckoutDir:   repos.clone,
 			Ref:           repos.taggedCommits["third"],
 			TagPrefix:     "x",
 			Repo:          "orgName/repoName",
 			PushRemote:    "origin",
-			GithubClient:  &githubClient,
+			GithubClient:  githubClient,
 			CreateRelease: true,
 			InitialTag:    "x1.0.0",
 			GoModFiles:    []string{"src/go/go.mod"},
@@ -273,31 +232,22 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		ctx := context.Background()
 		repos := setupGit(t)
 
-		githubClient := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				t.Helper()
-				assert.Equal(t, "orgName", owner)
-				assert.Equal(t, "repoName", repo)
-				assert.Equal(t, "v2.0.0", base)
-				assert.Equal(t, repos.taggedCommits["head"], head)
-				return []string{repos.taggedCommits["fourth"], repos.taggedCommits["head"]}, nil
-			},
-			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
-				t.Helper()
-				assert.Equal(t, "orgName", owner)
-				assert.Equal(t, "repoName", repo)
-				switch sha {
-				case repos.taggedCommits["fourth"]:
-					return []internal.BasePull{{Number: 1, Labels: []string{internal.LabelMinor}}}, nil
-				case repos.taggedCommits["head"]:
-					return []internal.BasePull{}, nil
-				default:
-					e := fmt.Errorf("unexpected sha %s", sha)
-					t.Error(e)
-					return nil, e
-				}
-			},
-		}
+		githubClient := testutil.MockGithubClient(t)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
+			&internal.CommitComparison{
+				AheadBy: 2,
+				Commits: []string{repos.taggedCommits["fourth"], repos.taggedCommits["head"]},
+			}, nil,
+		)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["head"], 0).Return(
+			&internal.CommitComparison{AheadBy: 2}, nil,
+		)
+		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["fourth"]).Return(
+			[]internal.BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{internal.LabelMinor}}}, nil,
+		)
+		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
+			[]internal.BasePull{}, nil,
+		)
 		preHook := `
 #!/bin/sh
 set -e
@@ -325,7 +275,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			TagPrefix:      "v",
 			Repo:           "orgName/repoName",
 			PushRemote:     "origin",
-			GithubClient:   &githubClient,
+			GithubClient:   githubClient,
 			CreateTag:      true,
 			PrereleaseHook: preHook,
 			GithubToken:    "token",
@@ -353,31 +303,22 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		ctx := context.Background()
 		repos := setupGit(t)
 
-		githubClient := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				t.Helper()
-				assert.Equal(t, "orgName", owner)
-				assert.Equal(t, "repoName", repo)
-				assert.Equal(t, "v2.0.0", base)
-				assert.Equal(t, repos.taggedCommits["head"], head)
-				return []string{repos.taggedCommits["fourth"], repos.taggedCommits["head"]}, nil
-			},
-			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
-				t.Helper()
-				assert.Equal(t, "orgName", owner)
-				assert.Equal(t, "repoName", repo)
-				switch sha {
-				case repos.taggedCommits["fourth"]:
-					return []internal.BasePull{{Number: 1, Labels: []string{internal.LabelMinor}}}, nil
-				case repos.taggedCommits["head"]:
-					return []internal.BasePull{}, nil
-				default:
-					e := fmt.Errorf("unexpected sha %s", sha)
-					t.Error(e)
-					return nil, e
-				}
-			},
-		}
+		githubClient := testutil.MockGithubClient(t)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
+			&internal.CommitComparison{
+				AheadBy: 2,
+				Commits: []string{repos.taggedCommits["fourth"], repos.taggedCommits["head"]},
+			}, nil,
+		)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["head"], 0).Return(
+			&internal.CommitComparison{AheadBy: 2}, nil,
+		)
+		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["fourth"]).Return(
+			[]internal.BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{internal.LabelMinor}}}, nil,
+		)
+		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
+			[]internal.BasePull{}, nil,
+		)
 		preHook := `echo aborting; exit 10`
 		runner := Runner{
 			CheckoutDir:    repos.clone,
@@ -385,7 +326,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			TagPrefix:      "v",
 			Repo:           "orgName/repoName",
 			PushRemote:     "origin",
-			GithubClient:   &githubClient,
+			GithubClient:   githubClient,
 			CreateTag:      true,
 			PrereleaseHook: preHook,
 		}
@@ -409,58 +350,40 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				t.Helper()
-				assert.Equal(t, "orgName", owner)
-				assert.Equal(t, "repoName", repo)
-				assert.Equal(t, "v2.0.0", base)
-				assert.Equal(t, repos.taggedCommits["head"], head)
-				return []string{repos.taggedCommits["v2.0.0"], repos.taggedCommits["head"]}, nil
-			},
-			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
-				t.Helper()
-				assert.Equal(t, "orgName", owner)
-				assert.Equal(t, "repoName", repo)
-				return []internal.BasePull{
-					{Number: 1, Labels: []string{internal.LabelMinor}},
-				}, nil
-			},
-			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo, tag, prevTag string) (string, error) {
-				t.Helper()
-				assert.Equal(t, "orgName", owner)
-				assert.Equal(t, "repoName", repo)
-				assert.Equal(t, "v2.1.0", tag)
-				assert.Equal(t, "v2.0.0", prevTag)
-				return "release notes", nil
-			},
-			StubCreateRelease: func(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*internal.RepoRelease, error) {
-				t.Helper()
-				assert.Equal(t, "orgName", owner)
-				assert.Equal(t, "repoName", repo)
-				assert.Equal(t, "v2.1.0", tag)
-				assert.Equal(t, "release notes", body)
-				assert.Equal(t, false, prerelease)
-				return &internal.RepoRelease{
-					ID:        1,
-					UploadURL: "localhost",
-				}, nil
-			},
-			StubPublishRelease: func(ctx context.Context, owner, repo string, id int64) error {
-				t.Helper()
-				assert.Equal(t, "orgName", owner)
-				assert.Equal(t, "repoName", repo)
-				assert.Equal(t, int64(1), id)
-				return nil
-			},
-		}
+		githubClient := testutil.MockGithubClient(t)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
+			&internal.CommitComparison{
+				AheadBy: 0,
+				Commits: []string{repos.taggedCommits["v2.0.0"], repos.taggedCommits["head"]},
+			}, nil,
+		)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["head"], 0).Return(
+			&internal.CommitComparison{AheadBy: 0}, nil,
+		)
+		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["v2.0.0"]).Return(
+			[]internal.BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{internal.LabelMinor}}}, nil,
+		)
+		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
+			[]internal.BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{internal.LabelMinor}}}, nil,
+		)
+		githubClient.EXPECT().GenerateReleaseNotes(gomock.Any(), "orgName", "repoName", "v2.1.0", "v2.0.0").Return(
+			"release notes", nil,
+		)
+		githubClient.EXPECT().CreateRelease(gomock.Any(), "orgName", "repoName", "v2.1.0", "release notes", false).Return(
+			&internal.RepoRelease{
+				ID:        1,
+				UploadURL: "localhost",
+			}, nil,
+		)
+		githubClient.EXPECT().PublishRelease(gomock.Any(), "orgName", "repoName", int64(1)).Return(nil)
+
 		runner := Runner{
 			CheckoutDir:   repos.clone,
 			Ref:           repos.taggedCommits["head"],
 			TagPrefix:     "v",
 			Repo:          "orgName/repoName",
 			PushRemote:    "origin",
-			GithubClient:  &githubClient,
+			GithubClient:  githubClient,
 			CreateRelease: true,
 		}
 		got, err := runner.Run(ctx)
@@ -505,17 +428,16 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				return nil, errors.New("api error")
-			},
-		}
+		githubClient := testutil.MockGithubClient(t)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
+			nil, errors.New("api error"),
+		)
 		_, err := (&Runner{
 			CheckoutDir:  repos.clone,
 			Ref:          repos.taggedCommits["head"],
 			TagPrefix:    "v",
 			Repo:         "orgName/repoName",
-			GithubClient: &githubClient,
+			GithubClient: githubClient,
 		}).Run(ctx)
 		require.EqualError(t, err, "api error")
 	})
@@ -524,27 +446,32 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				return []string{repos.taggedCommits["head"]}, nil
-			},
-			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
-				return []internal.BasePull{{Number: 2, Labels: []string{internal.LabelBreaking}}}, nil
-			},
-			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo, tag, prevTag string) (string, error) {
-				return "release notes", nil
-			},
-			StubCreateRelease: func(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*internal.RepoRelease, error) {
-				return nil, errors.New("release error")
-			},
-		}
+		githubClient := testutil.MockGithubClient(t)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
+			&internal.CommitComparison{
+				AheadBy: 1,
+				Commits: []string{repos.taggedCommits["head"]},
+			}, nil,
+		)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["head"], 0).Return(
+			&internal.CommitComparison{AheadBy: 0}, nil,
+		)
+		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
+			[]internal.BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{internal.LabelBreaking}}}, nil,
+		)
+		githubClient.EXPECT().GenerateReleaseNotes(gomock.Any(), "orgName", "repoName", "v3.0.0", "v2.0.0").Return(
+			"release notes", nil,
+		)
+		githubClient.EXPECT().CreateRelease(gomock.Any(), "orgName", "repoName", "v3.0.0", "release notes", false).Return(
+			nil, errors.New("release error"),
+		)
 		runner := Runner{
 			CheckoutDir:   repos.clone,
 			Ref:           repos.taggedCommits["head"],
 			TagPrefix:     "v",
 			Repo:          "orgName/repoName",
 			PushRemote:    "origin",
-			GithubClient:  &githubClient,
+			GithubClient:  githubClient,
 			CreateRelease: true,
 		}
 		_, err := runner.Run(ctx)
@@ -558,35 +485,30 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		calledDelete := false
-		githubClient := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				return []string{repos.taggedCommits["head"]}, nil
-			},
-			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
-				return []internal.BasePull{{Number: 2, Labels: []string{internal.LabelBreaking}}}, nil
-			},
-			StubGenerateReleaseNotes: func(ctx context.Context, owner, repo, tag, prevTag string) (string, error) {
-				return "release notes", nil
-			},
-			StubCreateRelease: func(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*internal.RepoRelease, error) {
-				return &internal.RepoRelease{
-					ID:        1,
-					UploadURL: "localhost",
-				}, nil
-			},
-			StubUploadAsset: func(ctx context.Context, uploadURL, filename string) error {
-				return errors.New("upload error")
-			},
-			StubDeleteRelease: func(ctx context.Context, owner, repo string, id int64) error {
-				t.Helper()
-				assert.Equal(t, "orgName", owner)
-				assert.Equal(t, "repoName", repo)
-				assert.Equal(t, int64(1), id)
-				calledDelete = true
-				return nil
-			},
-		}
+		githubClient := testutil.MockGithubClient(t)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
+			&internal.CommitComparison{
+				AheadBy: 1,
+				Commits: []string{repos.taggedCommits["head"]},
+			}, nil,
+		)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["head"], 0).Return(
+			&internal.CommitComparison{AheadBy: 0}, nil,
+		)
+		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
+			[]internal.BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{internal.LabelBreaking}}}, nil,
+		)
+		githubClient.EXPECT().GenerateReleaseNotes(gomock.Any(), "orgName", "repoName", "v3.0.0", "v2.0.0").Return(
+			"release notes", nil,
+		)
+		githubClient.EXPECT().CreateRelease(gomock.Any(), "orgName", "repoName", "v3.0.0", "release notes", false).Return(
+			&internal.RepoRelease{
+				ID:        1,
+				UploadURL: "localhost",
+			}, nil,
+		)
+		githubClient.EXPECT().UploadAsset(gomock.Any(), "localhost", gomock.Any()).Return(errors.New("upload error"))
+		githubClient.EXPECT().DeleteRelease(gomock.Any(), "orgName", "repoName", int64(1)).Return(nil)
 		preHook := `
 #!/bin/sh
 set -e
@@ -600,14 +522,13 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			TagPrefix:      "v",
 			Repo:           "orgName/repoName",
 			PushRemote:     "origin",
-			GithubClient:   &githubClient,
+			GithubClient:   githubClient,
 			CreateRelease:  true,
 			PrereleaseHook: preHook,
 			TempDir:        t.TempDir(),
 		}
 		_, err := runner.Run(ctx)
 		require.ErrorContains(t, err, "upload error")
-		require.Equal(t, true, calledDelete)
 		ok, err := localTagExists(repos.origin, "v3.0.0")
 		require.NoError(t, err)
 		require.False(t, ok)
@@ -617,20 +538,25 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				return []string{repos.taggedCommits["head"]}, nil
-			},
-			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
-				return []internal.BasePull{{Number: 2, Labels: []string{internal.LabelBreaking}}}, nil
-			},
-		}
+		githubClient := testutil.MockGithubClient(t)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
+			&internal.CommitComparison{
+				AheadBy: 1,
+				Commits: []string{repos.taggedCommits["head"]},
+			}, nil,
+		)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["head"], 0).Return(
+			&internal.CommitComparison{AheadBy: 0}, nil,
+		)
+		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
+			[]internal.BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{internal.LabelBreaking}}}, nil,
+		)
 		got, err := (&Runner{
 			CheckoutDir:  repos.clone,
 			Ref:          repos.taggedCommits["head"],
 			TagPrefix:    "v",
 			Repo:         "orgName/repoName",
-			GithubClient: &githubClient,
+			GithubClient: githubClient,
 		}).Run(ctx)
 		require.NoError(t, err)
 		require.Equal(t, &Result{
@@ -647,20 +573,25 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				return []string{repos.taggedCommits["head"]}, nil
-			},
-			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
-				return []internal.BasePull{{Number: 2, Labels: []string{internal.LabelBreaking}}}, nil
-			},
-		}
+		githubClient := testutil.MockGithubClient(t)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
+			&internal.CommitComparison{
+				AheadBy: 1,
+				Commits: []string{"fake"},
+			}, nil,
+		)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["head"], 0).Return(
+			&internal.CommitComparison{AheadBy: 0}, nil,
+		)
+		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", "fake").Return(
+			[]internal.BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{internal.LabelBreaking}}}, nil,
+		)
 		got, err := (&Runner{
 			CheckoutDir:   repos.clone,
 			Ref:           repos.taggedCommits["head"],
 			TagPrefix:     "v",
 			Repo:          "orgName/repoName",
-			GithubClient:  &githubClient,
+			GithubClient:  githubClient,
 			CreateRelease: true,
 			ReleaseRefs:   []string{"fake"},
 		}).Run(ctx)
@@ -679,20 +610,25 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				return []string{repos.taggedCommits["second"]}, nil
-			},
-			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
-				return []internal.BasePull{{Number: 2, Labels: []string{internal.LabelBreaking}}}, nil
-			},
-		}
+		githubClient := testutil.MockGithubClient(t)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v0.2.0", repos.taggedCommits["second"], -1).Return(
+			&internal.CommitComparison{
+				AheadBy: 1,
+				Commits: []string{repos.taggedCommits["second"]},
+			}, nil,
+		)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["second"], 0).Return(
+			&internal.CommitComparison{AheadBy: 0}, nil,
+		)
+		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["second"]).Return(
+			[]internal.BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{internal.LabelBreaking}}}, nil,
+		)
 		got, err := (&Runner{
 			CheckoutDir:  repos.clone,
 			Ref:          repos.taggedCommits["second"],
 			TagPrefix:    "v",
 			Repo:         "orgName/repoName",
-			GithubClient: &githubClient,
+			GithubClient: githubClient,
 			V0:           true,
 		}).Run(ctx)
 		require.NoError(t, err)
@@ -710,21 +646,12 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				return []string{repos.taggedCommits["third"]}, nil
-			},
-			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
-				return []internal.BasePull{{Number: 2, Labels: []string{internal.LabelMinor}}}, nil
-			},
-		}
 		_, err := (&Runner{
-			CheckoutDir:  repos.clone,
-			Ref:          repos.taggedCommits["third"],
-			TagPrefix:    "v",
-			Repo:         "orgName/repoName",
-			GithubClient: &githubClient,
-			V0:           true,
+			CheckoutDir: repos.clone,
+			Ref:         repos.taggedCommits["third"],
+			TagPrefix:   "v",
+			Repo:        "orgName/repoName",
+			V0:          true,
 		}).Run(ctx)
 		require.EqualError(t, err, `v0 flag is set, but previous version "1.0.0" has major version > 0`)
 	})
@@ -734,22 +661,25 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		ctx := context.Background()
 		repos := setupGit(t)
 		mustRunCmd(t, repos.clone, nil, "git", "tag", "v2.1.0-rc.1", "fifth")
-		githubClient := testutil.GithubStub{
-			StubCompareCommits: func(ctx context.Context, owner, repo, base, head string) ([]string, error) {
-				assert.Equal(t, "v2.1.0-rc.1", base)
-				assert.Equal(t, repos.taggedCommits["head"], head)
-				return []string{repos.taggedCommits["head"]}, nil
-			},
-			StubListPullRequestsWithCommit: func(ctx context.Context, owner, repo, sha string) ([]internal.BasePull, error) {
-				return []internal.BasePull{{Number: 2, Labels: []string{internal.LabelMinor, internal.LabelPrerelease}}}, nil
-			},
-		}
+		githubClient := testutil.MockGithubClient(t)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.1.0-rc.1", repos.taggedCommits["head"], -1).Return(
+			&internal.CommitComparison{
+				AheadBy: 1,
+				Commits: []string{repos.taggedCommits["head"]},
+			}, nil,
+		)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["head"], 0).Return(
+			&internal.CommitComparison{AheadBy: 0}, nil,
+		)
+		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
+			[]internal.BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{internal.LabelMinor, internal.LabelPrerelease}}}, nil,
+		)
 		got, err := (&Runner{
 			CheckoutDir:  repos.clone,
 			Ref:          repos.taggedCommits["head"],
 			TagPrefix:    "v",
 			Repo:         "orgName/repoName",
-			GithubClient: &githubClient,
+			GithubClient: githubClient,
 		}).Run(ctx)
 		require.NoError(t, err)
 		require.Equal(t, &Result{
