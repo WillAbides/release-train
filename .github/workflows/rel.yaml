@@ -2,7 +2,7 @@ name: rel test
 on:
   push:
   pull_request:
-    branches: [ '*']
+    branches: [ '*' ]
     branches-ignore:
       - main
       - v[0-9]
