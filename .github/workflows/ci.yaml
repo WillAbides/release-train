@@ -57,7 +57,7 @@ jobs:
             enhancement=semver:minor
           create-release: true
           validate-go-module: go.mod
-          release-train-bin: ${{ env.RELEASE_TRAIN_BIN }}
+#          release-train-bin: ${{ env.RELEASE_TRAIN_BIN }}
           release-refs: |
             main
             refs/heads/v[0-9]
