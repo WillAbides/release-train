@@ -133,7 +133,10 @@ runs:
         RELEASE_TRAIN_BIN="$ACTION_DIR"/bin/release-train
 
         if [ -z "${{ inputs.release-train-bin }}" ]; then
-          script/bindown install release-train --allow-missing-checksum
+          (
+            cd "$ACTION_DIR"
+        	script/bindown install release-train --allow-missing-checksum
+          )
         else
           RELEASE_TRAIN_BIN="${{ inputs.release-train-bin }}"
         fi
