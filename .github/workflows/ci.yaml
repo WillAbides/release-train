@@ -4,7 +4,6 @@ on:
     branches: [ '*' ]
   workflow_dispatch:
   pull_request:
-    branches: [ '*']
     branches-ignore:
       - main
       - v[0-9]
