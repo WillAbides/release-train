@@ -36,6 +36,11 @@ inputs:
       Whether to create a release. Implies create-tag.
 
       Only literal 'true' will be treated as true.
+  draft:
+    description: |-
+      Leave the release as a draft.
+
+      Only literal 'true' will be treated as true.
   tag-prefix:
     description: The prefix to use for the tag.
     default: v
@@ -195,6 +200,18 @@ runs:
           "") ;;
           *)
             echo "Input create-release must be 'true' or 'false'. Got '${{ inputs.create-release }}'." >&2
+            exit 1
+        	;;
+        esac
+
+        case "${{ inputs.draft }}" in
+          true)
+            set -- "$@" --draft
+            ;;
+          false) ;;
+          "") ;;
+          *)
+            echo "Input draft must be 'true' or 'false'. Got '${{ inputs.draft }}'." >&2
             exit 1
         	;;
         esac

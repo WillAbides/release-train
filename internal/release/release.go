@@ -25,6 +25,7 @@ type Runner struct {
 	GithubToken    string
 	CreateTag      bool
 	CreateRelease  bool
+	Draft          bool
 	V0             bool
 	TagPrefix      string
 	InitialTag     string
@@ -327,12 +328,15 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		return nil, err
 	}
 
+	result.CreatedRelease = true
+	if o.Draft {
+		return result, nil
+	}
+
 	err = o.GithubClient.PublishRelease(ctx, o.repoOwner(), o.repoName(), rel.ID)
 	if err != nil {
 		return nil, err
 	}
-
-	result.CreatedRelease = true
 
 	return result, nil
 }
