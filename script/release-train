@@ -16,17 +16,8 @@ action_dl() {
     mkdir -p tmp
     rm -f tmp/bindown.yaml
 
-    script/bindown -q install gh
-
-    bin/gh release \
-      --repo "WillAbides/release-train" \
-      download "$ACTION_VERSION" \
-      --pattern 'bindown.yaml' \
-      --output tmp/bindown.yaml ||
-      {
-        echo "Failed to download release-train $ACTION_VERSION from action" >&2
-        return 1
-      }
+    curl -L -o tmp/bindown.yaml \
+      "https://github.com/WillAbides/release-train/releases/download/$ACTION_VERSION/bindown.yaml"
 
     script/bindown install release-train --configfile tmp/bindown.yaml --cache .cache --output bin/release-train
     echo "Successfully downloaded release-train $ACTION_VERSION from action" >&2
