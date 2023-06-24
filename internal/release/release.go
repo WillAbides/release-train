@@ -280,8 +280,9 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		"ASSETS_DIR":         o.assetsDir(),
 	}
 
-	result.PrereleaseHookOutput, result.PrereleaseHookAborted, err = runPrereleaseHook(o.CheckoutDir, runEnv, o.PrereleaseHook)
+	result.PrereleaseHookOutput, result.PrereleaseHookAborted, err = runPrereleaseHook(ctx, o.CheckoutDir, runEnv, o.PrereleaseHook)
 	if err != nil {
+		logger.Debug("prerelease hook errored", slog.String("output", result.PrereleaseHookOutput))
 		return nil, err
 	}
 	if result.PrereleaseHookAborted {
@@ -380,7 +381,8 @@ func (o *Runner) tagRelease(releaseTag string) error {
 	return err
 }
 
-func runPrereleaseHook(dir string, env map[string]string, hook string) (stdout string, abort bool, _ error) {
+func runPrereleaseHook(ctx context.Context, dir string, env map[string]string, hook string) (stdout string, abort bool, _ error) {
+	logger := logging.GetLogger(ctx)
 	if hook == "" {
 		return "", false, nil
 	}
@@ -394,9 +396,11 @@ func runPrereleaseHook(dir string, env map[string]string, hook string) (stdout s
 	cmd.Stdout = &stdoutBuf
 	err := cmd.Run()
 	if err != nil {
+		logger.Debug("prerelease hook errored", slog.String("output", stdoutBuf.String()))
 		exitErr := internal.AsExitErr(err)
 		if exitErr != nil {
 			err = errors.Join(err, errors.New(string(exitErr.Stderr)))
+			logger.Debug("prerelease hook errored", slog.String("stderr", string(exitErr.Stderr)))
 			if exitErr.ExitCode() == 10 {
 				return stdoutBuf.String(), true, nil
 			}
