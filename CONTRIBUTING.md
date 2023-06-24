@@ -11,11 +11,6 @@ release-train uses a number of scripts to automate common tasks. They are found 
 
 script/bindown runs bindown
 
-### bindown-template
-
-script/bindown-template builds a bindown template for release-train.
-Usage: script/bindown-template <release> <output-file>
-
 ### bootstrap-bindown.sh
 
 bootstraps bindown -- only used by script/bindown
