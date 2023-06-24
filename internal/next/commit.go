@@ -68,7 +68,7 @@ func (c Commit) validate() error {
 
 	missingLabelPR := len(c.Pulls) > 0
 	for _, pull := range c.Pulls {
-		if len(pull.LevelLabels) > 0 {
+		if len(pull.LevelLabels) > 0 || pull.HasStableLabel {
 			missingLabelPR = false
 			break
 		}
