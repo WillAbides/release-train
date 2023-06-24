@@ -86,6 +86,11 @@ inputs:
       Accepts multiple values. One value per line.
   tempdir:
     description: The prefix to use with mktemp to create a temporary directory.
+  debug:
+    description: |-
+      Enable debug logging.
+
+      Only literal 'true' will be treated as true.
   release-train-bin:
     description: Path to release-train binary. Only needed if you're using a custom release-train binary.
 outputs:
@@ -235,5 +240,17 @@ runs:
         if [ -n "${{ inputs.tempdir }}" ]; then
           set -- "$@" --tempdir '${{ inputs.tempdir }}'
         fi
+
+        case "${{ inputs.debug }}" in
+          true)
+            set -- "$@" --debug
+            ;;
+          false) ;;
+          "") ;;
+          *)
+            echo "Input debug must be 'true' or 'false'. Got '${{ inputs.debug }}'." >&2
+            exit 1
+        	;;
+        esac
 
         "$RELEASE_TRAIN_BIN" "$@"

@@ -50,12 +50,11 @@ jobs:
       - id: release-train
         name: release-train
         uses: './'
-        env:
-          LOG_DEBUG_AS_NOTICE: 1
         with:
           labels: |
             enhancement=semver:minor
           create-release: true
+          debug: true
           validate-go-module: go.mod
           release-train-bin: ${{ env.RELEASE_TRAIN_BIN }}
           release-refs: |
