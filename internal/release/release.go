@@ -16,6 +16,7 @@ import (
 	"github.com/willabides/release-train-action/v3/internal/logging"
 	"github.com/willabides/release-train-action/v3/internal/next"
 	"github.com/willabides/release-train-action/v3/internal/prev"
+	"golang.org/x/exp/slog"
 	"golang.org/x/mod/modfile"
 )
 
@@ -137,6 +138,7 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 	result.ReleaseVersion = &nextRes.NextVersion
 	result.ReleaseTag = o.TagPrefix + nextRes.NextVersion.String()
 	result.ChangeLevel = nextRes.ChangeLevel
+	logger.Debug("returning from release Next", slog.Any("result", result))
 	return &result, nil
 }
 
