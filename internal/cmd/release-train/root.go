@@ -27,6 +27,7 @@ type rootCmd struct {
 	GithubToken    string            `action:"github-token,${{ github.token }}" hidden:"true" env:"GITHUB_TOKEN" help:"${github_token_help}"`
 	CreateTag      bool              `help:"${create_tag_help}"`
 	CreateRelease  bool              `help:"${create_release_help}"`
+	Draft          bool              `help:"${draft_help}"`
 	TagPrefix      string            `default:"v" help:"${tag_prefix_help}"`
 	V0             bool              `name:"v0" help:"${v0_help}"`
 	InitialTag     string            `action:"initial-release-tag" help:"${initial_tag_help}" default:"${initial_tag_default}"`
@@ -123,6 +124,7 @@ func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
 		GithubToken:    c.GithubToken,
 		CreateTag:      createTag,
 		CreateRelease:  c.CreateRelease,
+		Draft:          c.Draft,
 		TagPrefix:      c.TagPrefix,
 		InitialTag:     c.InitialTag,
 		PrereleaseHook: c.PreReleaseHook,

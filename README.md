@@ -60,6 +60,12 @@ Whether to create a release. Implies create-tag.
 
 Only literal 'true' will be treated as true.
 
+### draft
+
+Leave the release as a draft.
+
+Only literal 'true' will be treated as true.
+
 ### tag-prefix
 
 default: `v`
