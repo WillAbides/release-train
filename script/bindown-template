@@ -1,0 +1,29 @@
+#!/bin/bash
+#/ script/bindown-template builds a bindown template for release-train.
+#/ Usage: script/bindown-template <release> <output-file>
+
+set -e
+
+REPO_DIR="$(CDPATH="" cd -- "$(dirname -- "$0")/.." && pwd -P)"
+
+[ "$#" -eq 2 ] || {
+  echo "Usage: script/bindown-template <release> <output-file>" >&2
+  exit 1
+}
+
+[ -f "$REPO_DIR"/bin/bindown ] || (
+  cd "$REPO_DIR"
+  script/bootstrap-bindown.sh 2> /dev/null
+)
+PATH="$REPO_DIR/bin:$PATH"
+
+RELEASE="$1"
+CONFIG_FILE="$2"
+
+mkdir -p "$(dirname "$CONFIG_FILE")"
+echo "{}" > "$CONFIG_FILE"
+
+yes '' | bindown dependency add-by-github-release \
+  willabides/release-train@"$RELEASE" \
+  --configfile "$CONFIG_FILE" \
+  --experimental
