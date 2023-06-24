@@ -126,6 +126,12 @@ Accepts multiple values. One value per line.
 
 The prefix to use with mktemp to create a temporary directory.
 
+### debug
+
+Enable debug logging.
+
+Only literal 'true' will be treated as true.
+
 ### release-train-bin
 
 Path to release-train binary. Only needed if you're using a custom release-train binary.
