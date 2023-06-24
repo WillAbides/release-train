@@ -8,7 +8,7 @@ REPO_DIR="$(CDPATH="" cd -- "$(dirname -- "$0")/.." && pwd -P)"
 
 action_dl() {
   ( 
-    [ -n "$GITHUB_ACTION_PATH" ] && [ -n "$GITHUB_ACTION_REPOSITORY" ] || return 1
+    [ -n "$GITHUB_ACTION_PATH" ] || return 1
     cd "$REPO_DIR"
     ACTION_VERSION="$(basename "$GITHUB_ACTION_PATH")"
     echo "Using release-train version $ACTION_VERSION from action"
@@ -19,7 +19,7 @@ action_dl() {
     script/bindown -q install gh
 
     bin/gh release \
-      --repo "$GITHUB_ACTION_REPOSITORY" \
+      --repo "WillAbides/release-train" \
       download "$ACTION_VERSION" \
       --pattern 'bindown.yaml' \
       --output tmp/bindown.yaml ||
