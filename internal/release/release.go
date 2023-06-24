@@ -251,7 +251,8 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	if result.ReleaseVersion == nil || !createTag {
 		return result, nil
 	}
-	if !result.FirstRelease && result.ChangeLevel == internal.ChangeLevelNone {
+	if !result.FirstRelease && result.PreviousVersion == result.ReleaseVersion.String() {
+		logger.Debug("no changes detected since previous release %s, skipping tag", result.PreviousVersion)
 		return result, nil
 	}
 

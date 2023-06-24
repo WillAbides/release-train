@@ -165,11 +165,13 @@ func GetNext(ctx context.Context, opts *Options) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
+	logger.Debug("found commits", slog.Any("commits", commits))
 	if opts.CheckPR != 0 {
 		commits, err = includePullInResults(ctx, opts, commits)
 		if err != nil {
 			return nil, err
 		}
+		logger.Debug("found commits after including PR", slog.Any("commits", commits))
 	}
 	return bumpVersion(ctx, *prev, minBump, maxBump, commits)
 }
@@ -220,6 +222,7 @@ func bumpVersion(ctx context.Context, prev semver.Version, minBump, maxBump inte
 			pullsMap[p.Number] = p
 		}
 	}
+	logger.Debug("mapped pulls", slog.Any("result", result))
 	if len(pullsMap) == 0 {
 		result.NextVersion = result.PreviousVersion
 		return &result, nil
@@ -279,7 +282,16 @@ func bumpVersion(ctx context.Context, prev semver.Version, minBump, maxBump inte
 	if prev.Prerelease() != "" && !isStable {
 		return nil, fmt.Errorf("cannot create a stable release from a pre-release unless all PRs are labeled semver:stable. unlabeled PRs: %v", unstablePulls)
 	}
-	result.NextVersion = incrLevel(prev, result.ChangeLevel)
+	result.NextVersion = prev
+	if isStable {
+		var err error
+		result.NextVersion, err = result.NextVersion.SetPrerelease("")
+		if err != nil {
+			return nil, err
+		}
+		logger.Debug("isStable", slog.Any("result", result))
+	}
+	result.NextVersion = incrLevel(result.NextVersion, result.ChangeLevel)
 	return &result, nil
 }
 
