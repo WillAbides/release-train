@@ -650,6 +650,25 @@ func Test_bumpVersion(t *testing.T) {
 			},
 			wantErr: "cannot have pre-release and non-pre-release PRs in the same release. pre-release PRs: [#1], non-pre-release PRs: [#2]",
 		},
+		{
+			name: "stable tag only",
+			prev: "0.1.0-0",
+			commits: []Commit{
+				{
+					Pulls: []internal.Pull{
+						{
+							Number:         1,
+							HasStableLabel: true,
+						},
+					},
+				},
+			},
+			want: &Result{
+				NextVersion:     *semver.MustParse("0.1.0"),
+				PreviousVersion: *semver.MustParse("0.1.0-0"),
+				ChangeLevel:     internal.ChangeLevelNone,
+			},
+		},
 	} {
 		t.Run(td.name, func(t *testing.T) {
 			prev := semver.MustParse(td.prev)

@@ -3,8 +3,11 @@
 
 set -e
 
-CDPATH="" cd -- "$(dirname -- "$0")/.."
+REPO_DIR="$(CDPATH="" cd -- "$(dirname -- "$0")/.." && pwd -P)"
 
-go build -o bin/release-train .
+( 
+  cd "$REPO_DIR"
+  go build -o bin/release-train .
+)
 
-exec bin/release-train "$@"
+exec "$REPO_DIR"/bin/release-train "$@"
