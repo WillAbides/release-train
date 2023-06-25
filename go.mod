@@ -10,6 +10,7 @@ require (
 	github.com/google/go-github/v53 v53.0.0
 	github.com/sethvargo/go-githubactions v1.1.0
 	github.com/stretchr/testify v1.8.4
+	github.com/willabides/actionslog v0.0.0
 	github.com/wk8/go-ordered-map/v2 v2.1.7
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
 	golang.org/x/mod v0.10.0
