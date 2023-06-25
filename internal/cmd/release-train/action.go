@@ -114,9 +114,7 @@ fi
 
 func getAction(kongCtx *kong.Context) (*actions.CompositeAction, error) {
 	script := `#!/bin/sh
-set -ex
-
-env
+set -e
 
 ACTION_DIR="${{ github.action_path }}"
 RELEASE_TRAIN_BIN="$ACTION_DIR"/bin/release-train
