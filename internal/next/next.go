@@ -11,7 +11,6 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/willabides/release-train-action/v3/internal"
-	"github.com/willabides/release-train-action/v3/internal/logging"
 	"golang.org/x/exp/slog"
 )
 
@@ -128,7 +127,7 @@ func (o *Options) owner() string {
 }
 
 func GetNext(ctx context.Context, opts *Options) (*Result, error) {
-	logger := logging.GetLogger(ctx)
+	logger := internal.GetLogger(ctx)
 	if opts == nil {
 		opts = &Options{}
 	}
@@ -204,7 +203,7 @@ func includePullInResults(ctx context.Context, opts *Options, commits []Commit) 
 }
 
 func bumpVersion(ctx context.Context, prev semver.Version, minBump, maxBump internal.ChangeLevel, commits []Commit) (*Result, error) {
-	logger := logging.GetLogger(ctx)
+	logger := internal.GetLogger(ctx)
 	logger.Debug("starting bumpVersion", slog.String("prev", prev.String()))
 	if maxBump == 0 {
 		maxBump = internal.ChangeLevelMajor

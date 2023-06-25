@@ -13,7 +13,6 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/willabides/release-train-action/v3/internal"
-	"github.com/willabides/release-train-action/v3/internal/logging"
 	"github.com/willabides/release-train-action/v3/internal/next"
 	"github.com/willabides/release-train-action/v3/internal/prev"
 	"golang.org/x/exp/slog"
@@ -69,7 +68,7 @@ type Result struct {
 }
 
 func (o *Runner) Next(ctx context.Context) (*Result, error) {
-	logger := logging.GetLogger(ctx)
+	logger := internal.GetLogger(ctx)
 	logger.Debug("starting release Next")
 	ref := o.Ref
 	if o.Ref == "" {
@@ -213,7 +212,7 @@ func (o *Runner) getReleaseNotes(ctx context.Context, result *Result) (string, e
 }
 
 func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
-	logger := logging.GetLogger(ctx)
+	logger := internal.GetLogger(ctx)
 	logger.Debug("starting Run")
 	var teardowns []func() error
 	defer func() {
@@ -382,7 +381,7 @@ func (o *Runner) tagRelease(releaseTag string) error {
 }
 
 func runPrereleaseHook(ctx context.Context, dir string, env map[string]string, hook string) (stdout string, abort bool, _ error) {
-	logger := logging.GetLogger(ctx)
+	logger := internal.GetLogger(ctx)
 	if hook == "" {
 		return "", false, nil
 	}
