@@ -5,31 +5,31 @@ import (
 	"sort"
 )
 
-type Pull struct {
+type ghPull struct {
 	Number           int         `json:"number"`
 	LevelLabels      []string    `json:"labels,omitempty"`
-	ChangeLevel      ChangeLevel `json:"change_level"`
+	ChangeLevel      changeLevel `json:"change_level"`
 	HasPreLabel      bool        `json:"has_pre_label,omitempty"`
 	PreReleasePrefix string      `json:"pre_release_prefix,omitempty"`
 	HasStableLabel   bool        `json:"has_stable_label,omitempty"`
 }
 
-func NewPull(number int, aliases map[string]string, labels ...string) (*Pull, error) {
-	p := Pull{
+func newPull(number int, aliases map[string]string, labels ...string) (*ghPull, error) {
+	p := ghPull{
 		Number:      number,
-		ChangeLevel: ChangeLevelNone,
+		ChangeLevel: changeLevelNone,
 	}
 	sort.Strings(labels)
 	for _, label := range labels {
 		resolvedLabel := ResolveLabel(label, aliases)
-		level, ok := LabelLevels[resolvedLabel]
+		level, ok := labelLevels[resolvedLabel]
 		if ok {
 			p.LevelLabels = append(p.LevelLabels, label)
 			if level > p.ChangeLevel {
 				p.ChangeLevel = level
 			}
 		}
-		pre, prefix := CheckPrereleaseLabel(label, nil)
+		pre, prefix := checkPrereleaseLabel(label, nil)
 		if pre {
 			p.HasPreLabel = true
 			if prefix != "" {
@@ -39,7 +39,7 @@ func NewPull(number int, aliases map[string]string, labels ...string) (*Pull, er
 				p.PreReleasePrefix = prefix
 			}
 		}
-		if resolvedLabel == LabelStable {
+		if resolvedLabel == labelStable {
 			p.HasStableLabel = true
 		}
 	}
@@ -49,6 +49,6 @@ func NewPull(number int, aliases map[string]string, labels ...string) (*Pull, er
 	return &p, nil
 }
 
-func (p Pull) String() string {
+func (p ghPull) String() string {
 	return fmt.Sprintf("#%d", p.Number)
 }

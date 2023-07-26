@@ -91,7 +91,7 @@ func (c *rootCmd) Run(ctx context.Context, kongCtx *kong.Context) error {
 			}).WithOutput,
 		}
 	}
-	ctx = WithLogger(ctx, slog.New(logHandler))
+	ctx = withLogger(ctx, slog.New(logHandler))
 	if c.GenerateAction {
 		return c.generateAction(kongCtx)
 	}
@@ -109,7 +109,7 @@ func (c *rootCmd) generateAction(kongCtx *kong.Context) error {
 }
 
 func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
-	logger := GetLogger(ctx)
+	logger := getLogger(ctx)
 	defer func() {
 		if errOut != nil {
 			logger.Error(errOut.Error())
@@ -141,7 +141,7 @@ func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
 
 	repo := c.Repo
 	if repo == "" {
-		repo, err = GetGithubRepoFromRemote(c.CheckoutDir, c.PushRemote)
+		repo, err = getGithubRepoFromRemote(c.CheckoutDir, c.PushRemote)
 		if err != nil {
 			return err
 		}

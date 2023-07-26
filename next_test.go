@@ -15,80 +15,80 @@ import (
 func Test_incrPre(t *testing.T) {
 	for _, td := range []struct {
 		prev    string
-		level   ChangeLevel
+		level   changeLevel
 		prefix  string
 		want    string
 		wantErr string
 	}{
 		{
 			prev:  "1.2.3",
-			level: ChangeLevelMajor,
+			level: changeLevelMajor,
 			want:  "2.0.0-0",
 		},
 		{
 			prev:  "1.0.0-alpha.0",
-			level: ChangeLevelMinor,
+			level: changeLevelMinor,
 			want:  "1.0.0-alpha.1",
 		},
 		{
 			prev:  "1.0.0-0",
-			level: ChangeLevelMinor,
+			level: changeLevelMinor,
 			want:  "1.0.0-1",
 		},
 		{
 			prev:  "1.0.1-0",
-			level: ChangeLevelMinor,
+			level: changeLevelMinor,
 			want:  "1.1.0-0",
 		},
 		{
 			prev:  "1.0.1-0",
-			level: ChangeLevelPatch,
+			level: changeLevelPatch,
 			want:  "1.0.1-1",
 		},
 		{
 			prev:  "1.0.1-0",
-			level: ChangeLevelMajor,
+			level: changeLevelMajor,
 			want:  "2.0.0-0",
 		},
 		{
 			prev:   "1.0.1-0",
-			level:  ChangeLevelMajor,
+			level:  changeLevelMajor,
 			prefix: "alpha",
 			want:   "2.0.0-alpha.0",
 		},
 		{
 			prev:    "1.2.3",
-			level:   ChangeLevelNone,
+			level:   changeLevelNone,
 			prefix:  "alpha",
 			wantErr: `invalid change level for pre-release: none`,
 		},
 		{
 			prev:    "1.2.3-beta.0",
-			level:   ChangeLevelPatch,
+			level:   changeLevelPatch,
 			prefix:  "alpha",
 			wantErr: `pre-release version "1.2.3-alpha.0" is not greater than "1.2.3-beta.0"`,
 		},
 		{
 			prev:   "1.2.3-beta.0",
-			level:  ChangeLevelPatch,
+			level:  changeLevelPatch,
 			prefix: "",
 			want:   "1.2.3-beta.1",
 		},
 		{
 			prev:    "1.2.3-beta.0",
-			level:   ChangeLevelPatch,
+			level:   changeLevelPatch,
 			prefix:  "_invalid",
 			wantErr: "Invalid Prerelease string",
 		},
 		{
 			prev:   "1.2.3-rc0",
-			level:  ChangeLevelPatch,
+			level:  changeLevelPatch,
 			prefix: "",
 			want:   "1.2.3-rc0.0",
 		},
 		{
 			prev:    "1.2.3-rc0",
-			level:   ChangeLevelPatch,
+			level:   changeLevelPatch,
 			prefix:  "alpha",
 			wantErr: `pre-release version "1.2.3-alpha.0" is not greater than "1.2.3-rc0"`,
 		},
@@ -133,16 +133,16 @@ func TestGetNext(t *testing.T) {
 				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"SEMVER:BREAKING", "something else"}},
 				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
 				{Number: 3, MergeCommitSha: mergeSha},
-				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{LabelMinor}},
+				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelMinor}},
 			}, nil,
 		)
 		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
 			[]BasePull{}, nil,
 		)
 
-		got, err := GetNext(
+		got, err := getNext(
 			ctx,
-			&GetNextOptions{
+			&getNextOptions{
 				Repo:         "willabides/semver-next",
 				Base:         "v0.15.0",
 				PrevVersion:  "0.15.0",
@@ -151,10 +151,10 @@ func TestGetNext(t *testing.T) {
 			},
 		)
 		require.NoError(t, err)
-		want := GetNextResult{
+		want := getNextResult{
 			NextVersion:     *semver.MustParse("1.0.0"),
 			PreviousVersion: *semver.MustParse("0.15.0"),
-			ChangeLevel:     ChangeLevelMajor,
+			ChangeLevel:     changeLevelMajor,
 		}
 		require.Equal(t, &want, got)
 	})
@@ -173,17 +173,17 @@ func TestGetNext(t *testing.T) {
 		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
 			[]BasePull{
 				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
-				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{LabelMinor}},
+				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelMinor}},
 				{Number: 3, MergeCommitSha: mergeSha},
-				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{LabelPatch}},
+				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
 			}, nil,
 		)
 		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
 			[]BasePull{}, nil,
 		)
-		got, err := GetNext(
+		got, err := getNext(
 			ctx,
-			&GetNextOptions{
+			&getNextOptions{
 				Repo:         "willabides/semver-next",
 				Base:         "v0.15.0",
 				PrevVersion:  "0.15.0",
@@ -192,10 +192,10 @@ func TestGetNext(t *testing.T) {
 			},
 		)
 		require.NoError(t, err)
-		want := GetNextResult{
+		want := getNextResult{
 			NextVersion:     *semver.MustParse("0.16.0"),
 			PreviousVersion: *semver.MustParse("0.15.0"),
-			ChangeLevel:     ChangeLevelMinor,
+			ChangeLevel:     changeLevelMinor,
 		}
 		require.Equal(t, &want, got)
 	})
@@ -214,17 +214,17 @@ func TestGetNext(t *testing.T) {
 		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
 			[]BasePull{
 				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
-				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{LabelPatch}},
+				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
 				{Number: 3, MergeCommitSha: mergeSha},
-				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{LabelPatch}},
+				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
 			}, nil,
 		)
 		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
 			[]BasePull{}, nil,
 		)
-		got, err := GetNext(
+		got, err := getNext(
 			ctx,
-			&GetNextOptions{
+			&getNextOptions{
 				Repo:         "willabides/semver-next",
 				Base:         "v0.15.0",
 				PrevVersion:  "0.15.0",
@@ -233,10 +233,10 @@ func TestGetNext(t *testing.T) {
 			},
 		)
 		require.NoError(t, err)
-		want := GetNextResult{
+		want := getNextResult{
 			NextVersion:     *semver.MustParse("0.15.1"),
 			PreviousVersion: *semver.MustParse("0.15.0"),
-			ChangeLevel:     ChangeLevelPatch,
+			ChangeLevel:     changeLevelPatch,
 		}
 		require.Equal(t, &want, got)
 	})
@@ -255,9 +255,9 @@ func TestGetNext(t *testing.T) {
 		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
 			[]BasePull{
 				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
-				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{LabelPatch}},
+				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
 				{Number: 3, MergeCommitSha: mergeSha},
-				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{LabelPatch}},
+				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
 			}, nil,
 		)
 		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
@@ -266,16 +266,16 @@ func TestGetNext(t *testing.T) {
 		gh.EXPECT().GetPullRequest(gomock.Any(), "willabides", "semver-next", 14).Return(
 			&BasePull{
 				Number: 14,
-				Labels: []string{LabelMinor},
+				Labels: []string{labelMinor},
 			}, nil,
 		)
 		gh.EXPECT().GetPullRequestCommits(gomock.Any(), "willabides", "semver-next", 14).Return(
 			[]string{sha1}, nil,
 		)
 
-		got, err := GetNext(
+		got, err := getNext(
 			ctx,
-			&GetNextOptions{
+			&getNextOptions{
 				Repo:         "willabides/semver-next",
 				Base:         "v0.15.0",
 				PrevVersion:  "0.15.0",
@@ -285,10 +285,10 @@ func TestGetNext(t *testing.T) {
 			},
 		)
 		require.NoError(t, err)
-		want := GetNextResult{
+		want := getNextResult{
 			NextVersion:     *semver.MustParse("0.16.0"),
 			PreviousVersion: *semver.MustParse("0.15.0"),
-			ChangeLevel:     ChangeLevelMinor,
+			ChangeLevel:     changeLevelMinor,
 		}
 		require.Equal(t, &want, got)
 	})
@@ -307,17 +307,17 @@ func TestGetNext(t *testing.T) {
 		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
 			[]BasePull{
 				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
-				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{LabelNone}},
+				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelNone}},
 				{Number: 3, MergeCommitSha: mergeSha},
-				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{LabelNone}},
+				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelNone}},
 			}, nil,
 		)
 		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
 			[]BasePull{}, nil,
 		)
-		got, err := GetNext(
+		got, err := getNext(
 			ctx,
-			&GetNextOptions{
+			&getNextOptions{
 				Repo:         "willabides/semver-next",
 				Base:         "v0.15.0",
 				PrevVersion:  "0.15.0",
@@ -326,10 +326,10 @@ func TestGetNext(t *testing.T) {
 			},
 		)
 		require.NoError(t, err)
-		want := GetNextResult{
+		want := getNextResult{
 			NextVersion:     *semver.MustParse("0.15.0"),
 			PreviousVersion: *semver.MustParse("0.15.0"),
-			ChangeLevel:     ChangeLevelNone,
+			ChangeLevel:     changeLevelNone,
 		}
 		require.Equal(t, &want, got)
 	})
@@ -347,7 +347,7 @@ func TestGetNext(t *testing.T) {
 		)
 		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
 			[]BasePull{
-				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{LabelPatch}},
+				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
 			}, nil,
 		)
 		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
@@ -356,7 +356,7 @@ func TestGetNext(t *testing.T) {
 				{Number: 3, MergeCommitSha: mergeSha, Labels: []string{}},
 			}, nil,
 		)
-		_, err := GetNext(ctx, &GetNextOptions{
+		_, err := getNext(ctx, &getNextOptions{
 			Repo:         "willabides/semver-next",
 			Base:         "v0.15.0",
 			Head:         sha1,
@@ -370,7 +370,7 @@ func TestGetNext(t *testing.T) {
 		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
 			&CommitComparison{AheadBy: 0, Commits: []string{}}, nil,
 		)
-		got, err := GetNext(ctx, &GetNextOptions{
+		got, err := getNext(ctx, &getNextOptions{
 			Repo:         "willabides/semver-next",
 			Base:         "v0.15.0",
 			PrevVersion:  "0.15.0",
@@ -378,16 +378,16 @@ func TestGetNext(t *testing.T) {
 			GithubClient: gh,
 		})
 		require.NoError(t, err)
-		want := GetNextResult{
+		want := getNextResult{
 			NextVersion:     *semver.MustParse("0.15.0"),
 			PreviousVersion: *semver.MustParse("0.15.0"),
-			ChangeLevel:     ChangeLevelNone,
+			ChangeLevel:     changeLevelNone,
 		}
 		require.Equal(t, &want, got)
 	})
-	patchLvl := ChangeLevelPatch
-	minorLvl := ChangeLevelMinor
-	majorLvl := ChangeLevelMajor
+	patchLvl := changeLevelPatch
+	minorLvl := changeLevelMinor
+	majorLvl := changeLevelMajor
 
 	t.Run("empty diff ignores minBump", func(t *testing.T) {
 		gh := mockGithubClient(t)
@@ -395,7 +395,7 @@ func TestGetNext(t *testing.T) {
 			&CommitComparison{AheadBy: 0, Commits: []string{}}, nil,
 		)
 
-		got, err := GetNext(ctx, &GetNextOptions{
+		got, err := getNext(ctx, &getNextOptions{
 			Repo:         "willabides/semver-next",
 			Base:         "v0.15.0",
 			PrevVersion:  "0.15.0",
@@ -404,10 +404,10 @@ func TestGetNext(t *testing.T) {
 			GithubClient: gh,
 		})
 		require.NoError(t, err)
-		want := GetNextResult{
+		want := getNextResult{
 			NextVersion:     *semver.MustParse("0.15.0"),
 			PreviousVersion: *semver.MustParse("0.15.0"),
-			ChangeLevel:     ChangeLevelNone,
+			ChangeLevel:     changeLevelNone,
 		}
 		require.Equal(t, &want, got)
 	})
@@ -423,17 +423,17 @@ func TestGetNext(t *testing.T) {
 		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
 			[]BasePull{
 				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
-				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{LabelPatch}},
+				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
 				{Number: 3, MergeCommitSha: mergeSha},
-				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{LabelPatch}},
+				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
 			}, nil,
 		)
 		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
 			[]BasePull{}, nil,
 		)
-		got, err := GetNext(
+		got, err := getNext(
 			ctx,
-			&GetNextOptions{
+			&getNextOptions{
 				Repo:         "willabides/semver-next",
 				Base:         "v0.15.0",
 				PrevVersion:  "0.15.0",
@@ -443,10 +443,10 @@ func TestGetNext(t *testing.T) {
 			},
 		)
 		require.NoError(t, err)
-		want := GetNextResult{
+		want := getNextResult{
 			NextVersion:     *semver.MustParse("0.16.0"),
 			PreviousVersion: *semver.MustParse("0.15.0"),
-			ChangeLevel:     ChangeLevelMinor,
+			ChangeLevel:     changeLevelMinor,
 		}
 		require.Equal(t, &want, got)
 	})
@@ -456,7 +456,7 @@ func TestGetNext(t *testing.T) {
 		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
 			nil, assert.AnError,
 		)
-		_, err := GetNext(ctx, &GetNextOptions{
+		_, err := getNext(ctx, &getNextOptions{
 			Repo:         "willabides/semver-next",
 			Base:         "v0.15.0",
 			Head:         sha1,
@@ -479,7 +479,7 @@ func TestGetNext(t *testing.T) {
 		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha3).Return(
 			nil, assert.AnError,
 		)
-		_, err := GetNext(ctx, &GetNextOptions{
+		_, err := getNext(ctx, &getNextOptions{
 			Repo:         "willabides/semver-next",
 			Base:         "v0.15.0",
 			Head:         sha1,
@@ -489,17 +489,17 @@ func TestGetNext(t *testing.T) {
 	})
 
 	t.Run("prev version not valid semver", func(t *testing.T) {
-		_, err := GetNext(ctx, &GetNextOptions{PrevVersion: "foo"})
+		_, err := getNext(ctx, &getNextOptions{PrevVersion: "foo"})
 		require.EqualError(t, err, `invalid previous version "foo": Invalid Semantic Version`)
 	})
 
 	t.Run("invalid repo", func(t *testing.T) {
-		_, err := GetNext(ctx, &GetNextOptions{Repo: "foo", PrevVersion: "1.2.3"})
+		_, err := getNext(ctx, &getNextOptions{Repo: "foo", PrevVersion: "1.2.3"})
 		require.EqualError(t, err, `repo must be in the form owner/name`)
 	})
 
 	t.Run("minBump > maxBump", func(t *testing.T) {
-		_, err := GetNext(ctx, &GetNextOptions{
+		_, err := getNext(ctx, &getNextOptions{
 			MinBump: &majorLvl,
 			MaxBump: &minorLvl,
 		})
@@ -511,16 +511,16 @@ func Test_bumpVersion(t *testing.T) {
 	for _, td := range []struct {
 		name    string
 		prev    string
-		minBump ChangeLevel
-		maxBump ChangeLevel
-		commits []Commit
-		want    *GetNextResult
+		minBump changeLevel
+		maxBump changeLevel
+		commits []gitCommit
+		want    *getNextResult
 		wantErr string
 	}{
 		{
 			name: "no commits",
 			prev: "1.2.3",
-			want: &GetNextResult{
+			want: &getNextResult{
 				NextVersion:     *semver.MustParse("1.2.3"),
 				PreviousVersion: *semver.MustParse("1.2.3"),
 			},
@@ -528,7 +528,7 @@ func Test_bumpVersion(t *testing.T) {
 		{
 			name: "no commits, prerelease",
 			prev: "1.2.3-alpha.0",
-			want: &GetNextResult{
+			want: &getNextResult{
 				NextVersion:     *semver.MustParse("1.2.3-alpha.0"),
 				PreviousVersion: *semver.MustParse("1.2.3-alpha.0"),
 			},
@@ -536,78 +536,78 @@ func Test_bumpVersion(t *testing.T) {
 		{
 			name: "bump stable",
 			prev: "1.2.3",
-			commits: []Commit{
+			commits: []gitCommit{
 				{
-					Pulls: []Pull{
+					Pulls: []ghPull{
 						{
-							ChangeLevel: ChangeLevelPatch,
+							ChangeLevel: changeLevelPatch,
 							Number:      1,
 						},
 						{
-							ChangeLevel: ChangeLevelMinor,
+							ChangeLevel: changeLevelMinor,
 							Number:      2,
 						},
 					},
 				},
 			},
-			want: &GetNextResult{
+			want: &getNextResult{
 				NextVersion:     *semver.MustParse("1.3.0"),
 				PreviousVersion: *semver.MustParse("1.2.3"),
-				ChangeLevel:     ChangeLevelMinor,
+				ChangeLevel:     changeLevelMinor,
 			},
 		},
 		{
 			name: "new prerelease",
 			prev: "1.2.3",
-			commits: []Commit{
+			commits: []gitCommit{
 				{
-					Pulls: []Pull{{
-						ChangeLevel: ChangeLevelPatch,
+					Pulls: []ghPull{{
+						ChangeLevel: changeLevelPatch,
 						Number:      1,
 						HasPreLabel: true,
 					}},
 				},
 			},
-			want: &GetNextResult{
+			want: &getNextResult{
 				NextVersion:     *semver.MustParse("1.2.4-0"),
 				PreviousVersion: *semver.MustParse("1.2.3"),
-				ChangeLevel:     ChangeLevelPatch,
+				ChangeLevel:     changeLevelPatch,
 			},
 		},
 		{
 			name: "bump prerelease using previous prefix",
 			prev: "1.2.3-alpha.33",
-			commits: []Commit{
+			commits: []gitCommit{
 				{
-					Pulls: []Pull{{
-						ChangeLevel: ChangeLevelPatch,
+					Pulls: []ghPull{{
+						ChangeLevel: changeLevelPatch,
 						Number:      1,
 						HasPreLabel: true,
 					}, {
-						ChangeLevel: ChangeLevelNone,
+						ChangeLevel: changeLevelNone,
 						Number:      2,
 						HasPreLabel: true,
 					}},
 				},
 			},
-			want: &GetNextResult{
+			want: &getNextResult{
 				NextVersion:     *semver.MustParse("1.2.3-alpha.34"),
 				PreviousVersion: *semver.MustParse("1.2.3-alpha.33"),
-				ChangeLevel:     ChangeLevelPatch,
+				ChangeLevel:     changeLevelPatch,
 			},
 		},
 		{
 			name: "mixed prefixes",
 			prev: "1.2.3",
-			commits: []Commit{
+			commits: []gitCommit{
 				{
-					Pulls: []Pull{{
-						ChangeLevel:      ChangeLevelPatch,
+					Pulls: []ghPull{{
+						ChangeLevel:      changeLevelPatch,
 						Number:           1,
 						HasPreLabel:      true,
 						PreReleasePrefix: "alpha",
 					}, {
-						ChangeLevel:      ChangeLevelNone,
+						ChangeLevel:      changeLevelNone,
 						Number:           2,
 						HasPreLabel:      true,
 						PreReleasePrefix: "beta",
@@ -619,14 +619,14 @@ func Test_bumpVersion(t *testing.T) {
 		{
 			name: "mixed prerelease and non-prerelease on stable",
 			prev: "1.2.3",
-			commits: []Commit{
+			commits: []gitCommit{
 				{
-					Pulls: []Pull{{
-						ChangeLevel: ChangeLevelPatch,
+					Pulls: []ghPull{{
+						ChangeLevel: changeLevelPatch,
 						Number:      1,
 						HasPreLabel: true,
 					}, {
-						ChangeLevel: ChangeLevelPatch,
+						ChangeLevel: changeLevelPatch,
 						Number:      2,
 						HasPreLabel: false,
 					}},
@@ -637,14 +637,14 @@ func Test_bumpVersion(t *testing.T) {
 		{
 			name: "mixed prerelease and non-prerelease on prerelease",
 			prev: "1.2.3-0",
-			commits: []Commit{
+			commits: []gitCommit{
 				{
-					Pulls: []Pull{{
-						ChangeLevel: ChangeLevelPatch,
+					Pulls: []ghPull{{
+						ChangeLevel: changeLevelPatch,
 						Number:      1,
 						HasPreLabel: true,
 					}, {
-						ChangeLevel: ChangeLevelPatch,
+						ChangeLevel: changeLevelPatch,
 						Number:      2,
 						HasPreLabel: false,
 					}},
@@ -655,9 +655,9 @@ func Test_bumpVersion(t *testing.T) {
 		{
 			name: "stable tag only",
 			prev: "0.1.0-0",
-			commits: []Commit{
+			commits: []gitCommit{
 				{
-					Pulls: []Pull{
+					Pulls: []ghPull{
 						{
 							Number:         1,
 							HasStableLabel: true,
@@ -665,10 +665,10 @@ func Test_bumpVersion(t *testing.T) {
 					},
 				},
 			},
-			want: &GetNextResult{
+			want: &getNextResult{
 				NextVersion:     *semver.MustParse("0.1.0"),
 				PreviousVersion: *semver.MustParse("0.1.0-0"),
-				ChangeLevel:     ChangeLevelNone,
+				ChangeLevel:     changeLevelNone,
 			},
 		},
 	} {

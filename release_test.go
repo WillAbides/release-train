@@ -17,7 +17,7 @@ import (
 
 func mustRunCmd(t *testing.T, dir string, env map[string]string, name string, args ...string) string {
 	t.Helper()
-	out, err := RunCmd(dir, env, name, args...)
+	out, err := runCmd(dir, env, name, args...)
 	require.NoError(t, err)
 	return out
 }
@@ -168,7 +168,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			TempDir:        t.TempDir(),
 			ReleaseRefs:    []string{"first", "fake", "sixth"},
 			LabelAliases: map[string]string{
-				"MINORALIAS": LabelMinor,
+				"MINORALIAS": labelMinor,
 			},
 		}
 		got, err := runner.Run(ctx)
@@ -179,12 +179,12 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			FirstRelease:         false,
 			ReleaseVersion:       semver.MustParse("2.1.0"),
 			ReleaseTag:           "v2.1.0",
-			ChangeLevel:          ChangeLevelMinor,
+			ChangeLevel:          changeLevelMinor,
 			CreatedTag:           true,
 			CreatedRelease:       true,
 			PrereleaseHookOutput: "hello to my friends reading stdout\n",
 		}, got)
-		taggedSha, err := RunCmd(repos.origin, nil, "git", "rev-parse", "v2.1.0")
+		taggedSha, err := runCmd(repos.origin, nil, "git", "rev-parse", "v2.1.0")
 		require.NoError(t, err)
 		require.Equal(t, repos.taggedCommits["head"], taggedSha)
 	})
@@ -219,7 +219,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			FirstRelease:   true,
 			ReleaseTag:     "x1.0.0",
 			ReleaseVersion: semver.MustParse("1.0.0"),
-			ChangeLevel:    ChangeLevelNone,
+			ChangeLevel:    changeLevelNone,
 			CreatedTag:     true,
 			CreatedRelease: true,
 		}, got)
@@ -241,7 +241,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			&CommitComparison{AheadBy: 2}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["fourth"]).Return(
-			[]BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{LabelMinor}}}, nil,
+			[]BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{labelMinor}}}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
 			[]BasePull{}, nil,
@@ -287,7 +287,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			ReleaseVersion:  semver.MustParse("2.1.0"),
 			PreviousVersion: "2.0.0",
 			PreviousRef:     "v2.0.0",
-			ChangeLevel:     ChangeLevelMinor,
+			ChangeLevel:     changeLevelMinor,
 			CreatedTag:      true,
 			CreatedRelease:  false,
 		}, got)
@@ -312,7 +312,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			&CommitComparison{AheadBy: 2}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["fourth"]).Return(
-			[]BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{LabelMinor}}}, nil,
+			[]BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{labelMinor}}}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
 			[]BasePull{}, nil,
@@ -336,7 +336,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			ReleaseVersion:        semver.MustParse("2.1.0"),
 			PreviousVersion:       "2.0.0",
 			PreviousRef:           "v2.0.0",
-			ChangeLevel:           ChangeLevelMinor,
+			ChangeLevel:           changeLevelMinor,
 			CreatedTag:            false,
 			CreatedRelease:        false,
 			PrereleaseHookOutput:  "aborting\n",
@@ -359,10 +359,10 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			&CommitComparison{AheadBy: 0}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["v2.0.0"]).Return(
-			[]BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{LabelMinor}}}, nil,
+			[]BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{labelMinor}}}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
-			[]BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{LabelMinor}}}, nil,
+			[]BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{labelMinor}}}, nil,
 		)
 		githubClient.EXPECT().GenerateReleaseNotes(gomock.Any(), "orgName", "repoName", "v2.1.0", "v2.0.0").Return(
 			"release notes", nil,
@@ -392,7 +392,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			FirstRelease:    false,
 			ReleaseTag:      "v2.1.0",
 			ReleaseVersion:  semver.MustParse("2.1.0"),
-			ChangeLevel:     ChangeLevelMinor,
+			ChangeLevel:     changeLevelMinor,
 			CreatedTag:      true,
 			CreatedRelease:  true,
 		}, got)
@@ -455,7 +455,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			&CommitComparison{AheadBy: 0}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
-			[]BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{LabelBreaking}}}, nil,
+			[]BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelBreaking}}}, nil,
 		)
 		githubClient.EXPECT().GenerateReleaseNotes(gomock.Any(), "orgName", "repoName", "v3.0.0", "v2.0.0").Return(
 			"release notes", nil,
@@ -494,7 +494,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			&CommitComparison{AheadBy: 0}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
-			[]BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{LabelBreaking}}}, nil,
+			[]BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelBreaking}}}, nil,
 		)
 		githubClient.EXPECT().GenerateReleaseNotes(gomock.Any(), "orgName", "repoName", "v3.0.0", "v2.0.0").Return(
 			"release notes", nil,
@@ -547,7 +547,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			&CommitComparison{AheadBy: 0}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
-			[]BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{LabelBreaking}}}, nil,
+			[]BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelBreaking}}}, nil,
 		)
 		got, err := (&Runner{
 			CheckoutDir:  repos.clone,
@@ -563,7 +563,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			FirstRelease:    false,
 			ReleaseVersion:  semver.MustParse("3.0.0"),
 			ReleaseTag:      "v3.0.0",
-			ChangeLevel:     ChangeLevelMajor,
+			ChangeLevel:     changeLevelMajor,
 		}, got)
 	})
 
@@ -582,7 +582,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			&CommitComparison{AheadBy: 0}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", "fake").Return(
-			[]BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{LabelBreaking}}}, nil,
+			[]BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelBreaking}}}, nil,
 		)
 		got, err := (&Runner{
 			CheckoutDir:   repos.clone,
@@ -600,7 +600,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			FirstRelease:    false,
 			ReleaseVersion:  semver.MustParse("3.0.0"),
 			ReleaseTag:      "v3.0.0",
-			ChangeLevel:     ChangeLevelMajor,
+			ChangeLevel:     changeLevelMajor,
 		}, got)
 	})
 
@@ -619,7 +619,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			&CommitComparison{AheadBy: 0}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["second"]).Return(
-			[]BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{LabelBreaking}}}, nil,
+			[]BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelBreaking}}}, nil,
 		)
 		got, err := (&Runner{
 			CheckoutDir:  repos.clone,
@@ -636,7 +636,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			FirstRelease:    false,
 			ReleaseVersion:  semver.MustParse("0.3.0"),
 			ReleaseTag:      "v0.3.0",
-			ChangeLevel:     ChangeLevelMinor,
+			ChangeLevel:     changeLevelMinor,
 		}, got)
 	})
 
@@ -670,7 +670,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			&CommitComparison{AheadBy: 0}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
-			[]BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{LabelMinor, LabelPrerelease}}}, nil,
+			[]BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelMinor, labelPrerelease}}}, nil,
 		)
 		got, err := (&Runner{
 			CheckoutDir:  repos.clone,
@@ -686,7 +686,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			FirstRelease:    false,
 			ReleaseVersion:  semver.MustParse("2.1.0-rc.2"),
 			ReleaseTag:      "v2.1.0-rc.2",
-			ChangeLevel:     ChangeLevelMinor,
+			ChangeLevel:     changeLevelMinor,
 		}, got)
 	})
 }
