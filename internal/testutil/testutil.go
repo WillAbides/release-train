@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	mock "github.com/willabides/release-train-action/v3/internal/mock"
+	mock "github.com/willabides/release-train/v3/internal/mock"
 )
 
 func MockGithubClient(t *testing.T) *mock.MockGithubClient {

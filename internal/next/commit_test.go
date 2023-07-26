@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/willabides/release-train-action/v3/internal"
+	"github.com/willabides/release-train/v3/internal"
 )
 
 func testCommit(t *testing.T, pulls ...internal.BasePull) Commit {

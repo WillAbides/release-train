@@ -1,4 +1,4 @@
-module github.com/willabides/release-train-action/v3
+module github.com/willabides/release-train/v3
 
 go 1.20
 

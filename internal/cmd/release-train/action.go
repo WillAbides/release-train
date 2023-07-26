@@ -7,8 +7,8 @@ import (
 	"text/template"
 
 	"github.com/alecthomas/kong"
-	"github.com/willabides/release-train-action/v3/internal/actions"
-	"github.com/willabides/release-train-action/v3/internal/release"
+	"github.com/willabides/release-train/v3/internal/actions"
+	"github.com/willabides/release-train/v3/internal/release"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 

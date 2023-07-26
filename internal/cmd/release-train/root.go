@@ -11,8 +11,8 @@ import (
 	"github.com/sethvargo/go-githubactions"
 	"github.com/willabides/actionslog"
 	"github.com/willabides/actionslog/human"
-	"github.com/willabides/release-train-action/v3/internal"
-	"github.com/willabides/release-train-action/v3/internal/release"
+	"github.com/willabides/release-train/v3/internal"
+	"github.com/willabides/release-train/v3/internal/release"
 	"golang.org/x/exp/slog"
 	"gopkg.in/yaml.v3"
 )
