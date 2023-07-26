@@ -8,12 +8,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
 	"golang.org/x/exp/slog"
-	"golang.org/x/mod/modfile"
 )
 
 type Runner struct {
@@ -27,7 +25,6 @@ type Runner struct {
 	TagPrefix      string
 	InitialTag     string
 	PrereleaseHook string
-	GoModFiles     []string
 	Repo           string
 	PushRemote     string
 	TempDir        string
@@ -48,8 +45,6 @@ func (o *Runner) releaseTargetFile() string {
 func (o *Runner) assetsDir() string {
 	return filepath.Join(o.TempDir, "assets")
 }
-
-var modVersionRe = regexp.MustCompile(`v\d+$`)
 
 type Result struct {
 	PreviousRef           string          `json:"previous-ref"`
@@ -135,29 +130,6 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 	result.ChangeLevel = nextRes.ChangeLevel
 	logger.Debug("returning from release Next", slog.Any("result", result))
 	return &result, nil
-}
-
-func (o *Runner) runGoValidation(modFile string, result *Result) error {
-	mfPath := filepath.Join(o.CheckoutDir, filepath.FromSlash(modFile))
-	content, err := os.ReadFile(mfPath)
-	if err != nil {
-		return err
-	}
-	mf, err := modfile.ParseLax(mfPath, content, nil)
-	if err != nil {
-		return err
-	}
-	sv := result.ReleaseVersion
-	major := int(sv.Major())
-	wantM := ""
-	if major > 1 {
-		wantM = fmt.Sprintf("v%d", major)
-	}
-	m := modVersionRe.FindString(mf.Module.Mod.Path)
-	if m != wantM {
-		return fmt.Errorf("module %s has version suffix %q, want %q", mf.Module.Mod.Path, m, wantM)
-	}
-	return nil
 }
 
 func (o *Runner) repoOwner() string {
@@ -282,13 +254,6 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	}
 	if result.PrereleaseHookAborted {
 		return result, nil
-	}
-
-	for _, mf := range o.GoModFiles {
-		err = o.runGoValidation(mf, result)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	err = o.tagRelease(result.ReleaseTag)

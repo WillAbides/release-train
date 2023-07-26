@@ -1,0 +1,30 @@
+#!/bin/bash
+#/ script/check-module-version checks that this module's name works with the given version.
+#/ Usage: script/check-module-version <version>
+
+set -e
+
+CDPATH="" cd -- "$(dirname -- "$0")/.."
+
+[ "$#" -eq 1 ] || {
+  echo "Usage: script/check-module-version <version>" >&2
+  exit 1
+}
+
+VERSION="${1#v}"
+MAJOR_VERSION="${VERSION%%.*}"
+
+MODULE_NAME="$(go list -m)"
+
+if [ "$MAJOR_VERSION" -gt 1 ]; then
+  if [[ $MODULE_NAME != */v"$MAJOR_VERSION"   ]]; then
+    echo "module name $MODULE_NAME does not end with /v$MAJOR_VERSION" >&2
+    exit 1
+  fi
+  exit 0
+fi
+
+if [[ $MODULE_NAME == */v[[:digit:]]   ]]; then
+  echo "module name $MODULE_NAME will not work with major version $MAJOR_VERSION" >&2
+  exit 1
+fi

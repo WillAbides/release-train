@@ -164,7 +164,6 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			CreateRelease:  true,
 			PrereleaseHook: preHook,
 			GithubToken:    "token",
-			GoModFiles:     []string{"src/go/go.mod"},
 			TempDir:        t.TempDir(),
 			ReleaseRefs:    []string{"first", "fake", "sixth"},
 			LabelAliases: map[string]string{
@@ -211,7 +210,6 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			GithubClient:  githubClient,
 			CreateRelease: true,
 			InitialTag:    "x1.0.0",
-			GoModFiles:    []string{"src/go/go.mod"},
 		}
 		got, err := runner.Run(ctx)
 		require.NoError(t, err)

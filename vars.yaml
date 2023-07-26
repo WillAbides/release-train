@@ -9,9 +9,6 @@ ref_help: git ref.
 checkout_dir_help: The directory where the repository is checked out.
 create_tag_help: Whether to create a tag for the release.
 create_release_help: Whether to create a release. Implies create-tag.
-go_mod_file_help: |
-  Validates that the name of the go module at the given path matches the major version of the release. For example,
-  validation will fail when releasing v3.0.0 when the module name is "my_go_module/v2".
 initial_tag_help: The tag to use if no previous version can be found. Set to "" to cause an error instead.
 initial_tag_default: v0.0.0
 tag_prefix_help: The prefix to use for the tag.

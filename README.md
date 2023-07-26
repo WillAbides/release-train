@@ -117,13 +117,6 @@ Any files written to $ASSETS_DIR will be uploaded as release assets.
 The environment variables RELEASE_VERSION, RELEASE_TAG, PREVIOUS_VERSION, FIRST_RELEASE, GITHUB_TOKEN,
 RELEASE_NOTES_FILE, RELEASE_TARGET and ASSETS_DIR will be set.
 
-### validate-go-module
-
-Validates that the name of the go module at the given path matches the major version of the release. For example,
-validation will fail when releasing v3.0.0 when the module name is "my_go_module/v2".
-
-Accepts multiple values. One value per line.
-
 ### release-refs
 
 Only allow tags and releases to be created from matching refs. Refs can be patterns accepted by git-show-ref.
@@ -254,10 +247,6 @@ Flags:
                                       The environment variables RELEASE_VERSION, RELEASE_TAG,
                                       PREVIOUS_VERSION, FIRST_RELEASE, GITHUB_TOKEN,
                                       RELEASE_NOTES_FILE, RELEASE_TARGET and ASSETS_DIR will be set.
-      --go-mod-file=<filepath>,...    Validates that the name of the go module at the given path
-                                      matches the major version of the release. For example,
-                                      validation will fail when releasing v3.0.0 when the module
-                                      name is "my_go_module/v2".
       --release-ref=<branch>,...      Only allow tags and releases to be created from matching refs.
                                       Refs can be patterns accepted by git-show-ref. If undefined,
                                       any branch can be used.

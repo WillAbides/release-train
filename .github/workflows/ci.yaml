@@ -55,13 +55,13 @@ jobs:
             enhancement=semver:minor
           create-release: true
           debug: true
-          validate-go-module: go.mod
           release-train-bin: ${{ env.RELEASE_TRAIN_BIN }}
           release-refs: |
             main
             refs/heads/v[0-9]
             refs/heads/v[0-9][0-9]
           pre-release-hook: |
+            script/check-module-version
             script/bindown -q install goreleaser
             git tag "$RELEASE_TAG"
             bin/goreleaser release --clean --skip-publish

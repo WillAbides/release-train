@@ -77,12 +77,6 @@ inputs:
 
       The environment variables RELEASE_VERSION, RELEASE_TAG, PREVIOUS_VERSION, FIRST_RELEASE, GITHUB_TOKEN,
       RELEASE_NOTES_FILE, RELEASE_TARGET and ASSETS_DIR will be set.
-  validate-go-module:
-    description: |-
-      Validates that the name of the go module at the given path matches the major version of the release. For example,
-      validation will fail when releasing v3.0.0 when the module name is "my_go_module/v2".
-
-      Accepts multiple values. One value per line.
   release-refs:
     description: |-
       Only allow tags and releases to be created from matching refs. Refs can be patterns accepted by git-show-ref.
@@ -236,13 +230,6 @@ runs:
         if [ -n "${{ inputs.pre-release-hook }}" ]; then
           set -- "$@" --pre-release-hook '${{ inputs.pre-release-hook }}'
         fi
-
-        while IFS= read -r line; do
-          [ -n "$line" ] || continue
-          set -- "$@" --go-mod-file "$line"
-        done <<EOF
-        ${{ inputs.validate-go-module }}
-        EOF
 
         while IFS= read -r line; do
           [ -n "$line" ] || continue
