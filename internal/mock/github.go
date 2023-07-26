@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	internal "github.com/willabides/release-train-action/v3/internal"
+	internal "github.com/willabides/release-train/v3/internal"
 )
 
 // MockGithubClient is a mock of GithubClient interface.

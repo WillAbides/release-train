@@ -12,9 +12,9 @@ import (
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/willabides/release-train-action/v3/internal"
-	"github.com/willabides/release-train-action/v3/internal/next"
-	"github.com/willabides/release-train-action/v3/internal/prev"
+	"github.com/willabides/release-train/v3/internal"
+	"github.com/willabides/release-train/v3/internal/next"
+	"github.com/willabides/release-train/v3/internal/prev"
 	"golang.org/x/exp/slog"
 	"golang.org/x/mod/modfile"
 )

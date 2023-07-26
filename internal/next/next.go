@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/willabides/release-train-action/v3/internal"
+	"github.com/willabides/release-train/v3/internal"
 	"golang.org/x/exp/slog"
 )
 
