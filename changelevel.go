@@ -4,30 +4,30 @@ import (
 	"fmt"
 )
 
-type ChangeLevel int
+type changeLevel int
 
 const (
-	ChangeLevelNone ChangeLevel = iota
-	ChangeLevelPatch
-	ChangeLevelMinor
-	ChangeLevelMajor
+	changeLevelNone changeLevel = iota
+	changeLevelPatch
+	changeLevelMinor
+	changeLevelMajor
 )
 
-func (l ChangeLevel) String() string {
+func (l changeLevel) String() string {
 	switch l {
-	case ChangeLevelNone:
+	case changeLevelNone:
 		return "none"
-	case ChangeLevelPatch:
+	case changeLevelPatch:
 		return "patch"
-	case ChangeLevelMinor:
+	case changeLevelMinor:
 		return "minor"
-	case ChangeLevelMajor:
+	case changeLevelMajor:
 		return "major"
 	default:
 		panic("invalid change level")
 	}
 }
 
-func (l ChangeLevel) MarshalJSON() ([]byte, error) {
+func (l changeLevel) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("%q", l.String())), nil
 }

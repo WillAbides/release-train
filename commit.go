@@ -4,13 +4,13 @@ import (
 	"fmt"
 )
 
-type Commit struct {
-	Sha   string `json:"sha"`
-	Pulls []Pull `json:"pulls,omitempty"`
+type gitCommit struct {
+	Sha   string   `json:"sha"`
+	Pulls []ghPull `json:"pulls,omitempty"`
 }
 
-func (c Commit) changeLevel() ChangeLevel {
-	level := ChangeLevelNone
+func (c gitCommit) changeLevel() changeLevel {
+	level := changeLevelNone
 	for _, pull := range c.Pulls {
 		if pull.ChangeLevel > level {
 			level = pull.ChangeLevel
@@ -19,8 +19,8 @@ func (c Commit) changeLevel() ChangeLevel {
 	return level
 }
 
-func (c Commit) pullsLabeledStable() []Pull {
-	var result []Pull
+func (c gitCommit) pullsLabeledStable() []ghPull {
+	var result []ghPull
 	for _, p := range c.Pulls {
 		if p.HasStableLabel {
 			result = append(result, p)
@@ -29,8 +29,8 @@ func (c Commit) pullsLabeledStable() []Pull {
 	return result
 }
 
-func (c Commit) pullsLabeledPre() []Pull {
-	var result []Pull
+func (c gitCommit) pullsLabeledPre() []ghPull {
+	var result []ghPull
 	for _, p := range c.Pulls {
 		if p.HasPreLabel {
 			result = append(result, p)
@@ -39,8 +39,8 @@ func (c Commit) pullsLabeledPre() []Pull {
 	return result
 }
 
-func (c Commit) pullsWithPrefix() []Pull {
-	var result []Pull
+func (c gitCommit) pullsWithPrefix() []ghPull {
+	var result []ghPull
 	for _, p := range c.Pulls {
 		if p.PreReleasePrefix != "" {
 			result = append(result, p)
@@ -49,7 +49,7 @@ func (c Commit) pullsWithPrefix() []Pull {
 	return result
 }
 
-func (c Commit) validate() error {
+func (c gitCommit) validate() error {
 	prePulls := c.pullsLabeledPre()
 	stablePulls := c.pullsLabeledStable()
 	if len(prePulls) > 0 && len(stablePulls) > 0 {

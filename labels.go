@@ -7,19 +7,19 @@ import (
 )
 
 const (
-	LabelNone       = "semver:none"
-	LabelPatch      = "semver:patch"
-	LabelMinor      = "semver:minor"
-	LabelBreaking   = "semver:breaking"
-	LabelStable     = "semver:stable"
-	LabelPrerelease = "semver:prerelease"
+	labelNone       = "semver:none"
+	labelPatch      = "semver:patch"
+	labelMinor      = "semver:minor"
+	labelBreaking   = "semver:breaking"
+	labelStable     = "semver:stable"
+	labelPrerelease = "semver:prerelease"
 )
 
-var LabelLevels = map[string]ChangeLevel{
-	LabelBreaking: ChangeLevelMajor,
-	LabelMinor:    ChangeLevelMinor,
-	LabelPatch:    ChangeLevelPatch,
-	LabelNone:     ChangeLevelNone,
+var labelLevels = map[string]changeLevel{
+	labelBreaking: changeLevelMajor,
+	labelMinor:    changeLevelMinor,
+	labelPatch:    changeLevelPatch,
+	labelNone:     changeLevelNone,
 }
 
 func normalizeAliases(aliases map[string]string) map[string]string {
@@ -30,19 +30,19 @@ func normalizeAliases(aliases map[string]string) map[string]string {
 	return clone
 }
 
-// CheckPrereleaseLabel returns true if the label is a prerelease label and the prerelease prefix (the part after the final colon)
-func CheckPrereleaseLabel(label string, aliases map[string]string) (pre bool, prefix string) {
+// checkPrereleaseLabel returns true if the label is a prerelease label and the prerelease prefix (the part after the final colon)
+func checkPrereleaseLabel(label string, aliases map[string]string) (pre bool, prefix string) {
 	downcased := strings.ToLower(label)
-	if downcased == LabelPrerelease {
+	if downcased == labelPrerelease {
 		return true, ""
 	}
 	preLabel := ""
-	if strings.HasPrefix(downcased, LabelPrerelease+":") {
-		preLabel = LabelPrerelease + ":"
+	if strings.HasPrefix(downcased, labelPrerelease+":") {
+		preLabel = labelPrerelease + ":"
 	} else {
 		for alias, target := range aliases {
 			alias = strings.ToLower(alias)
-			if target != LabelPrerelease {
+			if target != labelPrerelease {
 				continue
 			}
 			if downcased == alias {
@@ -62,18 +62,18 @@ func CheckPrereleaseLabel(label string, aliases map[string]string) (pre bool, pr
 
 func ResolveLabel(label string, aliases map[string]string) string {
 	label = strings.ToLower(label)
-	_, ok := LabelLevels[label]
+	_, ok := labelLevels[label]
 	if ok {
 		return label
 	}
-	if label == LabelStable {
+	if label == labelStable {
 		return label
 	}
 	if aliases == nil {
 		return ""
 	}
 	v := normalizeAliases(aliases)[label]
-	if v == LabelPrerelease {
+	if v == labelPrerelease {
 		v = ""
 	}
 	return v

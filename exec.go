@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func AsExitErr(err error) *exec.ExitError {
+func asExitErr(err error) *exec.ExitError {
 	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) {
 		return exitErr
@@ -16,7 +16,7 @@ func AsExitErr(err error) *exec.ExitError {
 	return nil
 }
 
-func RunCmd(dir string, env map[string]string, command string, args ...string) (string, error) {
+func runCmd(dir string, env map[string]string, command string, args ...string) (string, error) {
 	cmd := exec.Command(command, args...)
 	cmd.Dir = dir
 	cmd.Env = os.Environ()
@@ -25,7 +25,7 @@ func RunCmd(dir string, env map[string]string, command string, args ...string) (
 	}
 	out, err := cmd.Output()
 	if err != nil {
-		exitErr := AsExitErr(err)
+		exitErr := asExitErr(err)
 		if exitErr != nil {
 			err = errors.Join(err, errors.New(string(exitErr.Stderr)))
 		}
@@ -35,8 +35,8 @@ func RunCmd(dir string, env map[string]string, command string, args ...string) (
 	return strings.TrimSpace(string(out)), nil
 }
 
-func GetGithubRepoFromRemote(dir, remote string) (string, error) {
-	orig, err := RunCmd(dir, nil, "git", "remote", "get-url", remote)
+func getGithubRepoFromRemote(dir, remote string) (string, error) {
+	orig, err := runCmd(dir, nil, "git", "remote", "get-url", remote)
 	if err != nil {
 		return "", err
 	}
