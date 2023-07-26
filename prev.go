@@ -1,8 +1,9 @@
-package prev
+package main
 
 import (
 	"bufio"
 	"context"
+	"errors"
 	"os/exec"
 	"sort"
 	"strings"
@@ -10,7 +11,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 )
 
-type Options struct {
+type getPrevTagOpts struct {
 	Head        string
 	RepoDir     string
 	Prefixes    []string
@@ -18,9 +19,9 @@ type Options struct {
 	Constraints *semver.Constraints
 }
 
-func GetPrevTag(ctx context.Context, options *Options) (string, error) {
+func getPrevTag(ctx context.Context, options *getPrevTagOpts) (string, error) {
 	if options == nil {
-		options = &Options{}
+		options = &getPrevTagOpts{}
 	}
 	head := options.Head
 	if head == "" {
@@ -123,7 +124,7 @@ func runCommandHandleLines(
 	if err == nil {
 		return nil
 	}
-	if err != context.Canceled && err.Error() != "signal: killed" {
+	if !errors.Is(err, context.Canceled) && err.Error() != "signal: killed" {
 		return err
 	}
 	return nil

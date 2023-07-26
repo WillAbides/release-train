@@ -1,4 +1,4 @@
-package prev
+package main
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_prevVersion(t *testing.T) {
+func Test_getPrevVersion(t *testing.T) {
 	ctx := context.Background()
 	dir := t.TempDir()
 	c := exec.Command("sh", "-c", `
@@ -38,21 +38,21 @@ git tag bar
 	require.NoError(t, c.Run())
 
 	t.Run("", func(t *testing.T) {
-		opts := Options{
+		opts := getPrevTagOpts{
 			RepoDir:  dir,
 			Prefixes: []string{"v"},
 		}
-		got, err := GetPrevTag(ctx, &opts)
+		got, err := getPrevTag(ctx, &opts)
 		require.NoError(t, err)
 		require.Equal(t, "v2.0.0", got)
 	})
 
 	t.Run("", func(t *testing.T) {
-		opts := Options{
+		opts := getPrevTagOpts{
 			RepoDir:  dir,
 			Prefixes: []string{"v", "bar"},
 		}
-		got, err := GetPrevTag(ctx, &opts)
+		got, err := getPrevTag(ctx, &opts)
 		require.NoError(t, err)
 		require.Equal(t, "v2.0.0", got)
 	})
@@ -60,12 +60,12 @@ git tag bar
 	t.Run("", func(t *testing.T) {
 		versionZero, err := semver.NewConstraint("< 1.0.0")
 		require.NoError(t, err)
-		opts := Options{
+		opts := getPrevTagOpts{
 			RepoDir:     dir,
 			Prefixes:    []string{"v", "foo"},
 			Constraints: versionZero,
 		}
-		got, err := GetPrevTag(ctx, &opts)
+		got, err := getPrevTag(ctx, &opts)
 		require.NoError(t, err)
 		require.Equal(t, "v0.2.0", got)
 	})

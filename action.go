@@ -1,4 +1,4 @@
-package releasetrain
+package main
 
 import (
 	"bytes"
@@ -7,8 +7,6 @@ import (
 	"text/template"
 
 	"github.com/alecthomas/kong"
-	"github.com/willabides/release-train/v3/internal/actions"
-	"github.com/willabides/release-train/v3/internal/release"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
@@ -20,57 +18,57 @@ const (
 var outputItems = []struct {
 	name        string
 	description string
-	value       func(*release.Result) string
+	value       func(*Result) string
 }{
 	{
 		name:        "previous-ref",
 		description: `A git ref pointing to the previous release, or the current ref if no previous release can be found.`,
-		value:       func(r *release.Result) string { return r.PreviousRef },
+		value:       func(r *Result) string { return r.PreviousRef },
 	},
 	{
 		name:        "previous-version",
 		description: `The previous version on the release branch.`,
-		value:       func(r *release.Result) string { return r.PreviousVersion },
+		value:       func(r *Result) string { return r.PreviousVersion },
 	},
 	{
 		name:        "first-release",
 		description: `Whether this is the first release on the release branch. Either "true" or "false".`,
-		value:       func(r *release.Result) string { return fmt.Sprintf("%t", r.FirstRelease) },
+		value:       func(r *Result) string { return fmt.Sprintf("%t", r.FirstRelease) },
 	},
 	{
 		name:        "release-version",
 		description: `The version of the new release. Empty if no release is called for.`,
-		value:       func(r *release.Result) string { return r.ReleaseVersion.String() },
+		value:       func(r *Result) string { return r.ReleaseVersion.String() },
 	},
 	{
 		name:        "release-tag",
 		description: `The tag of the new release. Empty if no release is called for.`,
-		value:       func(r *release.Result) string { return r.ReleaseTag },
+		value:       func(r *Result) string { return r.ReleaseTag },
 	},
 	{
 		name:        "change-level",
 		description: `The level of change in the release. Either "major", "minor", "patch" or "none".`,
-		value:       func(r *release.Result) string { return r.ChangeLevel.String() },
+		value:       func(r *Result) string { return r.ChangeLevel.String() },
 	},
 	{
 		name:        "created-tag",
 		description: `Whether a tag was created. Either "true" or "false".`,
-		value:       func(r *release.Result) string { return fmt.Sprintf("%t", r.CreatedTag) },
+		value:       func(r *Result) string { return fmt.Sprintf("%t", r.CreatedTag) },
 	},
 	{
 		name:        "created-release",
 		description: `Whether a release was created. Either "true" or "false".`,
-		value:       func(r *release.Result) string { return fmt.Sprintf("%t", r.CreatedRelease) },
+		value:       func(r *Result) string { return fmt.Sprintf("%t", r.CreatedRelease) },
 	},
 	{
 		name:        "pre-release-hook-output",
 		description: `The stdout of the pre_release_hook. Empty if pre_release_hook is not set or if the hook returned an exit other than 0 or 10.`,
-		value:       func(r *release.Result) string { return r.PrereleaseHookOutput },
+		value:       func(r *Result) string { return r.PrereleaseHookOutput },
 	},
 	{
 		name:        "pre-release-hook-aborted",
 		description: `Whether pre_release_hook issued an abort by exiting 10. Either "true" or "false".`,
-		value:       func(r *release.Result) string { return fmt.Sprintf("%t", r.PrereleaseHookAborted) },
+		value:       func(r *Result) string { return fmt.Sprintf("%t", r.PrereleaseHookAborted) },
 	},
 }
 
@@ -112,7 +110,7 @@ if [ -n "{{.Input}}" ]; then
 fi
 `))
 
-func getAction(kongCtx *kong.Context) (*actions.CompositeAction, error) {
+func getAction(kongCtx *kong.Context) (*CompositeAction, error) {
 	script := `#!/bin/sh
 set -e
 
@@ -127,7 +125,7 @@ fi
 
 set -- --output-format action --debug
 `
-	inputs := orderedmap.New[string, actions.Input]()
+	inputs := orderedmap.New[string, Input]()
 
 	for _, flag := range kongCtx.Flags() {
 		if flag.Name == "help" {
@@ -172,7 +170,7 @@ set -- --output-format action --debug
 		if err != nil {
 			return nil, err
 		}
-		inputs.Set(actionInput, actions.Input{
+		inputs.Set(actionInput, Input{
 			Description: actionHelp,
 			Default:     actionDefault,
 		})
@@ -183,9 +181,9 @@ set -- --output-format action --debug
 "$RELEASE_TRAIN_BIN" "$@"
 `
 	inputs.AddPairs(
-		orderedmap.Pair[string, actions.Input]{
+		orderedmap.Pair[string, Input]{
 			Key: "release-train-bin",
-			Value: actions.Input{
+			Value: Input{
 				Description: "Path to release-train binary. Only needed if you're using a custom release-train binary.",
 			},
 		},
@@ -195,26 +193,26 @@ set -- --output-format action --debug
 		return fmt.Sprintf("${{ steps.release.outputs.%s }}", s)
 	}
 
-	outputs := orderedmap.New[string, actions.CompositeOutput]()
+	outputs := orderedmap.New[string, CompositeOutput]()
 	for _, item := range outputItems {
-		outputs.Set(item.name, actions.CompositeOutput{
+		outputs.Set(item.name, CompositeOutput{
 			Value:       releaseOutput(item.name),
 			Description: item.description,
 		})
 	}
 
-	action := actions.CompositeAction{
+	action := CompositeAction{
 		Name:        kongCtx.Model.Name,
 		Description: kongCtx.Model.Help,
-		Branding: &actions.Branding{
+		Branding: &Branding{
 			Icon:  "send",
 			Color: "yellow",
 		},
 		Inputs:  inputs,
 		Outputs: outputs,
-		Runs: actions.CompositeRuns{
+		Runs: CompositeRuns{
 			Using: "composite",
-			Steps: []actions.CompositeStep{
+			Steps: []CompositeStep{
 				{
 					Name:  "release",
 					Id:    "release",
@@ -225,4 +223,48 @@ set -- --output-format action --debug
 		},
 	}
 	return &action, nil
+}
+
+type Input struct {
+	DeprecationMessage string `yaml:"deprecationMessage,omitempty"`
+	Description        string `yaml:"description"`
+	Required           bool   `yaml:"required,omitempty"`
+	Default            string `yaml:"default,omitempty"`
+}
+
+type CompositeOutput struct {
+	Value       string `yaml:"value"`
+	Description string `yaml:"description"`
+}
+
+type CompositeStep struct {
+	Name             string                                 `yaml:"name,omitempty"`
+	Id               string                                 `yaml:"id,omitempty"`
+	If               string                                 `yaml:"if,omitempty"`
+	Shell            string                                 `yaml:"shell,omitempty"`
+	WorkingDirectory string                                 `yaml:"working-directory,omitempty"`
+	Env              *orderedmap.OrderedMap[string, string] `yaml:"env,omitempty"`
+	Run              string                                 `yaml:"run,omitempty"`
+	Uses             string                                 `yaml:"uses,omitempty"`
+	With             *orderedmap.OrderedMap[string, string] `yaml:"with,omitempty"`
+}
+
+type CompositeRuns struct {
+	Using string          `yaml:"using"`
+	Steps []CompositeStep `yaml:"steps"`
+}
+
+type Branding struct {
+	Icon  string `yaml:"icon,omitempty"`
+	Color string `yaml:"color,omitempty"`
+}
+
+type CompositeAction struct {
+	Name        string                                          `yaml:"name"`
+	Description string                                          `yaml:"description"`
+	Author      string                                          `yaml:"author,omitempty"`
+	Branding    *Branding                                       `yaml:"branding,omitempty"`
+	Inputs      *orderedmap.OrderedMap[string, Input]           `yaml:"inputs,omitempty"`
+	Outputs     *orderedmap.OrderedMap[string, CompositeOutput] `yaml:"outputs,omitempty"`
+	Runs        CompositeRuns                                   `yaml:"runs"`
 }

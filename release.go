@@ -1,4 +1,4 @@
-package release
+package main
 
 import (
 	"bytes"
@@ -12,9 +12,6 @@ import (
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/willabides/release-train/v3/internal"
-	"github.com/willabides/release-train/v3/internal/next"
-	"github.com/willabides/release-train/v3/internal/prev"
 	"golang.org/x/exp/slog"
 	"golang.org/x/mod/modfile"
 )
@@ -37,7 +34,7 @@ type Runner struct {
 	ReleaseRefs    []string
 	LabelAliases   map[string]string
 	CheckPR        int
-	GithubClient   internal.GithubClient
+	GithubClient   GithubClient
 }
 
 func (o *Runner) releaseNotesFile() string {
@@ -55,36 +52,35 @@ func (o *Runner) assetsDir() string {
 var modVersionRe = regexp.MustCompile(`v\d+$`)
 
 type Result struct {
-	PreviousRef           string               `json:"previous-ref"`
-	PreviousVersion       string               `json:"previous-version"`
-	FirstRelease          bool                 `json:"first-release"`
-	ReleaseVersion        *semver.Version      `json:"release-version,omitempty"`
-	ReleaseTag            string               `json:"release-tag,omitempty"`
-	ChangeLevel           internal.ChangeLevel `json:"change-level"`
-	CreatedTag            bool                 `json:"created-tag,omitempty"`
-	CreatedRelease        bool                 `json:"created-release,omitempty"`
-	PrereleaseHookOutput  string               `json:"prerelease-hook-output"`
-	PrereleaseHookAborted bool                 `json:"prerelease-hook-aborted"`
+	PreviousRef           string          `json:"previous-ref"`
+	PreviousVersion       string          `json:"previous-version"`
+	FirstRelease          bool            `json:"first-release"`
+	ReleaseVersion        *semver.Version `json:"release-version,omitempty"`
+	ReleaseTag            string          `json:"release-tag,omitempty"`
+	ChangeLevel           ChangeLevel     `json:"change-level"`
+	CreatedTag            bool            `json:"created-tag,omitempty"`
+	CreatedRelease        bool            `json:"created-release,omitempty"`
+	PrereleaseHookOutput  string          `json:"prerelease-hook-output"`
+	PrereleaseHookAborted bool            `json:"prerelease-hook-aborted"`
 }
 
 func (o *Runner) Next(ctx context.Context) (*Result, error) {
-	logger := internal.GetLogger(ctx)
+	logger := GetLogger(ctx)
 	logger.Debug("starting release Next")
 	ref := o.Ref
 	if o.Ref == "" {
 		ref = "HEAD"
 	}
-	head, err := internal.RunCmd(o.CheckoutDir, nil, "git", "rev-parse", ref)
+	head, err := RunCmd(o.CheckoutDir, nil, "git", "rev-parse", ref)
 	if err != nil {
 		return nil, err
 	}
 	head = strings.TrimSpace(head)
-	prevOpts := prev.Options{
+	prevRef, err := getPrevTag(ctx, &getPrevTagOpts{
 		Head:     head,
 		RepoDir:  o.CheckoutDir,
 		Prefixes: []string{o.TagPrefix},
-	}
-	prevRef, err := prev.GetPrevTag(ctx, &prevOpts)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +89,7 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 		result := Result{
 			FirstRelease: true,
 			ReleaseTag:   o.InitialTag,
-			ChangeLevel:  internal.ChangeLevelNone,
+			ChangeLevel:  ChangeLevelNone,
 		}
 		if o.InitialTag != "" {
 			result.ReleaseVersion, err = semver.NewVersion(strings.TrimPrefix(o.InitialTag, o.TagPrefix))
@@ -108,9 +104,9 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 		return nil, err
 	}
 
-	maxBump := internal.ChangeLevelMajor
+	maxBump := ChangeLevelMajor
 	if o.V0 {
-		maxBump = internal.ChangeLevelMinor
+		maxBump = ChangeLevelMinor
 		if prevVersion.Major() != 0 {
 			return nil, fmt.Errorf("v0 flag is set, but previous version %q has major version > 0", prevVersion.String())
 		}
@@ -120,8 +116,8 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 		PreviousRef:     prevRef,
 		PreviousVersion: prevVersion.String(),
 	}
-	var nextRes *next.Result
-	nextRes, err = next.GetNext(ctx, &next.Options{
+	var nextRes *GetNextResult
+	nextRes, err = GetNext(ctx, &GetNextOptions{
 		Repo:         o.Repo,
 		GithubClient: o.GithubClient,
 		PrevVersion:  prevVersion.String(),
@@ -212,7 +208,7 @@ func (o *Runner) getReleaseNotes(ctx context.Context, result *Result) (string, e
 }
 
 func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
-	logger := internal.GetLogger(ctx)
+	logger := GetLogger(ctx)
 	logger.Debug("starting Run")
 	var teardowns []func() error
 	defer func() {
@@ -238,7 +234,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		createTag = false
 		release = false
 	}
-	shallow, err := internal.RunCmd(o.CheckoutDir, nil, "git", "rev-parse", "--is-shallow-repository")
+	shallow, err := RunCmd(o.CheckoutDir, nil, "git", "rev-parse", "--is-shallow-repository")
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +296,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		return nil, err
 	}
 	teardowns = append(teardowns, func() error {
-		_, e := internal.RunCmd(o.CheckoutDir, nil, "git", "push", o.PushRemote, "--delete", result.ReleaseTag)
+		_, e := RunCmd(o.CheckoutDir, nil, "git", "push", o.PushRemote, "--delete", result.ReleaseTag)
 		return e
 	})
 
@@ -371,17 +367,17 @@ func (o *Runner) tagRelease(releaseTag string) error {
 			return err
 		}
 
-		_, err = internal.RunCmd(o.CheckoutDir, nil, "git", "tag", releaseTag, target)
+		_, err = RunCmd(o.CheckoutDir, nil, "git", "tag", releaseTag, target)
 		if err != nil {
 			return err
 		}
 	}
-	_, err = internal.RunCmd(o.CheckoutDir, nil, "git", "push", o.PushRemote, releaseTag)
+	_, err = RunCmd(o.CheckoutDir, nil, "git", "push", o.PushRemote, releaseTag)
 	return err
 }
 
 func runPrereleaseHook(ctx context.Context, dir string, env map[string]string, hook string) (stdout string, abort bool, _ error) {
-	logger := internal.GetLogger(ctx)
+	logger := GetLogger(ctx)
 	if hook == "" {
 		return "", false, nil
 	}
@@ -396,7 +392,7 @@ func runPrereleaseHook(ctx context.Context, dir string, env map[string]string, h
 	err := cmd.Run()
 	if err != nil {
 		logger.Debug("prerelease hook errored", slog.String("output", stdoutBuf.String()))
-		exitErr := internal.AsExitErr(err)
+		exitErr := AsExitErr(err)
 		if exitErr != nil {
 			err = errors.Join(err, errors.New(string(exitErr.Stderr)))
 			logger.Debug("prerelease hook errored", slog.String("stderr", string(exitErr.Stderr)))
@@ -414,13 +410,13 @@ func gitNameRev(dir, commitish string, refs []string) bool {
 	for _, ref := range refs {
 		args = append(args, "--refs", ref)
 	}
-	_, err := internal.RunCmd(dir, nil, "git", args...)
+	_, err := RunCmd(dir, nil, "git", args...)
 	return err == nil
 }
 
 // assertTagNotExists returns an error if tag exists either locally or on remote
 func assertTagNotExists(dir, remote, tag string) error {
-	out, err := internal.RunCmd(dir, nil, "git", "ls-remote", "--tags", remote, tag)
+	out, err := RunCmd(dir, nil, "git", "ls-remote", "--tags", remote, tag)
 	if err != nil {
 		return err
 	}
@@ -438,7 +434,7 @@ func assertTagNotExists(dir, remote, tag string) error {
 }
 
 func localTagExists(dir, tag string) (bool, error) {
-	out, err := internal.RunCmd(dir, nil, "git", "tag", "--list", tag)
+	out, err := RunCmd(dir, nil, "git", "tag", "--list", tag)
 	if err != nil {
 		return false, err
 	}

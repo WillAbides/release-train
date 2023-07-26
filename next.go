@@ -1,4 +1,4 @@
-package next
+package main
 
 import (
 	"context"
@@ -10,27 +10,26 @@ import (
 	"sync"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/willabides/release-train/v3/internal"
 	"golang.org/x/exp/slog"
 )
 
-type Result struct {
-	NextVersion     semver.Version       `json:"next_version"`
-	PreviousVersion semver.Version       `json:"previous_version"`
-	ChangeLevel     internal.ChangeLevel `json:"change_level"`
+type GetNextResult struct {
+	NextVersion     semver.Version `json:"next_version"`
+	PreviousVersion semver.Version `json:"previous_version"`
+	ChangeLevel     ChangeLevel    `json:"change_level"`
 }
 
-func getCommitPRs(ctx context.Context, opts *Options, commitSha string, checkAncestor func(string) bool) ([]internal.Pull, error) {
+func getCommitPRs(ctx context.Context, opts *GetNextOptions, commitSha string, checkAncestor func(string) bool) ([]Pull, error) {
 	ghResult, err := opts.GithubClient.ListMergedPullsForCommit(ctx, opts.owner(), opts.repo(), commitSha)
 	if err != nil {
 		return nil, err
 	}
-	result := make([]internal.Pull, 0, len(ghResult))
+	result := make([]Pull, 0, len(ghResult))
 	for _, r := range ghResult {
 		if !checkAncestor(r.MergeCommitSha) {
 			continue
 		}
-		p, e := internal.NewPull(r.Number, opts.LabelAliases, r.Labels...)
+		p, e := NewPull(r.Number, opts.LabelAliases, r.Labels...)
 		if e != nil {
 			return nil, e
 		}
@@ -39,7 +38,7 @@ func getCommitPRs(ctx context.Context, opts *Options, commitSha string, checkAnc
 	return result, nil
 }
 
-func compareCommits(ctx context.Context, opts *Options) ([]Commit, error) {
+func compareCommits(ctx context.Context, opts *GetNextOptions) ([]Commit, error) {
 	var result []Commit
 	comp, err := opts.GithubClient.CompareCommits(ctx, opts.owner(), opts.repo(), opts.Base, opts.Head, -1)
 	if err != nil {
@@ -64,7 +63,7 @@ func compareCommits(ctx context.Context, opts *Options) ([]Commit, error) {
 		if ok {
 			return b
 		}
-		var ancestorComp *internal.CommitComparison
+		var ancestorComp *CommitComparison
 		ancestorComp, ancestorErr = opts.GithubClient.CompareCommits(ctx, opts.owner(), opts.repo(), sha, opts.Head, 0)
 		if ancestorErr != nil {
 			return false
@@ -104,32 +103,32 @@ func compareCommits(ctx context.Context, opts *Options) ([]Commit, error) {
 	return result, nil
 }
 
-type Options struct {
-	GithubClient internal.GithubClient
+type GetNextOptions struct {
+	GithubClient GithubClient
 	Repo         string
 	PrevVersion  string
 	Base         string
 	Head         string
-	MinBump      *internal.ChangeLevel
-	MaxBump      *internal.ChangeLevel
+	MinBump      *ChangeLevel
+	MaxBump      *ChangeLevel
 	CheckPR      int
 	LabelAliases map[string]string
 }
 
-func (o *Options) repo() string {
+func (o *GetNextOptions) repo() string {
 	_, repo, _ := strings.Cut(o.Repo, "/")
 	return repo
 }
 
-func (o *Options) owner() string {
+func (o *GetNextOptions) owner() string {
 	owner, _, _ := strings.Cut(o.Repo, "/")
 	return owner
 }
 
-func GetNext(ctx context.Context, opts *Options) (*Result, error) {
-	logger := internal.GetLogger(ctx)
+func GetNext(ctx context.Context, opts *GetNextOptions) (*GetNextResult, error) {
+	logger := GetLogger(ctx)
 	if opts == nil {
-		opts = &Options{}
+		opts = &GetNextOptions{}
 	}
 	logger.Debug(
 		"starting GetNext",
@@ -138,11 +137,11 @@ func GetNext(ctx context.Context, opts *Options) (*Result, error) {
 		slog.String("head", opts.Head),
 		slog.Int("check_pr", opts.CheckPR),
 	)
-	minBump := internal.ChangeLevelNone
+	minBump := ChangeLevelNone
 	if opts.MinBump != nil {
 		minBump = *opts.MinBump
 	}
-	maxBump := internal.ChangeLevelMajor
+	maxBump := ChangeLevelMajor
 	if opts.MaxBump != nil {
 		maxBump = *opts.MaxBump
 	}
@@ -175,12 +174,12 @@ func GetNext(ctx context.Context, opts *Options) (*Result, error) {
 	return bumpVersion(ctx, *prev, minBump, maxBump, commits)
 }
 
-func includePullInResults(ctx context.Context, opts *Options, commits []Commit) ([]Commit, error) {
+func includePullInResults(ctx context.Context, opts *GetNextOptions, commits []Commit) ([]Commit, error) {
 	base, err := opts.GithubClient.GetPullRequest(ctx, opts.owner(), opts.repo(), opts.CheckPR)
 	if err != nil {
 		return nil, err
 	}
-	pull, err := internal.NewPull(opts.CheckPR, opts.LabelAliases, base.Labels...)
+	pull, err := NewPull(opts.CheckPR, opts.LabelAliases, base.Labels...)
 	if err != nil {
 		return nil, err
 	}
@@ -202,16 +201,16 @@ func includePullInResults(ctx context.Context, opts *Options, commits []Commit) 
 	return result, nil
 }
 
-func bumpVersion(ctx context.Context, prev semver.Version, minBump, maxBump internal.ChangeLevel, commits []Commit) (*Result, error) {
-	logger := internal.GetLogger(ctx)
+func bumpVersion(ctx context.Context, prev semver.Version, minBump, maxBump ChangeLevel, commits []Commit) (*GetNextResult, error) {
+	logger := GetLogger(ctx)
 	logger.Debug("starting bumpVersion", slog.String("prev", prev.String()))
 	if maxBump == 0 {
-		maxBump = internal.ChangeLevelMajor
+		maxBump = ChangeLevelMajor
 	}
-	result := Result{
+	result := GetNextResult{
 		PreviousVersion: prev,
 	}
-	pullsMap := map[int]internal.Pull{}
+	pullsMap := map[int]Pull{}
 	for _, c := range commits {
 		level := c.changeLevel()
 		if level > result.ChangeLevel {
@@ -226,7 +225,7 @@ func bumpVersion(ctx context.Context, prev semver.Version, minBump, maxBump inte
 		result.NextVersion = result.PreviousVersion
 		return &result, nil
 	}
-	pulls := make([]internal.Pull, 0, len(pullsMap))
+	pulls := make([]Pull, 0, len(pullsMap))
 	for _, p := range pullsMap {
 		pulls = append(pulls, p)
 	}
@@ -248,7 +247,7 @@ func bumpVersion(ctx context.Context, prev semver.Version, minBump, maxBump inte
 					return nil, fmt.Errorf("cannot have multiple pre-release prefixes in the same release. pre-release prefix. release contains both %q and %q", prePrefix, pull.PreReleasePrefix)
 				}
 			}
-		} else if pull.ChangeLevel > internal.ChangeLevelNone {
+		} else if pull.ChangeLevel > ChangeLevelNone {
 			nonPrePulls = append(nonPrePulls, fmt.Sprintf("#%d", pull.Number))
 		}
 		if pull.HasStableLabel {
@@ -294,22 +293,22 @@ func bumpVersion(ctx context.Context, prev semver.Version, minBump, maxBump inte
 	return &result, nil
 }
 
-func incrLevel(prev semver.Version, level internal.ChangeLevel) semver.Version {
+func incrLevel(prev semver.Version, level ChangeLevel) semver.Version {
 	switch level {
-	case internal.ChangeLevelNone:
+	case ChangeLevelNone:
 		return prev
-	case internal.ChangeLevelPatch:
+	case ChangeLevelPatch:
 		return prev.IncPatch()
-	case internal.ChangeLevelMinor:
+	case ChangeLevelMinor:
 		return prev.IncMinor()
-	case internal.ChangeLevelMajor:
+	case ChangeLevelMajor:
 		return prev.IncMajor()
 	default:
 		panic(fmt.Sprintf("unknown change level %v", level))
 	}
 }
 
-func incrPre(prev semver.Version, level internal.ChangeLevel, prefix string) (next semver.Version, errOut error) {
+func incrPre(prev semver.Version, level ChangeLevel, prefix string) (next semver.Version, errOut error) {
 	orig := prev
 
 	// make sure result is always greater than prev
@@ -322,7 +321,7 @@ func incrPre(prev semver.Version, level internal.ChangeLevel, prefix string) (ne
 		}
 	}()
 
-	if level == internal.ChangeLevelNone {
+	if level == ChangeLevelNone {
 		return prev, fmt.Errorf("invalid change level for pre-release: %v", level)
 	}
 	prevPre := prev.Prerelease()
@@ -337,9 +336,9 @@ func incrPre(prev semver.Version, level internal.ChangeLevel, prefix string) (ne
 	// make sure everything to the right of level is 0
 	needsIncr := false
 	switch level {
-	case internal.ChangeLevelMinor:
+	case ChangeLevelMinor:
 		needsIncr = prev.Patch() > 0
-	case internal.ChangeLevelMajor:
+	case ChangeLevelMajor:
 		needsIncr = prev.Minor() > 0 || prev.Patch() > 0
 	}
 	if needsIncr {
