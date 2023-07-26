@@ -2,7 +2,7 @@
 package actions
 
 import (
-	"github.com/willabides/release-train-action/v3/internal/orderedmap"
+	gom "github.com/wk8/go-ordered-map/v2"
 )
 
 type Input struct {
@@ -18,15 +18,15 @@ type CompositeOutput struct {
 }
 
 type CompositeStep struct {
-	Name             string                         `yaml:"name,omitempty"`
-	Id               string                         `yaml:"id,omitempty"`
-	If               string                         `yaml:"if,omitempty"`
-	Shell            string                         `yaml:"shell,omitempty"`
-	WorkingDirectory string                         `yaml:"working-directory,omitempty"`
-	Env              *orderedmap.OrderedMap[string] `yaml:"env,omitempty"`
-	Run              string                         `yaml:"run,omitempty"`
-	Uses             string                         `yaml:"uses,omitempty"`
-	With             *orderedmap.OrderedMap[string] `yaml:"with,omitempty"`
+	Name             string                          `yaml:"name,omitempty"`
+	Id               string                          `yaml:"id,omitempty"`
+	If               string                          `yaml:"if,omitempty"`
+	Shell            string                          `yaml:"shell,omitempty"`
+	WorkingDirectory string                          `yaml:"working-directory,omitempty"`
+	Env              *gom.OrderedMap[string, string] `yaml:"env,omitempty"`
+	Run              string                          `yaml:"run,omitempty"`
+	Uses             string                          `yaml:"uses,omitempty"`
+	With             *gom.OrderedMap[string, string] `yaml:"with,omitempty"`
 }
 
 type CompositeRuns struct {
@@ -40,11 +40,11 @@ type Branding struct {
 }
 
 type CompositeAction struct {
-	Name        string                                  `yaml:"name"`
-	Description string                                  `yaml:"description"`
-	Author      string                                  `yaml:"author,omitempty"`
-	Branding    *Branding                               `yaml:"branding,omitempty"`
-	Inputs      *orderedmap.OrderedMap[Input]           `yaml:"inputs,omitempty"`
-	Outputs     *orderedmap.OrderedMap[CompositeOutput] `yaml:"outputs,omitempty"`
-	Runs        CompositeRuns                           `yaml:"runs"`
+	Name        string                                   `yaml:"name"`
+	Description string                                   `yaml:"description"`
+	Author      string                                   `yaml:"author,omitempty"`
+	Branding    *Branding                                `yaml:"branding,omitempty"`
+	Inputs      *gom.OrderedMap[string, Input]           `yaml:"inputs,omitempty"`
+	Outputs     *gom.OrderedMap[string, CompositeOutput] `yaml:"outputs,omitempty"`
+	Runs        CompositeRuns                            `yaml:"runs"`
 }
