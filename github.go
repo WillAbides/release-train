@@ -14,7 +14,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -source=$GOFILE -destination=mock_$GOFILE -package main
+//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -source=$GOFILE -destination=mock_$GOFILE -package main -write_package_comment=false
 
 type BasePull struct {
 	Number         int
