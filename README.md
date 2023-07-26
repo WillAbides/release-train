@@ -50,7 +50,7 @@ The GitHub token to use for authentication. Must have `contents: write` permissi
 
 ### create-tag
 
-Whether to create a tag for the release. Implies create-tag.
+Whether to create a tag for the release.
 
 Only literal 'true' will be treated as true.
 

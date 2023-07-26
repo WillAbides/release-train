@@ -7,7 +7,7 @@ check_pr_help: |
   Skips tag and release.
 ref_help: git ref.
 checkout_dir_help: The directory where the repository is checked out.
-create_tag_help: Whether to create a tag for the release. Implies create-tag.
+create_tag_help: Whether to create a tag for the release.
 create_release_help: Whether to create a release. Implies create-tag.
 go_mod_file_help: |
   Validates that the name of the go module at the given path matches the major version of the release. For example,

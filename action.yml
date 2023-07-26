@@ -28,7 +28,7 @@ inputs:
     default: ${{ github.token }}
   create-tag:
     description: |-
-      Whether to create a tag for the release. Implies create-tag.
+      Whether to create a tag for the release.
 
       Only literal 'true' will be treated as true.
   create-release:
