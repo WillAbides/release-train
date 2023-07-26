@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	gom "github.com/wk8/go-ordered-map/v2"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"gopkg.in/yaml.v3"
 )
 
@@ -20,9 +20,9 @@ func TestAction(t *testing.T) {
 			Color: "test",
 		},
 
-		Outputs: gom.New[string, CompositeOutput](
-			gom.WithInitialData[string, CompositeOutput](
-				gom.Pair[string, CompositeOutput]{
+		Outputs: orderedmap.New[string, CompositeOutput](
+			orderedmap.WithInitialData[string, CompositeOutput](
+				orderedmap.Pair[string, CompositeOutput]{
 					Key: "test",
 					Value: CompositeOutput{
 						Value:       "test",
@@ -31,9 +31,9 @@ func TestAction(t *testing.T) {
 				},
 			),
 		),
-		Inputs: gom.New[string, Input](
-			gom.WithInitialData[string, Input](
-				gom.Pair[string, Input]{
+		Inputs: orderedmap.New[string, Input](
+			orderedmap.WithInitialData[string, Input](
+				orderedmap.Pair[string, Input]{
 					Key: "test",
 					Value: Input{
 						DeprecationMessage: "omg this is deprecated",
@@ -53,9 +53,9 @@ func TestAction(t *testing.T) {
 					If:               "test",
 					Shell:            "test",
 					WorkingDirectory: "test",
-					Env: gom.New[string, string](
-						gom.WithInitialData[string, string](
-							gom.Pair[string, string]{
+					Env: orderedmap.New[string, string](
+						orderedmap.WithInitialData[string, string](
+							orderedmap.Pair[string, string]{
 								Key:   "test",
 								Value: "test",
 							},
@@ -63,9 +63,9 @@ func TestAction(t *testing.T) {
 					),
 					Run:  "test",
 					Uses: "test",
-					With: gom.New[string, string](
-						gom.WithInitialData[string, string](
-							gom.Pair[string, string]{
+					With: orderedmap.New[string, string](
+						orderedmap.WithInitialData[string, string](
+							orderedmap.Pair[string, string]{
 								Key:   "test",
 								Value: "test",
 							},

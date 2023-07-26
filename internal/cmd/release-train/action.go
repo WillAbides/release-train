@@ -9,7 +9,7 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/willabides/release-train-action/v3/internal/actions"
 	"github.com/willabides/release-train-action/v3/internal/release"
-	gom "github.com/wk8/go-ordered-map/v2"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
 const (
@@ -127,7 +127,7 @@ fi
 
 set -- --output-format action --debug
 `
-	inputs := gom.New[string, actions.Input]()
+	inputs := orderedmap.New[string, actions.Input]()
 
 	for _, flag := range kongCtx.Flags() {
 		if flag.Name == "help" {
@@ -183,7 +183,7 @@ set -- --output-format action --debug
 "$RELEASE_TRAIN_BIN" "$@"
 `
 	inputs.AddPairs(
-		gom.Pair[string, actions.Input]{
+		orderedmap.Pair[string, actions.Input]{
 			Key: "release-train-bin",
 			Value: actions.Input{
 				Description: "Path to release-train binary. Only needed if you're using a custom release-train binary.",
@@ -195,7 +195,7 @@ set -- --output-format action --debug
 		return fmt.Sprintf("${{ steps.release.outputs.%s }}", s)
 	}
 
-	outputs := gom.New[string, actions.CompositeOutput]()
+	outputs := orderedmap.New[string, actions.CompositeOutput]()
 	for _, item := range outputItems {
 		outputs.Set(item.name, actions.CompositeOutput{
 			Value:       releaseOutput(item.name),
