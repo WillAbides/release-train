@@ -56,7 +56,6 @@ type rootCmd struct {
 	V0             bool              `name:"v0" help:"${v0_help}"`
 	InitialTag     string            `action:"initial-release-tag" help:"${initial_tag_help}" default:"${initial_tag_default}"`
 	PreReleaseHook string            `placeholder:"<command>" help:"${pre_release_hook_help}"`
-	GoModFile      []string          `action:"validate-go-module" placeholder:"<filepath>" help:"${go_mod_file_help}"`
 	ReleaseRef     []string          `action:"release-refs" placeholder:"<branch>" help:"${release_ref_help}"`
 	PushRemote     string            `action:"-" default:"origin" help:"${pushremote_help}"`
 	Tempdir        string            `help:"${tempdir_help}"`
@@ -132,13 +131,6 @@ func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
 		createTag = true
 	}
 
-	var goModFiles []string
-	for _, goModFile := range c.GoModFile {
-		if goModFile != "" {
-			goModFiles = append(goModFiles, goModFile)
-		}
-	}
-
 	repo := c.Repo
 	if repo == "" {
 		repo, err = getGithubRepoFromRemote(c.CheckoutDir, c.PushRemote)
@@ -158,7 +150,6 @@ func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
 		TagPrefix:      c.TagPrefix,
 		InitialTag:     c.InitialTag,
 		PrereleaseHook: c.PreReleaseHook,
-		GoModFiles:     goModFiles,
 		PushRemote:     c.PushRemote,
 		Repo:           repo,
 		TempDir:        tempDir,

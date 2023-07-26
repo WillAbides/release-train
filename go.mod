@@ -13,7 +13,6 @@ require (
 	github.com/willabides/actionslog v0.5.1
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 	golang.org/x/exp v0.0.0-20230725093048-515e97ebf090
-	golang.org/x/mod v0.12.0
 	golang.org/x/oauth2 v0.10.0
 	gopkg.in/yaml.v3 v3.0.1
 )
