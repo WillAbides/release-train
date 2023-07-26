@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/willabides/release-train-action/v3/internal/orderedmap"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"gopkg.in/yaml.v3"
 )
 
@@ -19,19 +19,30 @@ func TestAction(t *testing.T) {
 			Icon:  "test",
 			Color: "test",
 		},
-		Inputs: orderedmap.NewOrderedMap(
-			orderedmap.Pair("test", Input{
-				DeprecationMessage: "omg this is deprecated",
-				Description:        "we are testing\nthis",
-				Required:           true,
-				Default:            "${{ github.event.inputs.test }}",
-			}),
+
+		Outputs: orderedmap.New[string, CompositeOutput](
+			orderedmap.WithInitialData[string, CompositeOutput](
+				orderedmap.Pair[string, CompositeOutput]{
+					Key: "test",
+					Value: CompositeOutput{
+						Value:       "test",
+						Description: "this is a test",
+					},
+				},
+			),
 		),
-		Outputs: orderedmap.NewOrderedMap(
-			orderedmap.Pair("test", CompositeOutput{
-				Value:       "test",
-				Description: "this is a test",
-			}),
+		Inputs: orderedmap.New[string, Input](
+			orderedmap.WithInitialData[string, Input](
+				orderedmap.Pair[string, Input]{
+					Key: "test",
+					Value: Input{
+						DeprecationMessage: "omg this is deprecated",
+						Description:        "we are testing\nthis",
+						Required:           true,
+						Default:            "${{ github.event.inputs.test }}",
+					},
+				},
+			),
 		),
 		Runs: CompositeRuns{
 			Using: "composite",
@@ -42,13 +53,23 @@ func TestAction(t *testing.T) {
 					If:               "test",
 					Shell:            "test",
 					WorkingDirectory: "test",
-					Env: orderedmap.NewOrderedMap(
-						orderedmap.Pair("test", "test"),
+					Env: orderedmap.New[string, string](
+						orderedmap.WithInitialData[string, string](
+							orderedmap.Pair[string, string]{
+								Key:   "test",
+								Value: "test",
+							},
+						),
 					),
 					Run:  "test",
 					Uses: "test",
-					With: orderedmap.NewOrderedMap(
-						orderedmap.Pair("test", "test"),
+					With: orderedmap.New[string, string](
+						orderedmap.WithInitialData[string, string](
+							orderedmap.Pair[string, string]{
+								Key:   "test",
+								Value: "test",
+							},
+						),
 					),
 				},
 			},

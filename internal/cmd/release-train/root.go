@@ -10,6 +10,7 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/sethvargo/go-githubactions"
 	"github.com/willabides/actionslog"
+	"github.com/willabides/actionslog/human"
 	"github.com/willabides/release-train-action/v3/internal"
 	"github.com/willabides/release-train-action/v3/internal/release"
 	"golang.org/x/exp/slog"
@@ -54,19 +55,18 @@ func (c *rootCmd) Run(ctx context.Context, kongCtx *kong.Context) error {
 
 	// In actions, we always log at debug level, but when --debug is set, we output the debug logs as notices.
 	if c.OutputFormat == "action" {
-		logOpts := actionslog.Options{
-			Level: slog.LevelDebug,
-		}
-		if c.Debug {
-			logOpts.LevelLog = func(level slog.Level) actionslog.Log {
-				l := actionslog.DefaultLevelLog(level)
+		logHandler = &actionslog.Wrapper{
+			ActionsLogger: func(level slog.Level) actionslog.ActionsLog {
+				l := actionslog.DefaultActionsLog(level)
 				if l == actionslog.LogDebug {
 					l = actionslog.LogNotice
 				}
 				return l
-			}
+			},
+			Handler: (&human.Handler{
+				Level: slog.LevelDebug,
+			}).WithOutput,
 		}
-		logHandler = actionslog.New(os.Stdout, &logOpts)
 	}
 	ctx = internal.WithLogger(ctx, slog.New(logHandler))
 	if c.GenerateAction {
