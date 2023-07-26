@@ -42,7 +42,7 @@ func Run(ctx context.Context, version string, args []string) {
 	parser, err := kong.New(
 		&root,
 		kong.BindTo(ctx, (*context.Context)(nil)),
-		kong.Description("release-train keeps a-rollin' down to San Antone"),
+		kong.Description("Release every PR merge. No magic commit message required."),
 		vars,
 	)
 	if err != nil {
