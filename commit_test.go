@@ -1,25 +1,24 @@
-package next
+package main
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/willabides/release-train/v3/internal"
 )
 
-func testCommit(t *testing.T, pulls ...internal.BasePull) Commit {
+func testCommit(t *testing.T, pulls ...BasePull) Commit {
 	t.Helper()
 	c := Commit{Sha: "deadbeef"}
 	for i := range pulls {
-		p, err := internal.NewPull(pulls[i].Number, nil, pulls[i].Labels...)
+		p, err := NewPull(pulls[i].Number, nil, pulls[i].Labels...)
 		require.NoError(t, err)
 		c.Pulls = append(c.Pulls, *p)
 	}
 	return c
 }
 
-func basePull(number int, labels ...string) internal.BasePull {
-	return internal.BasePull{
+func basePull(number int, labels ...string) BasePull {
+	return BasePull{
 		Number: number,
 		Labels: labels,
 	}
@@ -37,7 +36,7 @@ func TestCommit_validate(t *testing.T) {
 		},
 		{
 			name:   "all labeled",
-			commit: testCommit(t, basePull(1, internal.LabelBreaking), basePull(2, internal.LabelNone)),
+			commit: testCommit(t, basePull(1, LabelBreaking), basePull(2, LabelNone)),
 		},
 		{
 			name:   "unlabeled",
@@ -51,41 +50,41 @@ func TestCommit_validate(t *testing.T) {
 		},
 		{
 			name:   "unlabeled with prerelease",
-			commit: testCommit(t, basePull(1, internal.LabelPrerelease)),
+			commit: testCommit(t, basePull(1, LabelPrerelease)),
 			err:    `commit deadbeef has no labels on associated pull requests: [#1]`,
 		},
 		{
 			name:   "prerelease",
-			commit: testCommit(t, basePull(1, internal.LabelPrerelease, internal.LabelMinor)),
+			commit: testCommit(t, basePull(1, LabelPrerelease, LabelMinor)),
 		},
 		{
 			name:   "one prerelease",
-			commit: testCommit(t, basePull(1, internal.LabelPrerelease, internal.LabelMinor), basePull(2, internal.LabelMinor)),
+			commit: testCommit(t, basePull(1, LabelPrerelease, LabelMinor), basePull(2, LabelMinor)),
 		},
 		{
 			name:   "stable",
-			commit: testCommit(t, basePull(1, internal.LabelStable, internal.LabelMinor)),
+			commit: testCommit(t, basePull(1, LabelStable, LabelMinor)),
 		},
 		{
 			name:   "one stable",
-			commit: testCommit(t, basePull(1, internal.LabelStable, internal.LabelMinor), basePull(2, internal.LabelMinor)),
+			commit: testCommit(t, basePull(1, LabelStable, LabelMinor), basePull(2, LabelMinor)),
 		},
 		{
 			name:   "stable and prerelease",
-			commit: testCommit(t, basePull(1, internal.LabelStable, internal.LabelNone), basePull(2, internal.LabelPrerelease, internal.LabelMinor)),
+			commit: testCommit(t, basePull(1, LabelStable, LabelNone), basePull(2, LabelPrerelease, LabelMinor)),
 			err:    `commit deadbeef has both stable and prerelease labels: stable PR: [#1], prerelease PR: [#2]`,
 		},
 		{
 			name:   "prerelease prefix",
-			commit: testCommit(t, basePull(1, internal.LabelMinor, internal.LabelPrerelease+":foo")),
+			commit: testCommit(t, basePull(1, LabelMinor, LabelPrerelease+":foo")),
 		},
 		{
 			name:   "prerelease with and without prefix",
-			commit: testCommit(t, basePull(1, internal.LabelMinor, internal.LabelPrerelease+":foo", internal.LabelPrerelease)),
+			commit: testCommit(t, basePull(1, LabelMinor, LabelPrerelease+":foo", LabelPrerelease)),
 		},
 		{
 			name:   "conflicting prefixes",
-			commit: testCommit(t, basePull(1, internal.LabelPrerelease+":foo"), basePull(2, internal.LabelPrerelease+":bar")),
+			commit: testCommit(t, basePull(1, LabelPrerelease+":foo"), basePull(2, LabelPrerelease+":bar")),
 			err:    `commit deadbeef has pull requests with conflicting prefixes: #1 and #2`,
 		},
 	} {

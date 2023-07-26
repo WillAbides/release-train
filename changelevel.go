@@ -1,4 +1,4 @@
-package internal
+package main
 
 import (
 	"fmt"
@@ -30,8 +30,4 @@ func (l ChangeLevel) String() string {
 
 func (l ChangeLevel) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("%q", l.String())), nil
-}
-
-func Ptr[V any](v V) *V {
-	return &v
 }

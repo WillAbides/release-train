@@ -1,18 +1,16 @@
-package next
+package main
 
 import (
 	"fmt"
-
-	"github.com/willabides/release-train/v3/internal"
 )
 
 type Commit struct {
-	Sha   string          `json:"sha"`
-	Pulls []internal.Pull `json:"pulls,omitempty"`
+	Sha   string `json:"sha"`
+	Pulls []Pull `json:"pulls,omitempty"`
 }
 
-func (c Commit) changeLevel() internal.ChangeLevel {
-	level := internal.ChangeLevelNone
+func (c Commit) changeLevel() ChangeLevel {
+	level := ChangeLevelNone
 	for _, pull := range c.Pulls {
 		if pull.ChangeLevel > level {
 			level = pull.ChangeLevel
@@ -21,8 +19,8 @@ func (c Commit) changeLevel() internal.ChangeLevel {
 	return level
 }
 
-func (c Commit) pullsLabeledStable() []internal.Pull {
-	var result []internal.Pull
+func (c Commit) pullsLabeledStable() []Pull {
+	var result []Pull
 	for _, p := range c.Pulls {
 		if p.HasStableLabel {
 			result = append(result, p)
@@ -31,8 +29,8 @@ func (c Commit) pullsLabeledStable() []internal.Pull {
 	return result
 }
 
-func (c Commit) pullsLabeledPre() []internal.Pull {
-	var result []internal.Pull
+func (c Commit) pullsLabeledPre() []Pull {
+	var result []Pull
 	for _, p := range c.Pulls {
 		if p.HasPreLabel {
 			result = append(result, p)
@@ -41,8 +39,8 @@ func (c Commit) pullsLabeledPre() []internal.Pull {
 	return result
 }
 
-func (c Commit) pullsWithPrefix() []internal.Pull {
-	var result []internal.Pull
+func (c Commit) pullsWithPrefix() []Pull {
+	var result []Pull
 	for _, p := range c.Pulls {
 		if p.PreReleasePrefix != "" {
 			result = append(result, p)

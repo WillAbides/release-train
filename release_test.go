@@ -1,4 +1,4 @@
-package release
+package main
 
 import (
 	"context"
@@ -13,13 +13,11 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/willabides/release-train/v3/internal"
-	"github.com/willabides/release-train/v3/internal/testutil"
 )
 
 func mustRunCmd(t *testing.T, dir string, env map[string]string, name string, args ...string) string {
 	t.Helper()
-	out, err := internal.RunCmd(dir, env, name, args...)
+	out, err := RunCmd(dir, env, name, args...)
 	require.NoError(t, err)
 	return out
 }
@@ -86,24 +84,24 @@ git tag head
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := testutil.MockGithubClient(t)
+		githubClient := mockGithubClient(t)
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
-			&internal.CommitComparison{
+			&CommitComparison{
 				AheadBy: 2,
 				Commits: []string{repos.taggedCommits["fourth"], repos.taggedCommits["head"]},
 			}, nil,
 		)
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["head"], 0).Return(
-			&internal.CommitComparison{AheadBy: 1}, nil,
+			&CommitComparison{AheadBy: 1}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["fourth"]).Return(
-			[]internal.BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"MinorAlias"}}}, nil,
+			[]BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"MinorAlias"}}}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
-			[]internal.BasePull{}, nil,
+			[]BasePull{}, nil,
 		)
 		githubClient.EXPECT().CreateRelease(gomock.Any(), "orgName", "repoName", "v2.1.0", "I got your release notes right here buddy\n", false).Return(
-			&internal.RepoRelease{
+			&RepoRelease{
 				ID:        1,
 				UploadURL: "localhost",
 			}, nil,
@@ -170,7 +168,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			TempDir:        t.TempDir(),
 			ReleaseRefs:    []string{"first", "fake", "sixth"},
 			LabelAliases: map[string]string{
-				"MINORALIAS": internal.LabelMinor,
+				"MINORALIAS": LabelMinor,
 			},
 		}
 		got, err := runner.Run(ctx)
@@ -181,12 +179,12 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			FirstRelease:         false,
 			ReleaseVersion:       semver.MustParse("2.1.0"),
 			ReleaseTag:           "v2.1.0",
-			ChangeLevel:          internal.ChangeLevelMinor,
+			ChangeLevel:          ChangeLevelMinor,
 			CreatedTag:           true,
 			CreatedRelease:       true,
 			PrereleaseHookOutput: "hello to my friends reading stdout\n",
 		}, got)
-		taggedSha, err := internal.RunCmd(repos.origin, nil, "git", "rev-parse", "v2.1.0")
+		taggedSha, err := RunCmd(repos.origin, nil, "git", "rev-parse", "v2.1.0")
 		require.NoError(t, err)
 		require.Equal(t, repos.taggedCommits["head"], taggedSha)
 	})
@@ -196,9 +194,9 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		ctx := context.Background()
 		repos := setupGit(t)
 		mustRunCmd(t, repos.clone, nil, "git", "checkout", "third")
-		githubClient := testutil.MockGithubClient(t)
+		githubClient := mockGithubClient(t)
 		githubClient.EXPECT().CreateRelease(gomock.Any(), "orgName", "repoName", "x1.0.0", "", false).Return(
-			&internal.RepoRelease{
+			&RepoRelease{
 				ID:        1,
 				UploadURL: "localhost",
 			}, nil,
@@ -221,7 +219,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			FirstRelease:   true,
 			ReleaseTag:     "x1.0.0",
 			ReleaseVersion: semver.MustParse("1.0.0"),
-			ChangeLevel:    internal.ChangeLevelNone,
+			ChangeLevel:    ChangeLevelNone,
 			CreatedTag:     true,
 			CreatedRelease: true,
 		}, got)
@@ -232,21 +230,21 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		ctx := context.Background()
 		repos := setupGit(t)
 
-		githubClient := testutil.MockGithubClient(t)
+		githubClient := mockGithubClient(t)
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
-			&internal.CommitComparison{
+			&CommitComparison{
 				AheadBy: 2,
 				Commits: []string{repos.taggedCommits["fourth"], repos.taggedCommits["head"]},
 			}, nil,
 		)
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["head"], 0).Return(
-			&internal.CommitComparison{AheadBy: 2}, nil,
+			&CommitComparison{AheadBy: 2}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["fourth"]).Return(
-			[]internal.BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{internal.LabelMinor}}}, nil,
+			[]BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{LabelMinor}}}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
-			[]internal.BasePull{}, nil,
+			[]BasePull{}, nil,
 		)
 		preHook := `
 #!/bin/sh
@@ -289,7 +287,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			ReleaseVersion:  semver.MustParse("2.1.0"),
 			PreviousVersion: "2.0.0",
 			PreviousRef:     "v2.0.0",
-			ChangeLevel:     internal.ChangeLevelMinor,
+			ChangeLevel:     ChangeLevelMinor,
 			CreatedTag:      true,
 			CreatedRelease:  false,
 		}, got)
@@ -303,21 +301,21 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		ctx := context.Background()
 		repos := setupGit(t)
 
-		githubClient := testutil.MockGithubClient(t)
+		githubClient := mockGithubClient(t)
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
-			&internal.CommitComparison{
+			&CommitComparison{
 				AheadBy: 2,
 				Commits: []string{repos.taggedCommits["fourth"], repos.taggedCommits["head"]},
 			}, nil,
 		)
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["head"], 0).Return(
-			&internal.CommitComparison{AheadBy: 2}, nil,
+			&CommitComparison{AheadBy: 2}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["fourth"]).Return(
-			[]internal.BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{internal.LabelMinor}}}, nil,
+			[]BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{LabelMinor}}}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
-			[]internal.BasePull{}, nil,
+			[]BasePull{}, nil,
 		)
 		preHook := `echo aborting; exit 10`
 		runner := Runner{
@@ -338,7 +336,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			ReleaseVersion:        semver.MustParse("2.1.0"),
 			PreviousVersion:       "2.0.0",
 			PreviousRef:           "v2.0.0",
-			ChangeLevel:           internal.ChangeLevelMinor,
+			ChangeLevel:           ChangeLevelMinor,
 			CreatedTag:            false,
 			CreatedRelease:        false,
 			PrereleaseHookOutput:  "aborting\n",
@@ -350,27 +348,27 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := testutil.MockGithubClient(t)
+		githubClient := mockGithubClient(t)
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
-			&internal.CommitComparison{
+			&CommitComparison{
 				AheadBy: 0,
 				Commits: []string{repos.taggedCommits["v2.0.0"], repos.taggedCommits["head"]},
 			}, nil,
 		)
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["head"], 0).Return(
-			&internal.CommitComparison{AheadBy: 0}, nil,
+			&CommitComparison{AheadBy: 0}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["v2.0.0"]).Return(
-			[]internal.BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{internal.LabelMinor}}}, nil,
+			[]BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{LabelMinor}}}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
-			[]internal.BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{internal.LabelMinor}}}, nil,
+			[]BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{LabelMinor}}}, nil,
 		)
 		githubClient.EXPECT().GenerateReleaseNotes(gomock.Any(), "orgName", "repoName", "v2.1.0", "v2.0.0").Return(
 			"release notes", nil,
 		)
 		githubClient.EXPECT().CreateRelease(gomock.Any(), "orgName", "repoName", "v2.1.0", "release notes", false).Return(
-			&internal.RepoRelease{
+			&RepoRelease{
 				ID:        1,
 				UploadURL: "localhost",
 			}, nil,
@@ -394,7 +392,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			FirstRelease:    false,
 			ReleaseTag:      "v2.1.0",
 			ReleaseVersion:  semver.MustParse("2.1.0"),
-			ChangeLevel:     internal.ChangeLevelMinor,
+			ChangeLevel:     ChangeLevelMinor,
 			CreatedTag:      true,
 			CreatedRelease:  true,
 		}, got)
@@ -428,7 +426,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := testutil.MockGithubClient(t)
+		githubClient := mockGithubClient(t)
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
 			nil, errors.New("api error"),
 		)
@@ -446,18 +444,18 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := testutil.MockGithubClient(t)
+		githubClient := mockGithubClient(t)
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
-			&internal.CommitComparison{
+			&CommitComparison{
 				AheadBy: 1,
 				Commits: []string{repos.taggedCommits["head"]},
 			}, nil,
 		)
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["head"], 0).Return(
-			&internal.CommitComparison{AheadBy: 0}, nil,
+			&CommitComparison{AheadBy: 0}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
-			[]internal.BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{internal.LabelBreaking}}}, nil,
+			[]BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{LabelBreaking}}}, nil,
 		)
 		githubClient.EXPECT().GenerateReleaseNotes(gomock.Any(), "orgName", "repoName", "v3.0.0", "v2.0.0").Return(
 			"release notes", nil,
@@ -485,24 +483,24 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := testutil.MockGithubClient(t)
+		githubClient := mockGithubClient(t)
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
-			&internal.CommitComparison{
+			&CommitComparison{
 				AheadBy: 1,
 				Commits: []string{repos.taggedCommits["head"]},
 			}, nil,
 		)
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["head"], 0).Return(
-			&internal.CommitComparison{AheadBy: 0}, nil,
+			&CommitComparison{AheadBy: 0}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
-			[]internal.BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{internal.LabelBreaking}}}, nil,
+			[]BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{LabelBreaking}}}, nil,
 		)
 		githubClient.EXPECT().GenerateReleaseNotes(gomock.Any(), "orgName", "repoName", "v3.0.0", "v2.0.0").Return(
 			"release notes", nil,
 		)
 		githubClient.EXPECT().CreateRelease(gomock.Any(), "orgName", "repoName", "v3.0.0", "release notes", false).Return(
-			&internal.RepoRelease{
+			&RepoRelease{
 				ID:        1,
 				UploadURL: "localhost",
 			}, nil,
@@ -538,18 +536,18 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := testutil.MockGithubClient(t)
+		githubClient := mockGithubClient(t)
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
-			&internal.CommitComparison{
+			&CommitComparison{
 				AheadBy: 1,
 				Commits: []string{repos.taggedCommits["head"]},
 			}, nil,
 		)
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["head"], 0).Return(
-			&internal.CommitComparison{AheadBy: 0}, nil,
+			&CommitComparison{AheadBy: 0}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
-			[]internal.BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{internal.LabelBreaking}}}, nil,
+			[]BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{LabelBreaking}}}, nil,
 		)
 		got, err := (&Runner{
 			CheckoutDir:  repos.clone,
@@ -565,7 +563,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			FirstRelease:    false,
 			ReleaseVersion:  semver.MustParse("3.0.0"),
 			ReleaseTag:      "v3.0.0",
-			ChangeLevel:     internal.ChangeLevelMajor,
+			ChangeLevel:     ChangeLevelMajor,
 		}, got)
 	})
 
@@ -573,18 +571,18 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := testutil.MockGithubClient(t)
+		githubClient := mockGithubClient(t)
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
-			&internal.CommitComparison{
+			&CommitComparison{
 				AheadBy: 1,
 				Commits: []string{"fake"},
 			}, nil,
 		)
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["head"], 0).Return(
-			&internal.CommitComparison{AheadBy: 0}, nil,
+			&CommitComparison{AheadBy: 0}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", "fake").Return(
-			[]internal.BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{internal.LabelBreaking}}}, nil,
+			[]BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{LabelBreaking}}}, nil,
 		)
 		got, err := (&Runner{
 			CheckoutDir:   repos.clone,
@@ -602,7 +600,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			FirstRelease:    false,
 			ReleaseVersion:  semver.MustParse("3.0.0"),
 			ReleaseTag:      "v3.0.0",
-			ChangeLevel:     internal.ChangeLevelMajor,
+			ChangeLevel:     ChangeLevelMajor,
 		}, got)
 	})
 
@@ -610,18 +608,18 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := testutil.MockGithubClient(t)
+		githubClient := mockGithubClient(t)
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v0.2.0", repos.taggedCommits["second"], -1).Return(
-			&internal.CommitComparison{
+			&CommitComparison{
 				AheadBy: 1,
 				Commits: []string{repos.taggedCommits["second"]},
 			}, nil,
 		)
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["second"], 0).Return(
-			&internal.CommitComparison{AheadBy: 0}, nil,
+			&CommitComparison{AheadBy: 0}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["second"]).Return(
-			[]internal.BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{internal.LabelBreaking}}}, nil,
+			[]BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{LabelBreaking}}}, nil,
 		)
 		got, err := (&Runner{
 			CheckoutDir:  repos.clone,
@@ -638,7 +636,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			FirstRelease:    false,
 			ReleaseVersion:  semver.MustParse("0.3.0"),
 			ReleaseTag:      "v0.3.0",
-			ChangeLevel:     internal.ChangeLevelMinor,
+			ChangeLevel:     ChangeLevelMinor,
 		}, got)
 	})
 
@@ -661,18 +659,18 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		ctx := context.Background()
 		repos := setupGit(t)
 		mustRunCmd(t, repos.clone, nil, "git", "tag", "v2.1.0-rc.1", "fifth")
-		githubClient := testutil.MockGithubClient(t)
+		githubClient := mockGithubClient(t)
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.1.0-rc.1", repos.taggedCommits["head"], -1).Return(
-			&internal.CommitComparison{
+			&CommitComparison{
 				AheadBy: 1,
 				Commits: []string{repos.taggedCommits["head"]},
 			}, nil,
 		)
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["head"], 0).Return(
-			&internal.CommitComparison{AheadBy: 0}, nil,
+			&CommitComparison{AheadBy: 0}, nil,
 		)
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
-			[]internal.BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{internal.LabelMinor, internal.LabelPrerelease}}}, nil,
+			[]BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{LabelMinor, LabelPrerelease}}}, nil,
 		)
 		got, err := (&Runner{
 			CheckoutDir:  repos.clone,
@@ -688,7 +686,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			FirstRelease:    false,
 			ReleaseVersion:  semver.MustParse("2.1.0-rc.2"),
 			ReleaseTag:      "v2.1.0-rc.2",
-			ChangeLevel:     internal.ChangeLevelMinor,
+			ChangeLevel:     ChangeLevelMinor,
 		}, got)
 	})
 }
