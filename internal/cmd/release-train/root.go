@@ -20,7 +20,7 @@ import (
 type rootCmd struct {
 	Version        kong.VersionFlag  `action:"-"`
 	GenerateAction bool              `hidden:"true" help:"${generate_action_help}"`
-	Repo           string            `action:",${{ github.repository }}" help:"Github repository in the form of owner/repo."`
+	Repo           string            `action:",${{ github.repository }}" help:"${repo_help}"`
 	CheckPR        int               `action:"check-pr,${{ github.event.number }}" help:"${check_pr_help}"`
 	Label          map[string]string `action:"labels" help:"${label_help}" placeholder:"<alias>=<label>;..."`
 	CheckoutDir    string            `action:",${{ github.workspace }}" short:"C" default:"." help:"${checkout_dir_help}"`
@@ -35,8 +35,8 @@ type rootCmd struct {
 	PreReleaseHook string            `placeholder:"<command>" help:"${pre_release_hook_help}"`
 	GoModFile      []string          `action:"validate-go-module" placeholder:"<filepath>" help:"${go_mod_file_help}"`
 	ReleaseRef     []string          `action:"release-refs" placeholder:"<branch>" help:"${release_ref_help}"`
-	PushRemote     string            `action:"-" default:"origin" help:"The git remote to push to."`
-	Tempdir        string            `help:"The prefix to use with mktemp to create a temporary directory."`
+	PushRemote     string            `action:"-" default:"origin" help:"${pushremote_help}"`
+	Tempdir        string            `help:"${tempdir_help}"`
 	GithubApiUrl   string            `action:"-" help:"${github_api_url_help}" default:"${github_api_url_default}"`
 	OutputFormat   string            `action:"-" default:"json" help:"${output_format_help}" enum:"json,action"`
 	Debug          bool              `help:"${debug_help}"`

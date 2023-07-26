@@ -59,3 +59,6 @@ label_help: |
 output_format_help: Output either json our GitHub action output.
 debug_help: Enable debug logging.
 draft_help: Leave the release as a draft.
+tempdir_help: The prefix to use with mktemp to create a temporary directory.
+pushremote_help: The remote to push tags to.
+repo_help: Github repository in the form of owner/repo.

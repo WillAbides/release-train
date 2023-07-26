@@ -1,5 +1,5 @@
 name: release-train
-description: release-train keeps a-rollin' down to San Antone
+description: Release every PR merge. No magic commit message required.
 branding:
   icon: send
   color: yellow
