@@ -1,5 +1,7 @@
 # release-train
 
+[Contributions welcome](./CONTRIBUTING.md).
+
 Release-train is a command-line tool and GitHub action for creating releases based on Pull Request labels.
 
 # Action
@@ -184,3 +186,86 @@ The stdout of the pre_release_hook. Empty if pre_release_hook is not set or if t
 
 Whether pre_release_hook issued an abort by exiting 10. Either "true" or "false".
 <!--- end action doc --->
+
+# Command Line
+
+<!--- start usage output --->
+
+```
+Usage: release-train
+
+release-train keeps a-rollin' down to San Antone
+
+Flags:
+  -h, --help                          Show context-sensitive help.
+      --version
+      --repo=STRING                   Github repository in the form of owner/repo.
+      --check-pr=INT                  Operates as if the given PR has already been merged. Useful
+                                      for making sure the PR is properly labeled. Skips tag and
+                                      release.
+      --label=<alias>=<label>;...     PR label alias in the form of "<alias>=<label>" where <label>
+                                      is a canonical label.
+  -C, --checkout-dir="."              The directory where the repository is checked out.
+      --ref="HEAD"                    git ref.
+      --create-tag                    Whether to create a tag for the release.
+      --create-release                Whether to create a release. Implies create-tag.
+      --draft                         Leave the release as a draft.
+      --tag-prefix="v"                The prefix to use for the tag.
+      --v0                            Assert that current major version is 0 and treat breaking
+                                      changes as minor changes. Errors if the major version is not
+                                      0.
+      --initial-tag="v0.0.0"          The tag to use if no previous version can be found. Set to ""
+                                      to cause an error instead.
+      --pre-release-hook=<command>    Command to run before creating the release. You may abort the
+                                      release by exiting with a non-zero exit code.
+
+                                      Exit code 0 will continue the release. Exit code 10 will skip
+                                      the release without error. Any other exit code will abort the
+                                      release with an error.
+
+                                      You may provide custom release notes by writing to the file at
+                                      `$RELEASE_NOTES_FILE`:
+
+                                      ```
+
+                                        echo "my release notes" > "$RELEASE_NOTES_FILE"
+
+                                      ```
+
+                                      You can update the git ref to be released by writing it to the
+                                      file at `$RELEASE_TARGET`:
+
+                                      ```
+
+                                        # ... update some files ...
+                                        git commit -am "prepare release $RELEASE_TAG"
+                                        echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
+
+                                      ```
+
+                                      If you create a tag named $RELEASE_TAG, it will be used as the
+                                      release target instead of either HEAD or the value written to
+                                      $RELEASE_TARGET.
+
+                                      Any files written to $ASSETS_DIR will be uploaded as release
+                                      assets.
+
+                                      The environment variables RELEASE_VERSION, RELEASE_TAG,
+                                      PREVIOUS_VERSION, FIRST_RELEASE, GITHUB_TOKEN,
+                                      RELEASE_NOTES_FILE, RELEASE_TARGET and ASSETS_DIR will be set.
+      --go-mod-file=<filepath>,...    Validates that the name of the go module at the given path
+                                      matches the major version of the release. For example,
+                                      validation will fail when releasing v3.0.0 when the module
+                                      name is "my_go_module/v2".
+      --release-ref=<branch>,...      Only allow tags and releases to be created from matching refs.
+                                      Refs can be patterns accepted by git-show-ref. If undefined,
+                                      any branch can be used.
+      --push-remote="origin"          The git remote to push to.
+      --tempdir=STRING                The prefix to use with mktemp to create a temporary directory.
+      --github-api-url="https://api.github.com"
+                                      GitHub API URL.
+      --output-format="json"          Output either json our GitHub action output.
+      --debug                         Enable debug logging.
+```
+
+<!--- end usage output --->

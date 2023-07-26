@@ -1,5 +1,10 @@
 # Contributing to release-train
 
+Your issues and pull requests are welcome. If you have a non-trivial change, you
+may want to open an issue first so we can discuss whether it will be a good fit
+before you spend time on it. Don't let that stop you from coding, though. Just
+be aware that it may not get merged into this repo.
+
 ## Scripts
 
 release-train uses a number of scripts to automate common tasks. They are found in the

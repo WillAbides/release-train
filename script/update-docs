@@ -25,6 +25,14 @@ ACTION_DOC="$(bin/action-doc action.yml --header-prefix='#' --skip-action-name)"
 
 update_file_section README.md '<!--- start action doc --->' '<!--- end action doc --->' "$ACTION_DOC"
 
+  USAGE_OUTPUT="
+\`\`\`
+$(COLUMNS=100 script/release-train --help)
+\`\`\`
+"
+
+update_file_section README.md '<!--- start usage output --->' '<!--- end usage output --->' "$USAGE_OUTPUT"
+
 for f in script/*; do
   [ -f "$f" ] || continue
   SCRIPT_DESCRIPTIONS="$SCRIPT_DESCRIPTIONS
