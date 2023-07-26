@@ -25,6 +25,11 @@ Usage: script/bindown-template <release> <output-file>
 
 bootstraps bindown -- only used by script/bindown
 
+### check-module-version
+
+script/check-module-version checks that this module's name works with the given version.
+Usage: script/check-module-version <version>
+
 ### cibuild
 
 script/cibuild is run by CI to test this project. It can also be run locally.
