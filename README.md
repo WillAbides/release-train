@@ -77,7 +77,7 @@ The prefix to use for the tag.
 
 ### v0
 
-Assert that current major version is 0 and treat breaking changes as minor changes. 
+Assert that current major version is 0 and treat breaking changes as minor changes.
 Errors if the major version is not 0.
 
 Only literal 'true' will be treated as true.
@@ -91,23 +91,19 @@ The tag to use if no previous version can be found. Set to "" to cause an error 
 ### pre-release-hook
 
 Command to run before creating the release. You may abort the release by exiting with a non-zero exit code.
-
+  
 Exit code 0 will continue the release. Exit code 10 will skip the release without error. Any other exit code will
 abort the release with an error.
 
-You may provide custom release notes by writing to the file at `$RELEASE_NOTES_FILE`:
+You may provide custom release notes by writing to the file at $RELEASE_NOTES_FILE:
 
-```
-  echo "my release notes" > "$RELEASE_NOTES_FILE"
-```
+    echo "my release notes" > "$RELEASE_NOTES_FILE"
 
-You can update the git ref to be released by writing it to the file at `$RELEASE_TARGET`:
+You can update the git ref to be released by writing it to the file at $RELEASE_TARGET:
 
-```
-  # ... update some files ...
-  git commit -am "prepare release $RELEASE_TAG"
-  echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
-```
+    # ... update some files ...
+    git commit -am "prepare release $RELEASE_TAG"
+    echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 
 If you create a tag named $RELEASE_TAG, it will be used as the release target instead of either HEAD or the value
 written to $RELEASE_TARGET.
@@ -218,24 +214,16 @@ Flags:
                                       release with an error.
 
                                       You may provide custom release notes by writing to the file at
-                                      `$RELEASE_NOTES_FILE`:
-
-                                      ```
+                                      $RELEASE_NOTES_FILE:
 
                                         echo "my release notes" > "$RELEASE_NOTES_FILE"
 
-                                      ```
-
                                       You can update the git ref to be released by writing it to the
-                                      file at `$RELEASE_TARGET`:
-
-                                      ```
+                                      file at $RELEASE_TARGET:
 
                                         # ... update some files ...
                                         git commit -am "prepare release $RELEASE_TAG"
                                         echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
-
-                                      ```
 
                                       If you create a tag named $RELEASE_TAG, it will be used as the
                                       release target instead of either HEAD or the value written to
