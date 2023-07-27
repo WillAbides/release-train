@@ -166,7 +166,7 @@ func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
 		}
 	}()
 	logger.Debug("starting runRelease")
-	ghClient, err := c.GithubClient(ctx)
+	client, err := c.GithubClient(ctx)
 	if err != nil {
 		return err
 	}
@@ -208,7 +208,7 @@ func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
 		ReleaseRefs:    c.ReleaseRef,
 		CheckPR:        c.CheckPR,
 
-		GithubClient: ghClient,
+		GithubClient: client,
 	}
 
 	result, err := runner.Run(ctx)
