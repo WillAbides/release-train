@@ -7,7 +7,7 @@ set -e
 REPO_DIR="$(CDPATH="" cd -- "$(dirname -- "$0")/.." && pwd -P)"
 
 action_dl() {
-  ( 
+  (
     [ -n "$GITHUB_ACTION_PATH" ] || return 1
     cd "$REPO_DIR"
     ACTION_VERSION="$(basename "$GITHUB_ACTION_PATH")"
@@ -25,7 +25,7 @@ action_dl() {
 }
 
 local_build() {
-  ( 
+  (
     cd "$REPO_DIR"
     go build -o bin/release-train .
   )

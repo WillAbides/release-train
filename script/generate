@@ -15,7 +15,7 @@ if [ "$1" = "--check" ]; then
     mkdir -p "$(dirname -- "$target")"
     cp "$f" "$target"
   done
-  ( 
+  (
     cd "$GENTEMP"
     git add .
     git -c user.name='bot' -c user.email='bot@localhost' commit -m "generate" -q --allow-empty
