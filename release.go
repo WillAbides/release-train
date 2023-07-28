@@ -346,6 +346,7 @@ func runPrereleaseHook(ctx context.Context, dir string, env map[string]string, h
 	if hook == "" {
 		return "", false, nil
 	}
+	logger.Debug("running prerelease hook", slog.String("hook", hook))
 	var stdoutBuf bytes.Buffer
 	cmd := exec.Command("sh", "-c", hook)
 	cmd.Dir = dir
