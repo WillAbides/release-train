@@ -342,6 +342,41 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		}, got)
 	})
 
+	t.Run("pre-release hook failure without createTag", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		repos := setupGit(t)
+
+		githubClient := mockGithubClient(t)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
+			&CommitComparison{
+				AheadBy: 2,
+				Commits: []string{repos.taggedCommits["fourth"], repos.taggedCommits["head"]},
+			}, nil,
+		)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["head"], 0).Return(
+			&CommitComparison{AheadBy: 2}, nil,
+		)
+		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["fourth"]).Return(
+			[]BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{labelMinor}}}, nil,
+		)
+		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
+			[]BasePull{}, nil,
+		)
+		preHook := `echo failure; exit 1`
+		runner := Runner{
+			CheckoutDir:    repos.clone,
+			Ref:            repos.taggedCommits["head"],
+			TagPrefix:      "v",
+			Repo:           "orgName/repoName",
+			PushRemote:     "origin",
+			GithubClient:   githubClient,
+			PrereleaseHook: preHook,
+		}
+		_, err := runner.Run(ctx)
+		require.EqualError(t, err, "exit status 1\n")
+	})
+
 	t.Run("generates release notes from API", func(t *testing.T) {
 		t.Parallel()
 		ctx := context.Background()
@@ -552,6 +587,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			Ref:          repos.taggedCommits["head"],
 			TagPrefix:    "v",
 			Repo:         "orgName/repoName",
+			PushRemote:   "origin",
 			GithubClient: githubClient,
 		}).Run(ctx)
 		require.NoError(t, err)
@@ -587,6 +623,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			Ref:           repos.taggedCommits["head"],
 			TagPrefix:     "v",
 			Repo:          "orgName/repoName",
+			PushRemote:    "origin",
 			GithubClient:  githubClient,
 			CreateRelease: true,
 			ReleaseRefs:   []string{"fake"},
@@ -624,6 +661,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			Ref:          repos.taggedCommits["second"],
 			TagPrefix:    "v",
 			Repo:         "orgName/repoName",
+			PushRemote:   "origin",
 			GithubClient: githubClient,
 			V0:           true,
 		}).Run(ctx)
@@ -675,6 +713,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			Ref:          repos.taggedCommits["head"],
 			TagPrefix:    "v",
 			Repo:         "orgName/repoName",
+			PushRemote:   "origin",
 			GithubClient: githubClient,
 		}).Run(ctx)
 		require.NoError(t, err)

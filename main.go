@@ -192,23 +192,22 @@ func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
 
 	runner := &Runner{
 		CheckoutDir:    c.CheckoutDir,
-		LabelAliases:   c.Label,
 		Ref:            c.Ref,
 		GithubToken:    c.GithubToken,
 		CreateTag:      createTag,
 		CreateRelease:  c.CreateRelease,
 		Draft:          c.Draft,
+		V0:             c.V0,
 		TagPrefix:      c.TagPrefix,
 		InitialTag:     c.InitialTag,
 		PrereleaseHook: c.PreReleaseHook,
-		PushRemote:     c.PushRemote,
 		Repo:           repo,
+		PushRemote:     c.PushRemote,
 		TempDir:        tempDir,
-		V0:             c.V0,
 		ReleaseRefs:    c.ReleaseRef,
+		LabelAliases:   c.Label,
 		CheckPR:        c.CheckPR,
-
-		GithubClient: client,
+		GithubClient:   client,
 	}
 
 	result, err := runner.Run(ctx)
