@@ -218,10 +218,9 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		return nil, err
 	}
 
-	if result.ReleaseVersion == nil || !createTag {
-		return result, nil
-	}
-	if !result.FirstRelease && result.PreviousVersion == result.ReleaseVersion.String() {
+	if !result.FirstRelease &&
+		result.ReleaseVersion != nil &&
+		result.PreviousVersion == result.ReleaseVersion.String() {
 		logger.Debug("no changes detected since previous release %s, skipping tag", result.PreviousVersion)
 		return result, nil
 	}
@@ -237,7 +236,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	}
 
 	runEnv := map[string]string{
-		"RELEASE_VERSION":    result.ReleaseVersion.String(),
+		"RELEASE_VERSION":    "",
 		"RELEASE_TAG":        result.ReleaseTag,
 		"PREVIOUS_VERSION":   result.PreviousVersion,
 		"FIRST_RELEASE":      fmt.Sprintf("%t", result.FirstRelease),
@@ -246,6 +245,9 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		"RELEASE_TARGET":     o.releaseTargetFile(),
 		"ASSETS_DIR":         o.assetsDir(),
 	}
+	if result.ReleaseVersion != nil {
+		runEnv["RELEASE_VERSION"] = result.ReleaseVersion.String()
+	}
 
 	result.PrereleaseHookOutput, result.PrereleaseHookAborted, err = runPrereleaseHook(ctx, o.CheckoutDir, runEnv, o.PrereleaseHook)
 	if err != nil {
@@ -253,6 +255,9 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		return nil, err
 	}
 	if result.PrereleaseHookAborted {
+		return result, nil
+	}
+	if result.ReleaseVersion == nil || !createTag {
 		return result, nil
 	}
 
