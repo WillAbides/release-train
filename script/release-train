@@ -1,10 +1,36 @@
 #!/bin/sh
-#/ script/release-train builds and runs release-train.
+#/ script/release-train builds and runs release-train. When run from a github action, it will attempt
+#/ to download the version of release-train configured in the action instead of building it.
 
 set -e
 
-CDPATH="" cd -- "$(dirname -- "$0")/.."
+REPO_DIR="$(CDPATH="" cd -- "$(dirname -- "$0")/.." && pwd -P)"
 
-go build -o bin/release-train .
+action_dl() {
+  (
+    [ -n "$GITHUB_ACTION_PATH" ] || return 1
+    cd "$REPO_DIR"
+    ACTION_VERSION="$(basename "$GITHUB_ACTION_PATH")"
+    echo "Using release-train version $ACTION_VERSION from action"
 
-exec bin/release-train "$@"
+    mkdir -p tmp
+    rm -f tmp/bindown.yaml
+
+    curl -L -o tmp/bindown.yaml \
+      "https://github.com/WillAbides/release-train/releases/download/$ACTION_VERSION/bindown.yaml"
+
+    script/bindown install release-train --configfile tmp/bindown.yaml --cache .cache --output bin/release-train
+    echo "Successfully downloaded release-train $ACTION_VERSION from action" >&2
+  )
+}
+
+local_build() {
+  (
+    cd "$REPO_DIR"
+    go build -o bin/release-train .
+  )
+}
+
+action_dl || local_build
+
+exec "$REPO_DIR"/bin/release-train "$@"

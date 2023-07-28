@@ -1,8 +1,7 @@
 name: ci
 on:
   push:
-    branches:
-      - main
+    branches: [ '*' ]
   workflow_dispatch:
   pull_request:
     types:
@@ -40,48 +39,43 @@ jobs:
           app_id: ${{ secrets.RELEASER_APP_ID }}
           private_key: ${{ secrets.RELEASER_APP_KEY }}
       - name: config
+        id: config
         run: |
           git config --local user.name '${{ github.actor }}'
           git config --local user.email '${{ github.actor }}@users.noreply.github.com'
           go build -o bin/release-train .
           echo RELEASE_TRAIN_BIN="$(pwd)"/bin/release-train >> "$GITHUB_ENV"
+          echo branch_name="${GITHUB_REF##*/}" >> "$GITHUB_OUTPUT"
       - run: script/cibuild
       - id: release-train
+        name: release-train
         uses: './'
         with:
-          create_release: true
-          validate_go_module: go.mod
-          pre_release_hook: |
-            script/bindown dependency update-vars release-train \
-              --set version="$RELEASE_VERSION" \
-              --skipchecksums
-            if ! git diff --quiet .bindown.yaml; then
-              exit 10
-            fi
-      - if: steps.release-train.outputs.created_release == 'true'
-        name: goreleaser
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+          labels: |
+            enhancement=semver:minor
+          create-release: true
+          debug: true
+          release-train-bin: ${{ env.RELEASE_TRAIN_BIN }}
+          release-refs: |
+            main
+            refs/heads/v[0-9]
+            refs/heads/v[0-9][0-9]
+          pre-release-hook: |
+            set -e
+            script/check-module-version "$(go list -m)" "$RELEASE_TAG"
+            script/bindown -q install goreleaser
+            git tag "$RELEASE_TAG"
+            bin/goreleaser release --clean --skip-publish
+            cp dist/checksums.txt dist/release-train_*.tar.gz "$ASSETS_DIR"
+      - name: echo output
+        if: always()
         run: |
-          git status
-          script/bindown -q install goreleaser
-          bin/goreleaser release --clean
-      - if: steps.release-train.outputs.pre_release_hook_aborted == 'true'
-        name: create release pr
-        id: create-release-pr
-        # v5.0.1
-        uses: peter-evans/create-pull-request@284f54f989303d2699d373481a0cfa13ad5a6666
-        with:
-          token: "${{ steps.generate-token.outputs.token }}"
-          add-paths: ".bindown.yaml"
-          commit-message: "prepare to release ${{ steps.release-train.outputs.release_tag }}"
-          branch: "prepare-release"
-          delete-branch: true
-          title: "prepare to release ${{ steps.release-train.outputs.release_tag }}"
-          body: "prepare to release ${{ steps.release-train.outputs.release_tag }}"
-          labels: "semver:nochange"
-      - if: steps.create-release-pr.outputs.pull-request-number
-        name: auto-merge release pr
-        env:
-          GH_TOKEN: "${{ steps.generate-token.outputs.token }}"
-        run: gh pr merge --merge --auto ${{ steps.create-release-pr.outputs.pull-request-number }}
+          cat <<EOF
+          ${{ toJSON(steps.release-train.outputs) }}
+          EOF
+      - name: add bindown template
+        if: steps.release-train.outputs.created-release == 'true'
+        run: |
+          script/bindown -q install gh
+          script/bindown-template '${{ steps.release-train.outputs.release-tag }}' tmp/bindown/bindown.yaml
+          bin/gh release upload "${{ steps.release-train.outputs.release-tag }}" tmp/bindown/bindown.yaml

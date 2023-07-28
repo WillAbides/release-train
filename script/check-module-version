@@ -1,0 +1,26 @@
+#!/bin/bash
+#/ script/check-module-version checks that a go module's name works with the given tag.
+#/ It assumes that <tag> will always be a valid semantic version prefixed with v.
+#/
+#/ Usage: script/check-module-version <module name> <tag>
+
+set -e
+
+[ "$#" -eq 2 ] || {
+  grep '^#/' < "$0" | cut -c 4- >&2
+  exit 1
+}
+
+MOD_NAME="$1"
+TAG="$2"
+VERSION="${TAG#v}"
+MAJOR_VERSION="${VERSION%%.*}"
+if [ "$MAJOR_VERSION" -gt 1 ]; then
+  if [[ $MOD_NAME != */v"$MAJOR_VERSION" ]]; then
+    echo "module name $MOD_NAME is not compatible with tag $TAG" >&2
+    exit 1
+  fi
+elif [[ $MOD_NAME == */v[[:digit:]] ]]; then
+  echo "module name $MOD_NAME is not compatible with tag $TAG" >&2
+  exit 1
+fi

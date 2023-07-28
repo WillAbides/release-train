@@ -11,4 +11,4 @@ git ls-files -o -c --exclude-standard '*.go' |
   bin/handcrafted |
   xargs bin/gofumpt -w -extra
 
-bin/shfmt -ci -i 2 -ci -sr -w -s -kp ./script ./action
+bin/shfmt -ci -i 2 -ci -sr -w -s ./script

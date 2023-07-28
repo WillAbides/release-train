@@ -5,4 +5,7 @@ set -e
 
 CDPATH="" cd -- "$(dirname -- "$0")/.."
 
-exec action/bindown "$@"
+mkdir -p bin
+
+[ -f bin/bindown ] || script/bootstrap-bindown.sh 2> /dev/null
+exec bin/bindown "$@"

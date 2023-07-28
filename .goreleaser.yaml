@@ -1,6 +1,4 @@
 project_name: release-train
-gomod:
-  proxy: true
 builds:
   - goos:
       - linux
@@ -17,8 +15,5 @@ checksum:
   name_template: 'checksums.txt'
 snapshot:
   name_template: "{{ .Tag }}-next"
-publishers:
-  - name: gh
-    env:
-      - GITHUB_TOKEN="{{ .Env.GITHUB_TOKEN }}"
-    cmd: env && bin/gh release upload --clobber {{ .Tag }} dist/{{ .ArtifactName }}
+release:
+  disable: true
