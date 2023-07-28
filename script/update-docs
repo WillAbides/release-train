@@ -21,7 +21,7 @@ $end_comment"
 
 script/bindown -q install action-doc
 
-ACTION_DOC="$(bin/action-doc action.yml --header-prefix='#' --skip-action-name)"
+ACTION_DOC="$(bin/action-doc action.yml --header-prefix='##' --skip-action-name --skip-action-description)"
 
 update_file_section README.md '<!--- start action doc --->' '<!--- end action doc --->' "$ACTION_DOC"
 
