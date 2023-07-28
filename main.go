@@ -31,7 +31,7 @@ var flagHelp = kong.Vars{
 	"draft_help":           `Leave the release as a draft.`,
 	"tempdir_help":         `The prefix to use with mktemp to create a temporary directory.`,
 	"pushremote_help":      `The remote to push tags to.`,
-	"repo_help":            `Github repository in the form of owner/repo.`,
+	"repo_help":            `GitHub repository in the form of owner/repo.`,
 	"github_token_help":    "The GitHub token to use for authentication. Must have `contents: write` permission if creating a release or tag.",
 	"github_api_url_help":  `GitHub API URL.`,
 

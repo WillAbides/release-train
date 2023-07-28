@@ -5,7 +5,7 @@ branding:
   color: yellow
 inputs:
   repo:
-    description: Github repository in the form of owner/repo.
+    description: GitHub repository in the form of owner/repo.
     default: ${{ github.repository }}
   check-pr:
     description: |-
