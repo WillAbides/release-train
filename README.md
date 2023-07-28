@@ -48,12 +48,24 @@ See [action.md](./doc/action.md).
 
 ### Installation
 
-Install with bindown
+#### Install with bindown
 
 ```shell
-bindown dependency add release-train --source https://github.com/WillAbides/release-train/releases/latest/download/bindown.yamlbindown install release-train --source https://github.com/WillAbides/release-train/releases/latest/download/bindown.yaml
+bindown dependency add release-train --source https://github.com/WillAbides/release-train/releases/latest/download/bindown.yaml
 bindown install release-train
 ```
+
+#### Install from go source
+
+```shell
+go install github.com/willabides/release-train/v3@latest
+```
+
+#### Download a release
+
+Pick a release from
+the [releases page](https://github.com/WillAbides/release-train/releases) and
+download the appropriate binary for your platform.
 
 ### Usage
 
