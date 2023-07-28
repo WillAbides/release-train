@@ -11,15 +11,15 @@ set -e
   exit 1
 }
 
-   mod_name="$1"
-   version="${2#v}"
-   major_version="${version%%.*}"
-  if [ "$major_version" -gt 1 ]; then
-    if [[ $mod_name != */v"$major_version" ]]; then
-      echo "module name $mod_name is not compatible with version $version" >&2
-      exit 1
+MOD_NAME="$1"
+tmp_VERSION="${2#v}"
+MAJOR_VERSION="${tmp_VERSION%%.*}"
+if [ "$major_version" -gt 1 ]; then
+  if [[ $MOD_NAME != */v"$major_version" ]]; then
+    echo "module name $MOD_NAME is not compatible with version $version" >&2
+    exit 1
   fi
-elif   [[ $mod_name == */v[[:digit:]] ]]; then
-      echo "module name $mod_name is not compatible with version $version" >&2
-      exit 1
+elif [[ $MOD_NAME == */v[[:digit:]] ]]; then
+  echo "module name $MOD_NAME is not compatible with version $version" >&2
+  exit 1
 fi
