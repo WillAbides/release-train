@@ -210,7 +210,18 @@ The stdout of the pre_release_hook. Empty if pre_release_hook is not set or if t
 Whether pre_release_hook issued an abort by exiting 10. Either "true" or "false".
 <!--- end action doc --->
 
-## Command Line Usage
+## Command Line
+
+### Installation
+
+Install with bindown
+
+```shell
+bindown dependency add release-train --source https://github.com/WillAbides/release-train/releases/latest/download/bindown.yamlbindown install release-train --source https://github.com/WillAbides/release-train/releases/latest/download/bindown.yaml
+bindown install release-train
+```
+
+### Usage
 
 <!--- start usage output --->
 
