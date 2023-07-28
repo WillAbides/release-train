@@ -25,7 +25,7 @@ ACTION_DOC="$(bin/action-doc action.yml --header-prefix='#' --skip-action-name)"
 
 update_file_section README.md '<!--- start action doc --->' '<!--- end action doc --->' "$ACTION_DOC"
 
-  USAGE_OUTPUT="
+USAGE_OUTPUT="
 \`\`\`
 $(COLUMNS=100 script/release-train --help)
 \`\`\`
