@@ -27,8 +27,10 @@ bootstraps bindown -- only used by script/bindown
 
 ### check-module-version
 
-script/check-module-version checks that this module's name works with the given version.
-Usage: script/check-module-version <version>
+script/check-module-version checks that a go module's name works with the given tag.
+It assumes that <tag> will always be a valid semantic version prefixed with v.
+
+Usage: script/check-module-version <module name> <tag>
 
 ### cibuild
 
