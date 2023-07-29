@@ -306,6 +306,12 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		return nil, err
 	}
 
+	// push target last because it cannot be easily rolled back
+	err = o.pushTarget()
+	if err != nil {
+		return nil, err
+	}
+
 	return result, nil
 }
 
@@ -323,6 +329,23 @@ func (o *Runner) uploadAssets(ctx context.Context, uploadURL string) error {
 		}
 	}
 	return nil
+}
+
+func (o *Runner) pushTarget() error {
+	target, err := o.getReleaseTarget()
+	if err != nil {
+		return err
+	}
+	ref, err := runCmd(o.CheckoutDir, nil, "git", "rev-parse", "--verify", "--symbolic-full-name", target)
+	if err != nil {
+		return err
+	}
+	if !strings.HasPrefix(ref, "refs/heads/") {
+		// only push branches
+		return nil
+	}
+	_, err = runCmd(o.CheckoutDir, nil, "git", "push", o.PushRemote, target)
+	return err
 }
 
 func (o *Runner) tagRelease(releaseTag string) error {

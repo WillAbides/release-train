@@ -119,6 +119,11 @@ Flags:
                                       release target instead of either HEAD or the value written to
                                       $RELEASE_TARGET.
 
+                                      When either the original ref or the ref written to
+                                      $RELEASE_TARGET is a branch, the branch will be pushed to
+                                      origin. If you need to add a commit but don't want it pushed,
+                                      then write a sha to $RELEASE_TARGET instead of a branch name.
+
                                       Any files written to $ASSETS_DIR will be uploaded as release
                                       assets.
 
