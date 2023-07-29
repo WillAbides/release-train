@@ -120,7 +120,7 @@ runs:
           RELEASE_TRAIN_BIN="${{ inputs.release-train-bin }}"
         fi
 
-        set -- --output-format action --debug
+        set -- --output-format action
 
         if [ -n "${{ inputs.repo }}" ]; then
           set -- "$@" --repo '${{ inputs.repo }}'

@@ -123,7 +123,7 @@ else
   RELEASE_TRAIN_BIN="${{ inputs.release-train-bin }}"
 fi
 
-set -- --output-format action --debug
+set -- --output-format action
 `
 	inputs := orderedmap.New[string, Input]()
 
