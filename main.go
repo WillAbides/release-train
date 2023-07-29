@@ -59,6 +59,9 @@ You can update the git ref to be released by writing it to the file at $RELEASE_
 If you create a tag named $RELEASE_TAG, it will be used as the release target instead of either HEAD or the value
 written to $RELEASE_TARGET.
 
+When either the original ref or the ref written to $RELEASE_TARGET is a branch, the branch will be pushed to origin.
+If you need to add a commit but don't want it pushed, then write a sha to $RELEASE_TARGET instead of a branch name.
+
 Any files written to $ASSETS_DIR will be uploaded as release assets.
 
 The environment variables RELEASE_VERSION, RELEASE_TAG, PREVIOUS_VERSION, FIRST_RELEASE, GITHUB_TOKEN,
