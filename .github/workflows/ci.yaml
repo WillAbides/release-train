@@ -54,7 +54,6 @@ jobs:
           labels: |
             enhancement=semver:minor
           create-release: true
-          debug: true
           release-train-bin: ${{ env.RELEASE_TRAIN_BIN }}
           release-refs: |
             main
