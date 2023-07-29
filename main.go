@@ -131,7 +131,7 @@ func (c *rootCmd) Run(ctx context.Context, kongCtx *kong.Context) error {
 		logHandler = &actionslog.Wrapper{
 			ActionsLogger: func(level slog.Level) actionslog.ActionsLog {
 				l := actionslog.DefaultActionsLog(level)
-				if l == actionslog.LogDebug {
+				if c.Debug && l == actionslog.LogDebug {
 					l = actionslog.LogNotice
 				}
 				return l
