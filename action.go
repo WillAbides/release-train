@@ -115,11 +115,9 @@ func getAction(kongCtx *kong.Context) (*CompositeAction, error) {
 set -e
 
 ACTION_DIR="${{ github.action_path }}"
-RELEASE_TRAIN_BIN="$ACTION_DIR"/bin/release-train
 
-if [ -z "${{ inputs.release-train-bin }}" ]; then
-  RELEASE_TRAIN_BIN="$ACTION_DIR"/script/release-train
-else
+RELEASE_TRAIN_BIN="$ACTION_DIR"/script/release-train
+if [ -n "${{ inputs.release-train-bin }}" ]; then
   RELEASE_TRAIN_BIN="${{ inputs.release-train-bin }}"
 fi
 
