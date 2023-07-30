@@ -251,7 +251,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 
 	result.PrereleaseHookOutput, result.PrereleaseHookAborted, err = runPrereleaseHook(ctx, o.CheckoutDir, runEnv, o.PrereleaseHook)
 	if err != nil {
-		logger.Debug("prerelease hook errored", slog.String("output", result.PrereleaseHookOutput))
+		logger.Debug("runPrereleaseHook hook errored", slog.String("output", result.PrereleaseHookOutput))
 		return nil, err
 	}
 	if result.PrereleaseHookAborted {
@@ -385,12 +385,13 @@ func runPrereleaseHook(ctx context.Context, dir string, env map[string]string, h
 	cmd.Stdout = &stdoutBuf
 	err := cmd.Run()
 	if err != nil {
-		logger.Debug("prerelease hook errored", slog.String("output", stdoutBuf.String()))
+		logger.Debug("running prerelease hook returned an error", slog.String("output", stdoutBuf.String()), slog.Any("err", err))
 		exitErr := asExitErr(err)
 		if exitErr != nil {
 			err = errors.Join(err, errors.New(string(exitErr.Stderr)))
-			logger.Debug("prerelease hook errored", slog.String("stderr", string(exitErr.Stderr)))
+			logger.Debug("prerelease hook errored with exitErr", slog.String("stderr", string(exitErr.Stderr)))
 			if exitErr.ExitCode() == 10 {
+				logger.Debug("prerelease hook aborted")
 				return stdoutBuf.String(), true, nil
 			}
 		}
