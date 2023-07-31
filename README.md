@@ -112,6 +112,17 @@ release. Some options such as `--check-pr` will modify this behavior.
 8. **Emit output** including release version, tag, change level, etc that you
    use in notifications or other actions.
 
+## Pre-release hook
+
+**Pre-release hook isn't related to prereleases. It is a hook that runs before a
+release is created**. It will probably be renamed in the near future to avoid
+confusion. The name isn't even completely accurate anymore because it runs
+before creating the release tag.
+
+The pre-release hook is a shell script that runs before the new release is
+tagged. It lets you do some customizations like creating release notes, building
+release artifacts, or validating the release.
+
 ## GitHub Action Configuration
 
 See [action.md](./doc/action.md).
