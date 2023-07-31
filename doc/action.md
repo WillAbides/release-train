@@ -78,9 +78,9 @@ default: `v0.0.0`
 
 The tag to use if no previous version can be found. Set to "" to cause an error instead.
 
-### pre-release-hook
+### pre-tag-hook
 
-Command to run before creating the release. You may abort the release by exiting with a non-zero exit code.
+Command to run before tagging the release. You may abort the release by exiting with a non-zero exit code.
   
 Exit code 0 will continue the release. Exit code 10 will skip the release without error. Any other exit code will
 abort the release with an error.
@@ -89,7 +89,7 @@ You may provide custom release notes by writing to the file at $RELEASE_NOTES_FI
 
     echo "my release notes" > "$RELEASE_NOTES_FILE"
 
-You can update the git ref to be released by writing it to the file at $RELEASE_TARGET:
+Update the git ref to be released by writing it to the file at $RELEASE_TARGET:
 
     # ... update some files ...
     git commit -am "prepare release $RELEASE_TAG"
@@ -99,12 +99,19 @@ If you create a tag named $RELEASE_TAG, it will be used as the release target in
 written to $RELEASE_TARGET.
 
 When either the original ref or the ref written to $RELEASE_TARGET is a branch, the branch will be pushed to origin.
-If you need to add a commit but don't want it pushed, then write a sha to $RELEASE_TARGET instead of a branch name.
+In the unlikely situation where you need to add a commit but don't want it pushed, then write a sha to $RELEASE_TARGET
+instead of a branch name.
 
 Any files written to $ASSETS_DIR will be uploaded as release assets.
 
 The environment variables RELEASE_VERSION, RELEASE_TAG, PREVIOUS_VERSION, FIRST_RELEASE, GITHUB_TOKEN,
 RELEASE_NOTES_FILE, RELEASE_TARGET and ASSETS_DIR will be set.
+
+### pre-release-hook
+
+__Deprecated__ - deprecated
+
+*deprecated* Will be removed in a future release. Alias for pre-tag-hook.
 
 ### release-refs
 
@@ -163,9 +170,17 @@ Whether a release was created. Either "true" or "false".
 
 ### pre-release-hook-output
 
-The stdout of the pre_release_hook. Empty if pre_release_hook is not set or if the hook returned an exit other than 0 or 10.
+*deprecated* Will be removed in a future release. Alias for pre-tag-hook-output
 
 ### pre-release-hook-aborted
 
-Whether pre_release_hook issued an abort by exiting 10. Either "true" or "false".
+*deprecated* Will be removed in a future release. Alias for pre-tag-hook-aborted
+
+### pre-tag-hook-output
+
+The stdout of the pre-tag-hook. Empty if pre_release_hook is not set or if the hook returned an exit other than 0 or 10.
+
+### pre-tag-hook-aborted
+
+Whether pre-tag-hook issued an abort by exiting 10. Either "true" or "false".
 <!--- end action doc --->

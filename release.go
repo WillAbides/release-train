@@ -15,23 +15,23 @@ import (
 )
 
 type Runner struct {
-	CheckoutDir    string
-	Ref            string
-	GithubToken    string
-	CreateTag      bool
-	CreateRelease  bool
-	Draft          bool
-	V0             bool
-	TagPrefix      string
-	InitialTag     string
-	PrereleaseHook string
-	Repo           string
-	PushRemote     string
-	TempDir        string
-	ReleaseRefs    []string
-	LabelAliases   map[string]string
-	CheckPR        int
-	GithubClient   GithubClient
+	CheckoutDir   string
+	Ref           string
+	GithubToken   string
+	CreateTag     bool
+	CreateRelease bool
+	Draft         bool
+	V0            bool
+	TagPrefix     string
+	InitialTag    string
+	PreTagHook    string
+	Repo          string
+	PushRemote    string
+	TempDir       string
+	ReleaseRefs   []string
+	LabelAliases  map[string]string
+	CheckPR       int
+	GithubClient  GithubClient
 }
 
 func (o *Runner) releaseNotesFile() string {
@@ -57,6 +57,8 @@ type Result struct {
 	CreatedRelease        bool            `json:"created-release,omitempty"`
 	PrereleaseHookOutput  string          `json:"prerelease-hook-output"`
 	PrereleaseHookAborted bool            `json:"prerelease-hook-aborted"`
+	PreTagHookOutput      string          `json:"pre-tag-hook-output"`
+	PreTagHookAborted     bool            `json:"pre-tag-hook-aborted"`
 }
 
 func (o *Runner) Next(ctx context.Context) (*Result, error) {
@@ -249,12 +251,14 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		runEnv["RELEASE_VERSION"] = result.ReleaseVersion.String()
 	}
 
-	result.PrereleaseHookOutput, result.PrereleaseHookAborted, err = runPrereleaseHook(ctx, o.CheckoutDir, runEnv, o.PrereleaseHook)
+	result.PreTagHookOutput, result.PreTagHookAborted, err = runPreTagHook(ctx, o.CheckoutDir, runEnv, o.PreTagHook)
 	if err != nil {
-		logger.Debug("runPrereleaseHook hook errored", slog.String("output", result.PrereleaseHookOutput))
+		logger.Debug("runPreTagHook hook errored", slog.String("output", result.PreTagHookOutput))
 		return nil, err
 	}
-	if result.PrereleaseHookAborted {
+	result.PrereleaseHookOutput = result.PreTagHookOutput
+	result.PrereleaseHookAborted = result.PreTagHookAborted
+	if result.PreTagHookAborted {
 		return result, nil
 	}
 	if result.ReleaseVersion == nil || !createTag {
@@ -369,12 +373,12 @@ func (o *Runner) tagRelease(releaseTag string) error {
 	return err
 }
 
-func runPrereleaseHook(ctx context.Context, dir string, env map[string]string, hook string) (stdout string, abort bool, _ error) {
+func runPreTagHook(ctx context.Context, dir string, env map[string]string, hook string) (stdout string, abort bool, _ error) {
 	logger := getLogger(ctx)
 	if hook == "" {
 		return "", false, nil
 	}
-	logger.Debug("running prerelease hook", slog.String("hook", hook))
+	logger.Debug("running pre-tag hook", slog.String("hook", hook))
 	var stdoutBuf bytes.Buffer
 	cmd := exec.Command("sh", "-c", hook)
 	cmd.Dir = dir
@@ -385,13 +389,13 @@ func runPrereleaseHook(ctx context.Context, dir string, env map[string]string, h
 	cmd.Stdout = &stdoutBuf
 	err := cmd.Run()
 	if err != nil {
-		logger.Debug("running prerelease hook returned an error", slog.String("output", stdoutBuf.String()), slog.Any("err", err))
+		logger.Debug("running pre-tag hook returned an error", slog.String("output", stdoutBuf.String()), slog.Any("err", err))
 		exitErr := asExitErr(err)
 		if exitErr != nil {
 			err = errors.Join(err, errors.New(string(exitErr.Stderr)))
-			logger.Debug("prerelease hook errored with exitErr", slog.String("stderr", string(exitErr.Stderr)))
+			logger.Debug("pre-tag hook errored with exitErr", slog.String("stderr", string(exitErr.Stderr)))
 			if exitErr.ExitCode() == 10 {
-				logger.Debug("prerelease hook aborted")
+				logger.Debug("pre-tag hook aborted")
 				return stdoutBuf.String(), true, nil
 			}
 		}

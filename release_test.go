@@ -155,17 +155,17 @@ echo foo > "$ASSETS_DIR/foo.txt"
 echo bar > "$ASSETS_DIR/bar.txt"
 `
 		runner := Runner{
-			CheckoutDir:    repos.clone,
-			Ref:            "refs/tags/head",
-			TagPrefix:      "v",
-			Repo:           "orgName/repoName",
-			PushRemote:     "origin",
-			GithubClient:   githubClient,
-			CreateRelease:  true,
-			PrereleaseHook: preHook,
-			GithubToken:    "token",
-			TempDir:        t.TempDir(),
-			ReleaseRefs:    []string{"first", "fake", "sixth"},
+			CheckoutDir:   repos.clone,
+			Ref:           "refs/tags/head",
+			TagPrefix:     "v",
+			Repo:          "orgName/repoName",
+			PushRemote:    "origin",
+			GithubClient:  githubClient,
+			CreateRelease: true,
+			PreTagHook:    preHook,
+			GithubToken:   "token",
+			TempDir:       t.TempDir(),
+			ReleaseRefs:   []string{"first", "fake", "sixth"},
 			LabelAliases: map[string]string{
 				"MINORALIAS": labelMinor,
 			},
@@ -182,6 +182,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			CreatedTag:           true,
 			CreatedRelease:       true,
 			PrereleaseHookOutput: "hello to my friends reading stdout\n",
+			PreTagHookOutput:     "hello to my friends reading stdout\n",
 		}, got)
 		taggedSha, err := runCmd(repos.origin, nil, "git", "rev-parse", "v2.1.0")
 		require.NoError(t, err)
@@ -266,16 +267,16 @@ git commit -m "add foo.txt" > /dev/null
 echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 `
 		runner := Runner{
-			CheckoutDir:    repos.clone,
-			Ref:            repos.taggedCommits["head"],
-			TagPrefix:      "v",
-			Repo:           "orgName/repoName",
-			PushRemote:     "origin",
-			GithubClient:   githubClient,
-			CreateTag:      true,
-			PrereleaseHook: preHook,
-			GithubToken:    "token",
-			TempDir:        t.TempDir(),
+			CheckoutDir:  repos.clone,
+			Ref:          repos.taggedCommits["head"],
+			TagPrefix:    "v",
+			Repo:         "orgName/repoName",
+			PushRemote:   "origin",
+			GithubClient: githubClient,
+			CreateTag:    true,
+			PreTagHook:   preHook,
+			GithubToken:  "token",
+			TempDir:      t.TempDir(),
 		}
 		got, err := runner.Run(ctx)
 		require.NoError(t, err)
@@ -317,14 +318,14 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		)
 		preHook := `echo aborting; exit 10`
 		runner := Runner{
-			CheckoutDir:    repos.clone,
-			Ref:            repos.taggedCommits["head"],
-			TagPrefix:      "v",
-			Repo:           "orgName/repoName",
-			PushRemote:     "origin",
-			GithubClient:   githubClient,
-			CreateTag:      true,
-			PrereleaseHook: preHook,
+			CheckoutDir:  repos.clone,
+			Ref:          repos.taggedCommits["head"],
+			TagPrefix:    "v",
+			Repo:         "orgName/repoName",
+			PushRemote:   "origin",
+			GithubClient: githubClient,
+			CreateTag:    true,
+			PreTagHook:   preHook,
 		}
 		got, err := runner.Run(ctx)
 		require.NoError(t, err)
@@ -339,6 +340,8 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			CreatedRelease:        false,
 			PrereleaseHookOutput:  "aborting\n",
 			PrereleaseHookAborted: true,
+			PreTagHookOutput:      "aborting\n",
+			PreTagHookAborted:     true,
 		}, got)
 	})
 
@@ -365,13 +368,13 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		)
 		preHook := `echo failure; exit 1`
 		runner := Runner{
-			CheckoutDir:    repos.clone,
-			Ref:            repos.taggedCommits["head"],
-			TagPrefix:      "v",
-			Repo:           "orgName/repoName",
-			PushRemote:     "origin",
-			GithubClient:   githubClient,
-			PrereleaseHook: preHook,
+			CheckoutDir:  repos.clone,
+			Ref:          repos.taggedCommits["head"],
+			TagPrefix:    "v",
+			Repo:         "orgName/repoName",
+			PushRemote:   "origin",
+			GithubClient: githubClient,
+			PreTagHook:   preHook,
 		}
 		_, err := runner.Run(ctx)
 		require.EqualError(t, err, "exit status 1\n")
@@ -548,15 +551,15 @@ echo foo > "$ASSETS_DIR/foo.txt"
 echo bar > "$ASSETS_DIR/bar.txt"
 `
 		runner := &Runner{
-			CheckoutDir:    repos.clone,
-			Ref:            repos.taggedCommits["head"],
-			TagPrefix:      "v",
-			Repo:           "orgName/repoName",
-			PushRemote:     "origin",
-			GithubClient:   githubClient,
-			CreateRelease:  true,
-			PrereleaseHook: preHook,
-			TempDir:        t.TempDir(),
+			CheckoutDir:   repos.clone,
+			Ref:           repos.taggedCommits["head"],
+			TagPrefix:     "v",
+			Repo:          "orgName/repoName",
+			PushRemote:    "origin",
+			GithubClient:  githubClient,
+			CreateRelease: true,
+			PreTagHook:    preHook,
+			TempDir:       t.TempDir(),
 		}
 		_, err := runner.Run(ctx)
 		require.ErrorContains(t, err, "upload error")
