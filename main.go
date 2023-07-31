@@ -40,8 +40,8 @@ Operates as if the given PR has already been merged. Useful for making sure the 
 Skips tag and release.
 `,
 
-	"pre_release_hook_help": `
-Command to run before creating the release. You may abort the release by exiting with a non-zero exit code.
+	"pre_tag_hook_help": `
+Command to run before tagging the release. You may abort the release by exiting with a non-zero exit code.
   
 Exit code 0 will continue the release. Exit code 10 will skip the release without error. Any other exit code will
 abort the release with an error.
@@ -50,7 +50,7 @@ You may provide custom release notes by writing to the file at $RELEASE_NOTES_FI
 
     echo "my release notes" > "$RELEASE_NOTES_FILE"
 
-You can update the git ref to be released by writing it to the file at $RELEASE_TARGET:
+Update the git ref to be released by writing it to the file at $RELEASE_TARGET:
 
     # ... update some files ...
     git commit -am "prepare release $RELEASE_TAG"
@@ -60,12 +60,17 @@ If you create a tag named $RELEASE_TAG, it will be used as the release target in
 written to $RELEASE_TARGET.
 
 When either the original ref or the ref written to $RELEASE_TARGET is a branch, the branch will be pushed to origin.
-If you need to add a commit but don't want it pushed, then write a sha to $RELEASE_TARGET instead of a branch name.
+In the unlikely situation where you need to add a commit but don't want it pushed, then write a sha to $RELEASE_TARGET
+instead of a branch name.
 
 Any files written to $ASSETS_DIR will be uploaded as release assets.
 
 The environment variables RELEASE_VERSION, RELEASE_TAG, PREVIOUS_VERSION, FIRST_RELEASE, GITHUB_TOKEN,
 RELEASE_NOTES_FILE, RELEASE_TARGET and ASSETS_DIR will be set.
+`,
+
+	"pre_release_hook_help": `
+*deprecated* Will be removed in a future release. Alias for pre-tag-hook.
 `,
 
 	"v0_help": `
