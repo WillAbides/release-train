@@ -113,9 +113,9 @@ Environment variables available to the hook:
       to release instead of HEAD.
 
     ASSETS_DIR
-	  A directory where you can write release assets. All
-	  files in this directory will be uploaded as release
-	  assets.
+      A directory where you can write release assets. All
+      files in this directory will be uploaded as release
+      assets.
 
 In addition to the above environment variables, all variables from release-train's environment are available to the
 hook.

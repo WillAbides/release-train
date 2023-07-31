@@ -184,36 +184,36 @@ Flags:
 
                                       Environment variables available to the hook:
 
-                                            RELEASE_VERSION
-                                              The semantic version being released (e.g. 1.2.3).
+                                        RELEASE_VERSION
+                                          The semantic version being released (e.g. 1.2.3).
 
-                                            RELEASE_TAG
-                                              The tag being created (e.g. v1.2.3).
+                                        RELEASE_TAG
+                                          The tag being created (e.g. v1.2.3).
 
-                                            PREVIOUS_VERSION
-                                              The previous semantic version (e.g. 1.2.2). Empty on
-                                              first release.
+                                        PREVIOUS_VERSION
+                                          The previous semantic version (e.g. 1.2.2). Empty on
+                                          first release.
 
-                                            FIRST_RELEASE
-                                              Whether this is the first release. Either "true" or
-                                              "false".
+                                        FIRST_RELEASE
+                                          Whether this is the first release. Either "true" or
+                                          "false".
 
-                                            GITHUB_TOKEN
-                                              The GitHub token that was provided to release-train.
+                                        GITHUB_TOKEN
+                                          The GitHub token that was provided to release-train.
 
-                                            RELEASE_NOTES_FILE
-                                              A file path where you can write custom release notes.
-                                              When nothing is written to this file, release-train
-                                              will use GitHub's default release notes.
+                                        RELEASE_NOTES_FILE
+                                          A file path where you can write custom release notes.
+                                          When nothing is written to this file, release-train
+                                          will use GitHub's default release notes.
 
-                                            RELEASE_TARGET
-                                              A file path where you can write an alternate git ref
-                                              to release instead of HEAD.
+                                        RELEASE_TARGET
+                                          A file path where you can write an alternate git ref
+                                          to release instead of HEAD.
 
-                                            ASSETS_DIR
-                                        	  A directory where you can write release assets. All
-                                        	  files in this directory will be uploaded as release
-                                        	  assets.
+                                        ASSETS_DIR
+                                          A directory where you can write release assets. All
+                                          files in this directory will be uploaded as release
+                                          assets.
 
                                       In addition to the above environment variables, all variables
                                       from release-train's environment are available to the hook.
