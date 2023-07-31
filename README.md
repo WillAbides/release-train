@@ -314,6 +314,79 @@ jobs:
             git tag "$RELEASE_TAG"
 ```
 
+### Create Release PR
+
+This is similar to the previous recipe, but instead of pushing the change to the
+release branch, it creates a pull request with the change. When that PR is
+merged, the release will be created.
+
+Once again you will need to use a GitHub App, and this recipe assumes you have
+the appropriate secrets set.
+
+When the content of version.txt is not the same as the release tag, the hook
+exits with status code 10 to abort the release without causing release-train
+to error. After that, we use the third party 
+action [peter-evans/create-pull-request](https://github.com/peter-evans/create-pull-request)
+to create a pull request with the change, but only if the release was aborted.
+Then we set the newly created pull request to auto-merge.
+
+```yaml
+on:
+  push:
+  pull_request:
+    types: [ synchronize, opened, reopened, labeled, unlabeled ]
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: tibdex/github-app-token@v1.8.0
+        id: generate-token
+        with:
+          app_id: ${{ secrets.RELEASER_APP_ID }}
+          private_key: ${{ secrets.RELEASER_APP_KEY }}
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          token: ${{ steps.generate-token.outputs.token }}
+      - name: git config
+        run: |
+          git config --local user.name '${{ github.actor }}'
+          git config --local user.email '${{ github.actor }}@users.noreply.github.com'
+      - uses: WillAbides/release-train@v3.2.0
+        id: release-train
+        with:
+          create-release: true
+          release-refs: main
+          github-token: ${{ steps.generate-token.outputs.token }}
+          pre-tag-hook: |
+            set -e
+            echo "$RELEASE_TAG" > version.txt
+
+            # abort if the working tree is dirty
+            if ! git diff --quiet; then
+              exit 10
+            fi
+      - if: github.event_name == 'push' && steps.release-train.outputs.pre-release-hook-aborted == 'true'
+        name: create release pr
+        id: create-release-pr
+        uses: peter-evans/create-pull-request@v5.0.1
+        with:
+          token: "${{ steps.generate-token.outputs.token }}"
+          commit-message: "prepare to release ${{ steps.release-train.outputs.release-tag }}"
+          branch: "prepare-release"
+          delete-branch: true
+          title: "prepare to release ${{ steps.release-train.outputs.release-tag }}"
+          body: "prepare to release ${{ steps.release-train.outputs.release-tag }}"
+          labels: "semver:none"
+      - if: steps.create-release-pr.outputs.pull-request-number
+        name: auto-merge release pr
+        env:
+          GH_TOKEN: "${{ steps.generate-token.outputs.token }}"
+        run: gh pr merge --merge --auto ${{ steps.create-release-pr.outputs.pull-request-number }}
+```
+
 ## GitHub Action Configuration
 
 See [action.md](./doc/action.md).
