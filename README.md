@@ -90,9 +90,9 @@ labels: |
 
 ## Pre-tag hook
 
-The pre-tag hook is a shell script that runs before the new release is
-tagged. It lets you do some customizations like creating release notes, building
-release artifacts, or validating the release.
+The pre-tag hook is a shell script that runs before the new release is tagged.
+It lets you do some customizations like creating release notes, building release
+artifacts, or validating the release.
 
 See [the action doc](./doc/action.md#pre-tag-hook) for more details.
 
@@ -122,8 +122,8 @@ release. Some options such as `--check-pr` will modify this behavior.
 
 ## Recipes
 
-Recipes are only provided as GitHub Actions workflows. Adapting them to
-the command line is pretty straightforward.
+Recipes are only provided as GitHub Actions workflows. Adapting them to the
+command line is pretty straightforward.
 
 Unlike Cooks Illustrated, we have no recipe testers. If you have trouble getting
 one to work, there may be an issue with the recipe. Please open an issue for
@@ -148,7 +148,6 @@ jobs:
         with:
           fetch-depth: 0
       - uses: WillAbides/release-train@v3.2.0
-        id: release-train
         with:
           create-release: true
           release-refs: main
@@ -174,7 +173,6 @@ jobs:
         with:
           fetch-depth: 0
       - uses: WillAbides/release-train@v3.2.0
-        id: release-train
         with:
           create-release: true
           release-refs: main
@@ -198,7 +196,6 @@ jobs:
         with:
           fetch-depth: 0
       - uses: WillAbides/release-train@v3.2.0
-        id: release-train
         with:
           create-release: true
           release-refs: main
@@ -225,7 +222,6 @@ jobs:
         with:
           fetch-depth: 0
       - uses: WillAbides/release-train@v3.2.0
-        id: release-train
         with:
           create-release: true
           release-refs: main
@@ -233,6 +229,89 @@ jobs:
             set -e
             script/build-release-artifacts
             cp dist/checksums.txt dist/*.tar.gz "$ASSETS_DIR"
+```
+
+### Commit Change Before Release
+
+Sometimes you need to update a file before the release is tagged. For example,
+to update CHANGELOG.md with the new release notes or write the new version to a
+version file.
+
+For simplicity, this recipe assumes there are no rules preventing an action from
+pushing a new commit to the release branch. In reality, you probably have your
+release branch protected. A later recipe will cover how to do this with a GitHub
+App that can override branch protection rules.
+
+This recipe updates the file `version.txt` with the new release tag.
+
+```yaml
+on:
+  push:
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: git config
+        run: |
+          git config --local user.name '${{ github.actor }}'
+          git config --local user.email '${{ github.actor }}@users.noreply.github.com'
+      - uses: WillAbides/release-train@v3.2.0
+        with:
+          create-release: true
+          release-refs: main
+          pre-tag-hook: |
+            set -e
+            echo "$RELEASE_TAG" > version.txt
+            git add version.txt
+            git commit -m "bump version.txt to $RELEASE_TAG"
+            git tag "$RELEASE_TAG"
+```
+
+### Commit Change As GitHub App
+
+This is the same as the previous recipe, but it authenticates as a GitHub App.
+It assumes the appropriate secrets are set and uses another
+action, [tibdex/github-app-token](https://github.com/tibdex/github-app-token),
+to create a token for the GitHub App.
+
+```yaml
+on:
+  push:
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: tibdex/github-app-token@v1.8.0
+        id: generate-token
+        with:
+          app_id: ${{ secrets.RELEASER_APP_ID }}
+          private_key: ${{ secrets.RELEASER_APP_KEY }}
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          token: ${{ steps.generate-token.outputs.token }}
+      - name: git config
+        run: |
+          git config --local user.name '${{ github.actor }}'
+          git config --local user.email '${{ github.actor }}@users.noreply.github.com'
+      - uses: WillAbides/release-train@v3.2.0
+        with:
+          create-release: true
+          release-refs: main
+          github-token: ${{ steps.generate-token.outputs.token }}
+          pre-tag-hook: |
+            set -e
+            echo "$RELEASE_TAG" > version.txt
+            git add version.txt
+            git commit -m "bump version.txt to $RELEASE_TAG"
+            git tag "$RELEASE_TAG"
 ```
 
 ## GitHub Action Configuration
