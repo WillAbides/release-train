@@ -88,6 +88,14 @@ labels: |
   refactor=semver:patch
 ```
 
+## Pre-tag hook
+
+The pre-tag hook is a shell script that runs before the new release is
+tagged. It lets you do some customizations like creating release notes, building
+release artifacts, or validating the release.
+
+See [the action doc](./doc/action.md#pre-tag-hook) for more details.
+
 ## Release steps
 
 When run from a release branch, release-train follows these steps to publish a
@@ -111,14 +119,6 @@ release. Some options such as `--check-pr` will modify this behavior.
 7. **Publish the release**.
 8. **Emit output** including release version, tag, change level, etc that you
    use in notifications or other actions.
-
-## Pre-tag hook
-
-The pre-tag hook is a shell script that runs before the new release is
-tagged. It lets you do some customizations like creating release notes, building
-release artifacts, or validating the release.
-
-See [the action doc](./doc/action.md#pre-tag-hook) for more details.
 
 ## GitHub Action Configuration
 
