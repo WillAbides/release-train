@@ -4,17 +4,61 @@
 
 **release-train** creates releases for every PR merge in your repository. No
 magic commit message is required. You only need to label your PRs with the
-appropriate labels and run release-train (either from the command line or a 
+appropriate labels and run release-train (either from the command line or a
 GitHub Action).
 
 Release-train is inspired
 by [semantic-release](https://github.com/semantic-release/semantic-release) and
 has a few advantages for somebody with my biases:
+
 - It doesn't require special commit messages, so you won't need to squash
   commits or ask contributors to rebase before merging.
 - No need for npm or other package managers.
-- No plugin configuration. Release-train has no plugins. You can do anything
-  a plugin would do from the pre-release hook.
+- No plugin configuration. Release-train has no plugins. You can do anything a
+  plugin would do from the pre-release hook.
+
+## Labels
+
+Release-train uses pull request labels to determine the change level for each
+PR.
+
+| Version Label     | Effect                  | Example              |
+|-------------------|-------------------------|----------------------|
+| `semver:breaking` | Increment major version | `v0.1.2` -> `v1.0.0` |
+| `semver:minor`    | Increment minor version | `v0.1.2` -> `v0.2.0` |
+| `semver:patch`    | Increment patch version | `v0.1.2` -> `v0.1.3` |
+
+There is also a `semver:none` label that can be used to indicate that a PR
+should not trigger a release. This is required so that we can check that all
+changes are associated with a change label and not confuse a PR that doesn't
+trigger a release with a PR that was unintentionally not labeled.
+
+In addition there are prerelease and stable labels used to determine whether to
+publish a prerelease or stable release. These are `semver:prerelease` and
+`semver:stable`.
+
+`semver:prerelease` must be combined with version labels to determine what the
+stable portion of the prerelease version will be.
+
+`semver:prerelease` can also specify the prerelease identifier. For example,
+`semver:prerelease:alpha` will create a prerelease with the identifier `alpha`.
+A prerelease cannot contain PRs with conflicting identifiers.
+
+| Previous release | Labels                                       | Next release     | Notes                                               |
+|------------------|----------------------------------------------|------------------|-----------------------------------------------------|   
+| `v0.1.2`         | `semver:breaking`, `semver:prerelease`       | `v1.0.0-0`       |                                                     |
+| `v0.1.2`         | `semver:breaking`, `semver:prerelease:alpha` | `v1.0.0-alpha.0` |                                                     |
+| `v1.0.0-0`       | `semver:breaking`, `semver:prerelease`       | `v1.0.0-1`       | Doesn't iterate major because minor and patch are 0 |
+| `v1.1.0-0`       | `semver:breaking`, `semver:prerelease`       | `v2.0.0-0`       | Iterates major because minor is not 0               |
+| `v1.0.0-2`       | `semver:breaking`, `semver:prerelease:alpha` | `v1.0.0-alpha.0` | New identifier resets the prerelease iterator       |
+
+When the most recent release is a prerelease, `semver:stable` is used to
+indicate that the next release should be stable. When the most recent release is
+a prerelease and one PR in the next release is labeled `semver:stable`, then
+all PRs in the next release must be labeled `semver:stable`.
+
+If `semver:stable` is combined with a version label, the version is incremented
+*after* making the release stable.
 
 ## Release steps
 
