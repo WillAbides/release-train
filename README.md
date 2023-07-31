@@ -100,7 +100,7 @@ release. Some options such as `--check-pr` will modify this behavior.
    previous release tag and inspecting the pull request where each commit was
    introduced. The previous version is incremented by the highest change level
    found.
-3. **Run pre-release-hook**. This is where you can do things like validate the
+3. **Run pre-tag-hook**. This is where you can do things like validate the
    release, built release artifacts or generate a changelog.
 4. **Create and push the new git tag** if `--create-tag` is set.
 5. **Create a draft release** if `--create-release` is set. It starts as a draft
@@ -179,7 +179,7 @@ Flags:
                                       0.
       --initial-tag="v0.0.0"          The tag to use if no previous version can be found. Set to ""
                                       to cause an error instead.
-      --pre-release-hook=<command>    Command to run before creating the release. You may abort the
+      --pre-tag-hook=<command>        Command to run before tagging the release. You may abort the
                                       release by exiting with a non-zero exit code.
 
                                       Exit code 0 will continue the release. Exit code 10 will skip
@@ -191,8 +191,8 @@ Flags:
 
                                         echo "my release notes" > "$RELEASE_NOTES_FILE"
 
-                                      You can update the git ref to be released by writing it to the
-                                      file at $RELEASE_TARGET:
+                                      Update the git ref to be released by writing it to the file at
+                                      $RELEASE_TARGET:
 
                                         # ... update some files ...
                                         git commit -am "prepare release $RELEASE_TAG"
@@ -204,8 +204,9 @@ Flags:
 
                                       When either the original ref or the ref written to
                                       $RELEASE_TARGET is a branch, the branch will be pushed to
-                                      origin. If you need to add a commit but don't want it pushed,
-                                      then write a sha to $RELEASE_TARGET instead of a branch name.
+                                      origin. In the unlikely situation where you need to add
+                                      a commit but don't want it pushed, then write a sha to
+                                      $RELEASE_TARGET instead of a branch name.
 
                                       Any files written to $ASSETS_DIR will be uploaded as release
                                       assets.
@@ -213,6 +214,8 @@ Flags:
                                       The environment variables RELEASE_VERSION, RELEASE_TAG,
                                       PREVIOUS_VERSION, FIRST_RELEASE, GITHUB_TOKEN,
                                       RELEASE_NOTES_FILE, RELEASE_TARGET and ASSETS_DIR will be set.
+      --pre-release-hook=<command>    *deprecated* Will be removed in a future release. Alias for
+                                      pre-tag-hook.
       --release-ref=<branch>,...      Only allow tags and releases to be created from matching refs.
                                       Refs can be patterns accepted by git-show-ref. If undefined,
                                       any branch can be used.
