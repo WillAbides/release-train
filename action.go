@@ -168,9 +168,14 @@ set -- --output-format action
 		if err != nil {
 			return nil, err
 		}
+		deprecationMessage := ""
+		if strings.Contains(strings.ToLower(actionHelp), `*deprecated*`) {
+			deprecationMessage = "deprecated"
+		}
 		inputs.Set(actionInput, Input{
-			Description: actionHelp,
-			Default:     actionDefault,
+			Description:        actionHelp,
+			Default:            actionDefault,
+			DeprecationMessage: deprecationMessage,
 		})
 
 		script += buf.String()

@@ -80,6 +80,8 @@ The tag to use if no previous version can be found. Set to "" to cause an error 
 
 ### pre-release-hook
 
+__Deprecated__ - deprecated
+
 *deprecated* Will be removed in a future release. Alias for pre-tag-hook.
 
 ### release-refs

@@ -54,6 +54,7 @@ inputs:
     description: The tag to use if no previous version can be found. Set to "" to cause an error instead.
     default: v0.0.0
   pre-release-hook:
+    deprecationMessage: deprecated
     description: '*deprecated* Will be removed in a future release. Alias for pre-tag-hook.'
   release-refs:
     description: |-
