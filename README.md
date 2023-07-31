@@ -120,6 +120,40 @@ release. Some options such as `--check-pr` will modify this behavior.
 8. **Emit output** including release version, tag, change level, etc that you
    use in notifications or other actions.
 
+## Recipes
+
+Recipes are only provided as GitHub Actions workflows. Adapting them to
+the command line is pretty straightforward.
+
+Unlike Cooks Illustrated, we have no recipe testers. If you have trouble getting
+one to work, there may be an issue with the recipe. Please open an issue for
+help or a PR if you fix it.
+
+### Simple release
+
+This is probably the simplest possible usage of release-train. It will create a
+release for every PR that is merged into `main` with default release notes and
+no release assets.
+
+```yaml
+on:
+  push:
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # needed for creating tags and releases
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: WillAbides/release-train@v3.2.0
+        id: release-train
+        with:
+          create-release: true
+          release-refs: main
+```
+
 ## GitHub Action Configuration
 
 See [action.md](./doc/action.md).
