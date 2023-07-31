@@ -73,12 +73,12 @@ var outputItems = []struct {
 	{
 		name:        "pre-tag-hook-output",
 		description: `The stdout of the pre-tag-hook. Empty if pre_release_hook is not set or if the hook returned an exit other than 0 or 10.`,
-		value:       func(r *Result) string { return r.PrereleaseHookOutput },
+		value:       func(r *Result) string { return r.PreTagHookOutput },
 	},
 	{
 		name:        "pre-tag-hook-aborted",
 		description: `Whether pre-tag-hook issued an abort by exiting 10. Either "true" or "false".`,
-		value:       func(r *Result) string { return fmt.Sprintf("%t", r.PrereleaseHookAborted) },
+		value:       func(r *Result) string { return fmt.Sprintf("%t", r.PreTagHookAborted) },
 	},
 }
 

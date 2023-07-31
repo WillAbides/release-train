@@ -258,7 +258,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	}
 	result.PrereleaseHookOutput = result.PreTagHookOutput
 	result.PrereleaseHookAborted = result.PreTagHookAborted
-	if result.PrereleaseHookAborted {
+	if result.PreTagHookAborted {
 		return result, nil
 	}
 	if result.ReleaseVersion == nil || !createTag {

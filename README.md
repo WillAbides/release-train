@@ -28,7 +28,7 @@ release. Some options such as `--check-pr` will modify this behavior.
    previous release tag and inspecting the pull request where each commit was
    introduced. The previous version is incremented by the highest change level
    found.
-3. **Run pre-release-hook**. This is where you can do things like validate the
+3. **Run pre-tag-hook**. This is where you can do things like validate the
    release, built release artifacts or generate a changelog.
 4. **Create and push the new git tag** if `--create-tag` is set.
 5. **Create a draft release** if `--create-release` is set. It starts as a draft
