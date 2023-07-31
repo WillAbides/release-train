@@ -120,17 +120,6 @@ release. Some options such as `--check-pr` will modify this behavior.
 8. **Emit output** including release version, tag, change level, etc that you
    use in notifications or other actions.
 
-```mermaid
-graph TD
-  A[Find previous release tag] --> B[Find next release version]
-  B --> C[Run pre-tag-hook]
-  C --> D[Create and push the new git tag]
-  D --> E[Create a draft release]
-  E --> F[Upload release assets]
-  F --> G[Publish the release]
-  G --> H[Emit output]
-```
-
 ## GitHub Action Configuration
 
 See [action.md](./doc/action.md).
