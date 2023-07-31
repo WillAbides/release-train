@@ -17,7 +17,7 @@ has a few advantages for somebody with my biases and proclivities:
   including [xkcd commit conventions](https://xkcd.com/1296/).
 - No need for npm or other package managers.
 - No plugin configuration. Release-train has no plugins. You can do anything a
-  plugin would do from the pre-release hook.
+  plugin would do from the pre-tag hook.
 
 ## Labels
 
@@ -112,16 +112,13 @@ release. Some options such as `--check-pr` will modify this behavior.
 8. **Emit output** including release version, tag, change level, etc that you
    use in notifications or other actions.
 
-## Pre-release hook
+## Pre-tag hook
 
-**Pre-release hook isn't related to prereleases. It is a hook that runs before a
-release is created**. It will probably be renamed in the near future to avoid
-confusion. The name isn't even completely accurate anymore because it runs
-before creating the release tag.
-
-The pre-release hook is a shell script that runs before the new release is
+The pre-tag hook is a shell script that runs before the new release is
 tagged. It lets you do some customizations like creating release notes, building
 release artifacts, or validating the release.
+
+See [the action doc](./doc/action.md#pre-tag-hook) for more details.
 
 ## GitHub Action Configuration
 
@@ -180,40 +177,50 @@ Flags:
       --initial-tag="v0.0.0"          The tag to use if no previous version can be found. Set to ""
                                       to cause an error instead.
       --pre-tag-hook=<command>        Command to run before tagging the release. You may abort the
-                                      release by exiting with a non-zero exit code.
+                                      release by exiting with a non-zero exit code. Exit code 0
+                                      will continue the release. Exit code 10 will skip the release
+                                      without error. Any other exit code will abort the release with
+                                      an error.
 
-                                      Exit code 0 will continue the release. Exit code 10 will skip
-                                      the release without error. Any other exit code will abort the
-                                      release with an error.
+                                      Environment variables available to the hook:
 
-                                      You may provide custom release notes by writing to the file at
-                                      $RELEASE_NOTES_FILE:
+                                            RELEASE_VERSION
+                                              The semantic version being released (e.g. 1.2.3).
 
-                                        echo "my release notes" > "$RELEASE_NOTES_FILE"
+                                            RELEASE_TAG
+                                              The tag being created (e.g. v1.2.3).
 
-                                      Update the git ref to be released by writing it to the file at
-                                      $RELEASE_TARGET:
+                                            PREVIOUS_VERSION
+                                              The previous semantic version (e.g. 1.2.2). Empty on
+                                              first release.
 
-                                        # ... update some files ...
-                                        git commit -am "prepare release $RELEASE_TAG"
-                                        echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
+                                            FIRST_RELEASE
+                                              Whether this is the first release. Either "true" or
+                                              "false".
 
-                                      If you create a tag named $RELEASE_TAG, it will be used as the
-                                      release target instead of either HEAD or the value written to
-                                      $RELEASE_TARGET.
+                                            GITHUB_TOKEN
+                                              The GitHub token that was provided to release-train.
 
-                                      When either the original ref or the ref written to
-                                      $RELEASE_TARGET is a branch, the branch will be pushed to
-                                      origin. In the unlikely situation where you need to add
-                                      a commit but don't want it pushed, then write a sha to
-                                      $RELEASE_TARGET instead of a branch name.
+                                            RELEASE_NOTES_FILE
+                                              A file path where you can write custom release notes.
+                                              When nothing is written to this file, release-train
+                                              will use GitHub's default release notes.
 
-                                      Any files written to $ASSETS_DIR will be uploaded as release
-                                      assets.
+                                            RELEASE_TARGET
+                                              A file path where you can write an alternate git ref
+                                              to release instead of HEAD.
 
-                                      The environment variables RELEASE_VERSION, RELEASE_TAG,
-                                      PREVIOUS_VERSION, FIRST_RELEASE, GITHUB_TOKEN,
-                                      RELEASE_NOTES_FILE, RELEASE_TARGET and ASSETS_DIR will be set.
+                                            ASSETS_DIR
+                                        	  A directory where you can write release assets. All
+                                        	  files in this directory will be uploaded as release
+                                        	  assets.
+
+                                      In addition to the above environment variables, all variables
+                                      from release-train's environment are available to the hook.
+
+                                      When the hook creates a tag named $RELEASE_TAG, it will be
+                                      used as the release target instead of either HEAD or the value
+                                      written to $RELEASE_TARGET.
       --pre-release-hook=<command>    *deprecated* Will be removed in a future release. Alias for
                                       pre-tag-hook.
       --release-ref=<branch>,...      Only allow tags and releases to be created from matching refs.

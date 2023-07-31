@@ -41,32 +41,48 @@ Skips tag and release.
 `,
 
 	"pre_tag_hook_help": `
-Command to run before tagging the release. You may abort the release by exiting with a non-zero exit code.
-  
-Exit code 0 will continue the release. Exit code 10 will skip the release without error. Any other exit code will
-abort the release with an error.
+Command to run before tagging the release. You may abort the release by exiting with a non-zero exit code. Exit code 0
+will continue the release. Exit code 10 will skip the release without error. Any other exit code will abort the release
+with an error.
 
-You may provide custom release notes by writing to the file at $RELEASE_NOTES_FILE:
+Environment variables available to the hook:
 
-    echo "my release notes" > "$RELEASE_NOTES_FILE"
+    RELEASE_VERSION
+      The semantic version being released (e.g. 1.2.3).
 
-Update the git ref to be released by writing it to the file at $RELEASE_TARGET:
+    RELEASE_TAG
+      The tag being created (e.g. v1.2.3).
 
-    # ... update some files ...
-    git commit -am "prepare release $RELEASE_TAG"
-    echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
+    PREVIOUS_VERSION 
+      The previous semantic version (e.g. 1.2.2). Empty on
+      first release.
 
-If you create a tag named $RELEASE_TAG, it will be used as the release target instead of either HEAD or the value
-written to $RELEASE_TARGET.
+    FIRST_RELEASE
+      Whether this is the first release. Either "true" or
+      "false".
 
-When either the original ref or the ref written to $RELEASE_TARGET is a branch, the branch will be pushed to origin.
-In the unlikely situation where you need to add a commit but don't want it pushed, then write a sha to $RELEASE_TARGET
-instead of a branch name.
+    GITHUB_TOKEN
+      The GitHub token that was provided to release-train.
 
-Any files written to $ASSETS_DIR will be uploaded as release assets.
+    RELEASE_NOTES_FILE
+      A file path where you can write custom release notes.
+      When nothing is written to this file, release-train
+      will use GitHub's default release notes.
 
-The environment variables RELEASE_VERSION, RELEASE_TAG, PREVIOUS_VERSION, FIRST_RELEASE, GITHUB_TOKEN,
-RELEASE_NOTES_FILE, RELEASE_TARGET and ASSETS_DIR will be set.
+    RELEASE_TARGET
+      A file path where you can write an alternate git ref
+      to release instead of HEAD.
+
+    ASSETS_DIR
+	  A directory where you can write release assets. All
+	  files in this directory will be uploaded as release
+	  assets.
+
+In addition to the above environment variables, all variables from release-train's environment are available to the
+hook.
+
+When the hook creates a tag named $RELEASE_TAG, it will be used as the release target instead of either HEAD or the
+value written to $RELEASE_TARGET.
 `,
 
 	"pre_release_hook_help": `
