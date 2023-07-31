@@ -170,9 +170,17 @@ Whether a release was created. Either "true" or "false".
 
 ### pre-release-hook-output
 
-The stdout of the pre_release_hook. Empty if pre_release_hook is not set or if the hook returned an exit other than 0 or 10.
+*deprecated* Will be removed in a future release. Alias for pre-tag-hook-output
 
 ### pre-release-hook-aborted
 
-Whether pre_release_hook issued an abort by exiting 10. Either "true" or "false".
+*deprecated* Will be removed in a future release. Alias for pre-tag-hook-aborted
+
+### pre-tag-hook-output
+
+The stdout of the pre-tag-hook. Empty if pre_release_hook is not set or if the hook returned an exit other than 0 or 10.
+
+### pre-tag-hook-aborted
+
+Whether pre-tag-hook issued an abort by exiting 10. Either "true" or "false".
 <!--- end action doc --->

@@ -182,6 +182,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			CreatedTag:           true,
 			CreatedRelease:       true,
 			PrereleaseHookOutput: "hello to my friends reading stdout\n",
+			PreTagHookOutput:     "hello to my friends reading stdout\n",
 		}, got)
 		taggedSha, err := runCmd(repos.origin, nil, "git", "rev-parse", "v2.1.0")
 		require.NoError(t, err)
@@ -339,6 +340,8 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			CreatedRelease:        false,
 			PrereleaseHookOutput:  "aborting\n",
 			PrereleaseHookAborted: true,
+			PreTagHookOutput:      "aborting\n",
+			PreTagHookAborted:     true,
 		}, got)
 	})
 

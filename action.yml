@@ -100,10 +100,16 @@ outputs:
     description: Whether a release was created. Either "true" or "false".
   pre-release-hook-output:
     value: ${{ steps.release.outputs.pre-release-hook-output }}
-    description: The stdout of the pre_release_hook. Empty if pre_release_hook is not set or if the hook returned an exit other than 0 or 10.
+    description: '*deprecated* Will be removed in a future release. Alias for pre-tag-hook-output'
   pre-release-hook-aborted:
     value: ${{ steps.release.outputs.pre-release-hook-aborted }}
-    description: Whether pre_release_hook issued an abort by exiting 10. Either "true" or "false".
+    description: '*deprecated* Will be removed in a future release. Alias for pre-tag-hook-aborted'
+  pre-tag-hook-output:
+    value: ${{ steps.release.outputs.pre-tag-hook-output }}
+    description: The stdout of the pre-tag-hook. Empty if pre_release_hook is not set or if the hook returned an exit other than 0 or 10.
+  pre-tag-hook-aborted:
+    value: ${{ steps.release.outputs.pre-tag-hook-aborted }}
+    description: Whether pre-tag-hook issued an abort by exiting 10. Either "true" or "false".
 runs:
   using: composite
   steps:
