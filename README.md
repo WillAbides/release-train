@@ -129,7 +129,7 @@ Unlike Cooks Illustrated, we have no recipe testers. If you have trouble getting
 one to work, there may be an issue with the recipe. Please open an issue for
 help or a PR if you fix it.
 
-### Simple release
+### Simple Release
 
 This is probably the simplest possible usage of release-train. It will create a
 release for every PR that is merged into `main` with default release notes and
@@ -152,6 +152,87 @@ jobs:
         with:
           create-release: true
           release-refs: main
+```
+
+### Validate Pull Requests
+
+This is like Simple Release above, but it also checks that pull requests are
+appropriately labeled.
+
+```yaml
+on:
+  push:
+  pull_request:
+    types: [ synchronize, opened, reopened, labeled, unlabeled ]
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: WillAbides/release-train@v3.2.0
+        id: release-train
+        with:
+          create-release: true
+          release-refs: main
+```
+
+### Custom Release Notes
+
+Create custom release notes. This assumes you have a script called
+`script/generate-release-notes` that will echo the release notes to stdout.
+
+```yaml
+on:
+  push:
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: WillAbides/release-train@v3.2.0
+        id: release-train
+        with:
+          create-release: true
+          release-refs: main
+          pre-tag-hook: |
+            set -e
+            script/generate-release-notes > "$RELEASE_NOTES_FILE"
+```
+
+### Build Release Artifacts
+
+This assumes you have a script called `script/build-release-artifacts` that
+creates tar.gz files and checksums.txt in the `dist` directory.
+
+```yaml
+on:
+  push:
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: WillAbides/release-train@v3.2.0
+        id: release-train
+        with:
+          create-release: true
+          release-refs: main
+          pre-tag-hook: |
+            set -e
+            script/build-release-artifacts
+            cp dist/checksums.txt dist/*.tar.gz "$ASSETS_DIR"
 ```
 
 ## GitHub Action Configuration
