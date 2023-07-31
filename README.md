@@ -117,8 +117,7 @@ release. Some options such as `--check-pr` will modify this behavior.
 6. **Upload release assets**. Any files written to `$ASSETS_DIR` will be
    uploaded as release assets.
 7. **Publish the release**.
-8. **Emit output** including release version, tag, change level, etc that you
-   use in notifications or other actions.
+8. **Emit output** including release version, tag, change level, etc.
 
 ## Recipes
 
