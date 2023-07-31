@@ -15,23 +15,23 @@ import (
 )
 
 type Runner struct {
-	CheckoutDir    string
-	Ref            string
-	GithubToken    string
-	CreateTag      bool
-	CreateRelease  bool
-	Draft          bool
-	V0             bool
-	TagPrefix      string
-	InitialTag     string
-	PrereleaseHook string
-	Repo           string
-	PushRemote     string
-	TempDir        string
-	ReleaseRefs    []string
-	LabelAliases   map[string]string
-	CheckPR        int
-	GithubClient   GithubClient
+	CheckoutDir   string
+	Ref           string
+	GithubToken   string
+	CreateTag     bool
+	CreateRelease bool
+	Draft         bool
+	V0            bool
+	TagPrefix     string
+	InitialTag    string
+	PreTagHook    string
+	Repo          string
+	PushRemote    string
+	TempDir       string
+	ReleaseRefs   []string
+	LabelAliases  map[string]string
+	CheckPR       int
+	GithubClient  GithubClient
 }
 
 func (o *Runner) releaseNotesFile() string {
@@ -249,7 +249,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		runEnv["RELEASE_VERSION"] = result.ReleaseVersion.String()
 	}
 
-	result.PrereleaseHookOutput, result.PrereleaseHookAborted, err = runPrereleaseHook(ctx, o.CheckoutDir, runEnv, o.PrereleaseHook)
+	result.PrereleaseHookOutput, result.PrereleaseHookAborted, err = runPrereleaseHook(ctx, o.CheckoutDir, runEnv, o.PreTagHook)
 	if err != nil {
 		logger.Debug("runPrereleaseHook hook errored", slog.String("output", result.PrereleaseHookOutput))
 		return nil, err

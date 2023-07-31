@@ -114,6 +114,7 @@ type rootCmd struct {
 	TagPrefix      string            `default:"v" help:"${tag_prefix_help}"`
 	V0             bool              `name:"v0" help:"${v0_help}"`
 	InitialTag     string            `action:"initial-release-tag" help:"${initial_tag_help}" default:"v0.0.0"`
+	PreTagHook     string            `placeholder:"<command>" help:"${pre_tag_hook_help}"`
 	PreReleaseHook string            `placeholder:"<command>" help:"${pre_release_hook_help}"`
 	ReleaseRef     []string          `action:"release-refs" placeholder:"<branch>" help:"${release_ref_help}"`
 	PushRemote     string            `action:"-" default:"origin" help:"${pushremote_help}"`
@@ -198,24 +199,32 @@ func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
 		}
 	}
 
+	preTagHook := c.PreTagHook
+	if c.PreReleaseHook != "" {
+		if preTagHook != "" {
+			return fmt.Errorf("cannot specify both --pre-tag-hook and --pre-release-hook")
+		}
+		preTagHook = c.PreReleaseHook
+	}
+
 	runner := &Runner{
-		CheckoutDir:    c.CheckoutDir,
-		Ref:            c.Ref,
-		GithubToken:    c.GithubToken,
-		CreateTag:      createTag,
-		CreateRelease:  c.CreateRelease,
-		Draft:          c.Draft,
-		V0:             c.V0,
-		TagPrefix:      c.TagPrefix,
-		InitialTag:     c.InitialTag,
-		PrereleaseHook: c.PreReleaseHook,
-		Repo:           repo,
-		PushRemote:     c.PushRemote,
-		TempDir:        tempDir,
-		ReleaseRefs:    c.ReleaseRef,
-		LabelAliases:   c.Label,
-		CheckPR:        c.CheckPR,
-		GithubClient:   client,
+		CheckoutDir:   c.CheckoutDir,
+		Ref:           c.Ref,
+		GithubToken:   c.GithubToken,
+		CreateTag:     createTag,
+		CreateRelease: c.CreateRelease,
+		Draft:         c.Draft,
+		V0:            c.V0,
+		TagPrefix:     c.TagPrefix,
+		InitialTag:    c.InitialTag,
+		PreTagHook:    preTagHook,
+		Repo:          repo,
+		PushRemote:    c.PushRemote,
+		TempDir:       tempDir,
+		ReleaseRefs:   c.ReleaseRef,
+		LabelAliases:  c.Label,
+		CheckPR:       c.CheckPR,
+		GithubClient:  client,
 	}
 
 	result, err := runner.Run(ctx)
