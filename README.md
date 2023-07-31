@@ -4,15 +4,17 @@
 
 **release-train** creates releases for every PR merge in your repository. No
 magic commit message is required. You only need to label your PRs with the
-appropriate labels and run release-train (either from the command line or a
-GitHub Action).
+appropriate labels and run release-train -- either from the command line or a
+GitHub Action.
 
 Release-train is inspired
 by [semantic-release](https://github.com/semantic-release/semantic-release) and
-has a few advantages for somebody with my biases:
+has a few advantages for somebody with my biases and proclivities:
 
 - It doesn't require special commit messages, so you won't need to squash
-  commits or ask contributors to rebase before merging.
+  commits or ask contributors to rebase before merging. You are free to follow
+  whatever commit conventions suit you,
+  including [xkcd commit conventions](https://xkcd.com/1296/).
 - No need for npm or other package managers.
 - No plugin configuration. Release-train has no plugins. You can do anything a
   plugin would do from the pre-release hook.
@@ -60,7 +62,10 @@ a prerelease and one PR in the next release is labeled `semver:stable`, then all
 PRs in the next release must be labeled `semver:stable`.
 
 If `semver:stable` is combined with a version label, the version is incremented
-*after* making the release stable.
+**after** making the release stable. For instance, if the latest release
+is `v1.0.0-3` and you merge a PR labeled `semver:stable`, the next release will
+be `v1.0.0`, but if the PR is labeled both `semver:stable`
+and `semver:minor`, the next release will be `v1.1.0`.
 
 ### Label Aliases
 
