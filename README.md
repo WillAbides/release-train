@@ -19,19 +19,21 @@ has a few advantages for somebody with my biases:
 
 ## Labels
 
-Release-train uses pull request labels to determine the change level for each
-PR.
+Labels and label aliases are **not** case-sensitive
 
-| Version Label     | Effect                  | Example              |
+Release-train uses pull request labels to determine the change level for each
+PR. The release updates the version based on the highest change level found in
+the PRs being released -- typically only one PR if you are doing continuous
+releases.
+
+| Label             | Effect                  | Example              |
 |-------------------|-------------------------|----------------------|
 | `semver:breaking` | Increment major version | `v0.1.2` -> `v1.0.0` |
 | `semver:minor`    | Increment minor version | `v0.1.2` -> `v0.2.0` |
 | `semver:patch`    | Increment patch version | `v0.1.2` -> `v0.1.3` |
+| `semver:none`     | No version change       | `v0.1.2` -> `v0.1.2` |
 
-There is also a `semver:none` label that can be used to indicate that a PR
-should not trigger a release. This is required so that we can check that all
-changes are associated with a change label and not confuse a PR that doesn't
-trigger a release with a PR that was unintentionally not labeled.
+### Prerelease
 
 In addition there are prerelease and stable labels used to determine whether to
 publish a prerelease or stable release. These are `semver:prerelease` and
@@ -54,11 +56,32 @@ A prerelease cannot contain PRs with conflicting identifiers.
 
 When the most recent release is a prerelease, `semver:stable` is used to
 indicate that the next release should be stable. When the most recent release is
-a prerelease and one PR in the next release is labeled `semver:stable`, then
-all PRs in the next release must be labeled `semver:stable`.
+a prerelease and one PR in the next release is labeled `semver:stable`, then all
+PRs in the next release must be labeled `semver:stable`.
 
 If `semver:stable` is combined with a version label, the version is incremented
 *after* making the release stable.
+
+### Label Aliases
+
+The labels listed above are the canonical labels, but you can use aliases that
+are better suited to your project.
+
+For example if you want something close
+to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) your
+github action config might contain something like this:
+
+```yaml
+labels: |
+  "breaking change"=semver:breaking
+  fix=semver:patch
+  feat=semver:minor
+  perf=semver:patch
+  chore=semver:none
+  docs=semver:none
+  style=semver:none
+  refactor=semver:patch
+```
 
 ## Release steps
 
