@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -13,11 +14,15 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/slog"
 )
 
 func mustRunCmd(t *testing.T, dir string, env map[string]string, name string, args ...string) string {
 	t.Helper()
-	out, err := runCmd(dir, env, name, args...)
+	out, err := runCmd(context.Background(), &runCmdOpts{
+		dir: dir,
+		env: env,
+	}, name, args...)
 	require.NoError(t, err)
 	return out
 }
@@ -184,7 +189,9 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			PrereleaseHookOutput: "hello to my friends reading stdout\n",
 			PreTagHookOutput:     "hello to my friends reading stdout\n",
 		}, got)
-		taggedSha, err := runCmd(repos.origin, nil, "git", "rev-parse", "v2.1.0")
+		taggedSha, err := runCmd(ctx, &runCmdOpts{
+			dir: repos.origin,
+		}, "git", "rev-parse", "v2.1.0")
 		require.NoError(t, err)
 		require.Equal(t, repos.taggedCommits["head"], taggedSha)
 	})
@@ -349,6 +356,10 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
+		var logOut bytes.Buffer
+		logHandler := slog.NewTextHandler(&logOut, nil)
+		logger := slog.New(logHandler)
+		ctx = withLogger(ctx, logger)
 
 		githubClient := mockGithubClient(t)
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
@@ -366,8 +377,17 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
 			[]BasePull{}, nil,
 		)
-		preHook := `echo failure; exit 1`
+		preHook := `
+echo failure
+echo this is an error >&2
+echo this is another error >&2
+exit 1
+`
+		var stderr bytes.Buffer
+		var stdout bytes.Buffer
 		runner := Runner{
+			Stdout:       &stdout,
+			Stderr:       &stderr,
 			CheckoutDir:  repos.clone,
 			Ref:          repos.taggedCommits["head"],
 			TagPrefix:    "v",
@@ -377,7 +397,10 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			PreTagHook:   preHook,
 		}
 		_, err := runner.Run(ctx)
-		require.EqualError(t, err, "exit status 1\n")
+		require.EqualError(t, err, "exit status 1")
+		require.Contains(t, stderr.String(), "this is an error\nthis is another error\n")
+		require.Contains(t, stdout.String(), "failure\n")
+		require.Contains(t, logOut.String(), `msg="pre-tag hook failed" err="exit status 1" stdout="failure\n" stderr="this is an error\nthis is another error\n"`)
 	})
 
 	t.Run("generates release notes from API", func(t *testing.T) {
@@ -510,7 +533,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		}
 		_, err := runner.Run(ctx)
 		require.EqualError(t, err, "release error")
-		ok, err := localTagExists(repos.origin, "v3.0.0")
+		ok, err := localTagExists(ctx, repos.origin, "v3.0.0")
 		require.NoError(t, err)
 		require.False(t, ok)
 	})
@@ -563,7 +586,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		}
 		_, err := runner.Run(ctx)
 		require.ErrorContains(t, err, "upload error")
-		ok, err := localTagExists(repos.origin, "v3.0.0")
+		ok, err := localTagExists(ctx, repos.origin, "v3.0.0")
 		require.NoError(t, err)
 		require.False(t, ok)
 	})

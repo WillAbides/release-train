@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"context"
-	"errors"
-	"os/exec"
 	"sort"
 	"strings"
 
@@ -38,7 +35,7 @@ func getPrevTag(ctx context.Context, options *getPrevTagOpts) (string, error) {
 	}
 	var versions []prefixedVersion
 	done := false
-	err := runCommandHandleLines(ctx, options.RepoDir, cmdLine, func(line string, cancel context.CancelFunc) {
+	err := runCmdHandleLines(ctx, options.RepoDir, cmdLine, func(line string, cancel context.CancelFunc) {
 		if done {
 			return
 		}
@@ -93,39 +90,4 @@ func getPrevTag(ctx context.Context, options *getPrevTagOpts) (string, error) {
 	}
 	winner := versions[0]
 	return winner.prefix + winner.ver.Original(), nil
-}
-
-func runCommandHandleLines(
-	ctx context.Context,
-	dir string,
-	cmdLine []string,
-	handleLine func(line string, cancel context.CancelFunc),
-) error {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	command := exec.CommandContext(ctx, cmdLine[0], cmdLine[1:]...)
-	command.Dir = dir
-
-	stdout, err := command.StdoutPipe()
-	if err != nil {
-		return err
-	}
-	err = command.Start()
-	if err != nil {
-		return err
-	}
-	scanner := bufio.NewScanner(stdout)
-	for scanner.Scan() {
-		line := scanner.Text()
-		handleLine(line, cancel)
-	}
-	err = command.Wait()
-	if err == nil {
-		return nil
-	}
-	if !errors.Is(err, context.Canceled) && err.Error() != "signal: killed" {
-		return err
-	}
-	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/alecthomas/kong"
@@ -170,7 +171,7 @@ func (c *rootCmd) Run(ctx context.Context, kongCtx *kong.Context) error {
 	if c.GenerateAction {
 		return c.generateAction(kongCtx)
 	}
-	return c.runRelease(ctx)
+	return c.runRelease(ctx, kongCtx.Stdout, kongCtx.Stderr)
 }
 
 func (c *rootCmd) generateAction(kongCtx *kong.Context) error {
@@ -183,7 +184,7 @@ func (c *rootCmd) generateAction(kongCtx *kong.Context) error {
 	return enc.Encode(got)
 }
 
-func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
+func (c *rootCmd) runRelease(ctx context.Context, stdout, stderr io.Writer) (errOut error) {
 	logger := getLogger(ctx)
 	defer func() {
 		if errOut != nil {
@@ -209,7 +210,7 @@ func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
 
 	repo := c.Repo
 	if repo == "" {
-		repo, err = getGithubRepoFromRemote(c.CheckoutDir, c.PushRemote)
+		repo, err = getGithubRepoFromRemote(ctx, c.CheckoutDir, c.PushRemote)
 		if err != nil {
 			return err
 		}
@@ -241,6 +242,8 @@ func (c *rootCmd) runRelease(ctx context.Context) (errOut error) {
 		LabelAliases:  c.Label,
 		CheckPR:       c.CheckPR,
 		GithubClient:  client,
+		Stdout:        stdout,
+		Stderr:        stderr,
 	}
 
 	result, err := runner.Run(ctx)

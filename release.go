@@ -5,8 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -32,6 +32,8 @@ type Runner struct {
 	LabelAliases  map[string]string
 	CheckPR       int
 	GithubClient  GithubClient
+	Stdout        io.Writer
+	Stderr        io.Writer
 }
 
 func (o *Runner) releaseNotesFile() string {
@@ -68,7 +70,9 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 	if o.Ref == "" {
 		ref = "HEAD"
 	}
-	head, err := runCmd(o.CheckoutDir, nil, "git", "rev-parse", ref)
+	head, err := runCmd(ctx, &runCmdOpts{
+		dir: o.CheckoutDir,
+	}, "git", "rev-parse", ref)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +203,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		createTag = true
 	}
 	// no tag or release if release-refs is defined and the ref is not in the list
-	if len(o.ReleaseRefs) > 0 && !gitNameRev(o.CheckoutDir, o.Ref, o.ReleaseRefs) {
+	if len(o.ReleaseRefs) > 0 && !gitNameRev(ctx, o.CheckoutDir, o.Ref, o.ReleaseRefs) {
 		createTag = false
 		release = false
 	}
@@ -208,7 +212,9 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		createTag = false
 		release = false
 	}
-	shallow, err := runCmd(o.CheckoutDir, nil, "git", "rev-parse", "--is-shallow-repository")
+	shallow, err := runCmd(ctx, &runCmdOpts{
+		dir: o.CheckoutDir,
+	}, "git", "rev-parse", "--is-shallow-repository")
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +233,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		return result, nil
 	}
 
-	err = assertTagNotExists(o.CheckoutDir, o.PushRemote, result.ReleaseTag)
+	err = assertTagNotExists(ctx, o.CheckoutDir, o.PushRemote, result.ReleaseTag)
 	if err != nil {
 		return nil, err
 	}
@@ -237,27 +243,11 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		return nil, err
 	}
 
-	runEnv := map[string]string{
-		"RELEASE_VERSION":    "",
-		"RELEASE_TAG":        result.ReleaseTag,
-		"PREVIOUS_VERSION":   result.PreviousVersion,
-		"FIRST_RELEASE":      fmt.Sprintf("%t", result.FirstRelease),
-		"GITHUB_TOKEN":       o.GithubToken,
-		"RELEASE_NOTES_FILE": o.releaseNotesFile(),
-		"RELEASE_TARGET":     o.releaseTargetFile(),
-		"ASSETS_DIR":         o.assetsDir(),
-	}
-	if result.ReleaseVersion != nil {
-		runEnv["RELEASE_VERSION"] = result.ReleaseVersion.String()
-	}
-
-	result.PreTagHookOutput, result.PreTagHookAborted, err = runPreTagHook(ctx, o.CheckoutDir, runEnv, o.PreTagHook)
+	*result, err = o.runPreTagHook(ctx, *result)
 	if err != nil {
 		logger.Debug("runPreTagHook hook errored", slog.String("output", result.PreTagHookOutput))
 		return nil, err
 	}
-	result.PrereleaseHookOutput = result.PreTagHookOutput
-	result.PrereleaseHookAborted = result.PreTagHookAborted
 	if result.PreTagHookAborted {
 		return result, nil
 	}
@@ -265,12 +255,14 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		return result, nil
 	}
 
-	err = o.tagRelease(result.ReleaseTag)
+	err = o.tagRelease(ctx, result.ReleaseTag)
 	if err != nil {
 		return nil, err
 	}
 	teardowns = append(teardowns, func() error {
-		_, e := runCmd(o.CheckoutDir, nil, "git", "push", o.PushRemote, "--delete", result.ReleaseTag)
+		_, e := runCmd(ctx, &runCmdOpts{
+			dir: o.CheckoutDir,
+		}, "git", "push", o.PushRemote, "--delete", result.ReleaseTag)
 		return e
 	})
 
@@ -311,7 +303,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	}
 
 	// push target last because it cannot be easily rolled back
-	err = o.pushTarget()
+	err = o.pushTarget(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -335,12 +327,14 @@ func (o *Runner) uploadAssets(ctx context.Context, uploadURL string) error {
 	return nil
 }
 
-func (o *Runner) pushTarget() error {
+func (o *Runner) pushTarget(ctx context.Context) error {
 	target, err := o.getReleaseTarget()
 	if err != nil {
 		return err
 	}
-	ref, err := runCmd(o.CheckoutDir, nil, "git", "rev-parse", "--verify", "--symbolic-full-name", target)
+	ref, err := runCmd(ctx, &runCmdOpts{
+		dir: o.CheckoutDir,
+	}, "git", "rev-parse", "--verify", "--symbolic-full-name", target)
 	if err != nil {
 		return err
 	}
@@ -348,12 +342,14 @@ func (o *Runner) pushTarget() error {
 		// only push branches
 		return nil
 	}
-	_, err = runCmd(o.CheckoutDir, nil, "git", "push", o.PushRemote, target)
+	_, err = runCmd(ctx, &runCmdOpts{
+		dir: o.CheckoutDir,
+	}, "git", "push", o.PushRemote, target)
 	return err
 }
 
-func (o *Runner) tagRelease(releaseTag string) error {
-	exists, err := localTagExists(o.CheckoutDir, releaseTag)
+func (o *Runner) tagRelease(ctx context.Context, releaseTag string) error {
+	exists, err := localTagExists(ctx, o.CheckoutDir, releaseTag)
 	if err != nil {
 		return err
 	}
@@ -364,65 +360,101 @@ func (o *Runner) tagRelease(releaseTag string) error {
 			return err
 		}
 
-		_, err = runCmd(o.CheckoutDir, nil, "git", "tag", releaseTag, target)
+		_, err = runCmd(ctx, &runCmdOpts{
+			dir: o.CheckoutDir,
+		}, "git", "tag", releaseTag, target)
 		if err != nil {
 			return err
 		}
 	}
-	_, err = runCmd(o.CheckoutDir, nil, "git", "push", o.PushRemote, releaseTag)
+	_, err = runCmd(ctx, &runCmdOpts{
+		dir: o.CheckoutDir,
+	}, "git", "push", o.PushRemote, releaseTag)
 	return err
 }
 
-func runPreTagHook(ctx context.Context, dir string, env map[string]string, hook string) (stdout string, abort bool, _ error) {
+func (o *Runner) runPreTagHook(ctx context.Context, result Result) (Result, error) {
 	logger := getLogger(ctx)
-	if hook == "" {
-		return "", false, nil
+	if o.PreTagHook == "" {
+		return result, nil
 	}
-	logger.Debug("running pre-tag hook", slog.String("hook", hook))
-	var stdoutBuf bytes.Buffer
-	cmd := exec.Command("sh", "-c", hook)
-	cmd.Dir = dir
-	cmd.Env = os.Environ()
-	for k, v := range env {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
+	releaseVersion := ""
+	if result.ReleaseVersion != nil {
+		releaseVersion = result.ReleaseVersion.String()
 	}
-	cmd.Stdout = &stdoutBuf
-	err := cmd.Run()
+	env := map[string]string{
+		"RELEASE_TAG":        result.ReleaseTag,
+		"PREVIOUS_VERSION":   result.PreviousVersion,
+		"FIRST_RELEASE":      fmt.Sprintf("%t", result.FirstRelease),
+		"GITHUB_TOKEN":       o.GithubToken,
+		"RELEASE_NOTES_FILE": o.releaseNotesFile(),
+		"RELEASE_TARGET":     o.releaseTargetFile(),
+		"ASSETS_DIR":         o.assetsDir(),
+		"RELEASE_VERSION":    releaseVersion,
+	}
+	var stdoutBuf, stderrBuf bytes.Buffer
+	var stdout, stderr io.Writer
+	stdout = &stdoutBuf
+	if o.Stdout != nil {
+		stdout = io.MultiWriter(o.Stdout, &stdoutBuf)
+	}
+	stderr = &stderrBuf
+	if o.Stderr != nil {
+		stderr = io.MultiWriter(o.Stderr, &stderrBuf)
+	}
+	_, err := runCmd(ctx, &runCmdOpts{
+		dir:    o.CheckoutDir,
+		stdout: stdout,
+		stderr: stderr,
+		env:    env,
+	}, "sh", "-c", o.PreTagHook)
+	result.PreTagHookOutput = stdoutBuf.String()
+	result.PrereleaseHookOutput = stdoutBuf.String()
 	if err != nil {
-		logger.Debug("running pre-tag hook returned an error", slog.String("output", stdoutBuf.String()), slog.Any("err", err))
 		exitErr := asExitErr(err)
 		if exitErr != nil {
-			err = errors.Join(err, errors.New(string(exitErr.Stderr)))
-			logger.Debug("pre-tag hook errored with exitErr", slog.String("stderr", string(exitErr.Stderr)))
 			if exitErr.ExitCode() == 10 {
 				logger.Debug("pre-tag hook aborted")
-				return stdoutBuf.String(), true, nil
+				result.PreTagHookAborted = true
+				result.PrereleaseHookAborted = true
+				return result, nil
 			}
+			err = exitErr
 		}
-		return "", false, err
+		logger.Error(
+			"pre-tag hook failed",
+			slog.Any("err", err),
+			slog.String("stdout", stdoutBuf.String()),
+			slog.String("stderr", stderrBuf.String()),
+		)
+		return result, err
 	}
-	return stdoutBuf.String(), false, nil
+	return result, nil
 }
 
-func gitNameRev(dir, commitish string, refs []string) bool {
+func gitNameRev(ctx context.Context, dir, commitish string, refs []string) bool {
 	args := []string{"name-rev", commitish, "--no-undefined"}
 	for _, ref := range refs {
 		args = append(args, "--refs", ref)
 	}
-	_, err := runCmd(dir, nil, "git", args...)
+	_, err := runCmd(ctx, &runCmdOpts{
+		dir: dir,
+	}, "git", args...)
 	return err == nil
 }
 
 // assertTagNotExists returns an error if tag exists either locally or on remote
-func assertTagNotExists(dir, remote, tag string) error {
-	out, err := runCmd(dir, nil, "git", "ls-remote", "--tags", remote, tag)
+func assertTagNotExists(ctx context.Context, dir, remote, tag string) error {
+	out, err := runCmd(ctx, &runCmdOpts{
+		dir: dir,
+	}, "git", "ls-remote", "--tags", remote, tag)
 	if err != nil {
 		return err
 	}
 	if strings.TrimSpace(out) != "" {
 		return fmt.Errorf("tag %q already exists on remote", tag)
 	}
-	ok, err := localTagExists(dir, tag)
+	ok, err := localTagExists(ctx, dir, tag)
 	if err != nil {
 		return err
 	}
@@ -432,8 +464,10 @@ func assertTagNotExists(dir, remote, tag string) error {
 	return nil
 }
 
-func localTagExists(dir, tag string) (bool, error) {
-	out, err := runCmd(dir, nil, "git", "tag", "--list", tag)
+func localTagExists(ctx context.Context, dir, tag string) (bool, error) {
+	out, err := runCmd(ctx, &runCmdOpts{
+		dir: dir,
+	}, "git", "tag", "--list", tag)
 	if err != nil {
 		return false, err
 	}
