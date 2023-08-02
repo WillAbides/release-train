@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -379,41 +378,48 @@ func (o *Runner) runPreTagHook(ctx context.Context, result Result) (Result, erro
 	if o.PreTagHook == "" {
 		return result, nil
 	}
-	logger.Debug("running pre-tag hook", slog.String("hook", o.PreTagHook))
-
-	cmd := exec.Command("sh", "-c", o.PreTagHook)
-	cmd.Dir = o.CheckoutDir
-	cmd.Env = os.Environ()
-
-	addCmdEnv(cmd, "RELEASE_TAG", result.ReleaseTag)
-	addCmdEnv(cmd, "PREVIOUS_VERSION", result.PreviousVersion)
-	addCmdEnv(cmd, "FIRST_RELEASE", result.FirstRelease)
-	addCmdEnv(cmd, "GITHUB_TOKEN", o.GithubToken)
-	addCmdEnv(cmd, "RELEASE_NOTES_FILE", o.releaseNotesFile())
-	addCmdEnv(cmd, "RELEASE_TARGET", o.releaseTargetFile())
-	addCmdEnv(cmd, "ASSETS_DIR", o.assetsDir())
+	releaseVersion := ""
 	if result.ReleaseVersion != nil {
-		addCmdEnv(cmd, "RELEASE_VERSION", result.ReleaseVersion.String())
+		releaseVersion = result.ReleaseVersion.String()
+	}
+	env := map[string]string{
+		"RELEASE_TAG":        result.ReleaseTag,
+		"PREVIOUS_VERSION":   result.PreviousVersion,
+		"FIRST_RELEASE":      fmt.Sprintf("%t", result.FirstRelease),
+		"GITHUB_TOKEN":       o.GithubToken,
+		"RELEASE_NOTES_FILE": o.releaseNotesFile(),
+		"RELEASE_TARGET":     o.releaseTargetFile(),
+		"ASSETS_DIR":         o.assetsDir(),
+		"RELEASE_VERSION":    releaseVersion,
 	}
 	var stdoutBuf, stderrBuf bytes.Buffer
-	cmd.Stdout = &stdoutBuf
+	var stdout, stderr io.Writer
+	stdout = &stdoutBuf
 	if o.Stdout != nil {
-		cmd.Stdout = io.MultiWriter(o.Stdout, &stdoutBuf)
+		stdout = io.MultiWriter(o.Stdout, &stdoutBuf)
 	}
-	cmd.Stderr = &stderrBuf
+	stderr = &stderrBuf
 	if o.Stderr != nil {
-		cmd.Stderr = io.MultiWriter(o.Stderr, &stderrBuf)
+		stderr = io.MultiWriter(o.Stderr, &stderrBuf)
 	}
-	err := cmd.Run()
+	_, err := runCmd(ctx, &runCmdOpts{
+		dir:    o.CheckoutDir,
+		stdout: stdout,
+		stderr: stderr,
+		env:    env,
+	}, "sh", "-c", o.PreTagHook)
 	result.PreTagHookOutput = stdoutBuf.String()
 	result.PrereleaseHookOutput = stdoutBuf.String()
 	if err != nil {
 		exitErr := asExitErr(err)
-		if exitErr != nil && exitErr.ExitCode() == 10 {
-			logger.Debug("pre-tag hook aborted")
-			result.PreTagHookAborted = true
-			result.PrereleaseHookAborted = true
-			return result, nil
+		if exitErr != nil {
+			if exitErr.ExitCode() == 10 {
+				logger.Debug("pre-tag hook aborted")
+				result.PreTagHookAborted = true
+				result.PrereleaseHookAborted = true
+				return result, nil
+			}
+			err = exitErr
 		}
 		logger.Error(
 			"pre-tag hook failed",
