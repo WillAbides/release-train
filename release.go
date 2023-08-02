@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -32,6 +33,8 @@ type Runner struct {
 	LabelAliases  map[string]string
 	CheckPR       int
 	GithubClient  GithubClient
+	Stdout        io.Writer
+	Stderr        io.Writer
 }
 
 func (o *Runner) releaseNotesFile() string {
@@ -251,7 +254,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		runEnv["RELEASE_VERSION"] = result.ReleaseVersion.String()
 	}
 
-	result.PreTagHookOutput, result.PreTagHookAborted, err = runPreTagHook(ctx, o.CheckoutDir, runEnv, o.PreTagHook)
+	result.PreTagHookOutput, result.PreTagHookAborted, err = o.runPreTagHook(ctx, runEnv)
 	if err != nil {
 		logger.Debug("runPreTagHook hook errored", slog.String("output", result.PreTagHookOutput))
 		return nil, err
@@ -373,32 +376,41 @@ func (o *Runner) tagRelease(releaseTag string) error {
 	return err
 }
 
-func runPreTagHook(ctx context.Context, dir string, env map[string]string, hook string) (stdout string, abort bool, _ error) {
+func (o *Runner) runPreTagHook(ctx context.Context, env map[string]string) (output string, abort bool, _ error) {
 	logger := getLogger(ctx)
-	if hook == "" {
+	if o.PreTagHook == "" {
 		return "", false, nil
 	}
-	logger.Debug("running pre-tag hook", slog.String("hook", hook))
-	var stdoutBuf bytes.Buffer
-	cmd := exec.Command("sh", "-c", hook)
-	cmd.Dir = dir
+	logger.Debug("running pre-tag hook", slog.String("hook", o.PreTagHook))
+
+	cmd := exec.Command("sh", "-c", o.PreTagHook)
+	cmd.Dir = o.CheckoutDir
 	cmd.Env = os.Environ()
 	for k, v := range env {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
+	var stdoutBuf, stderrBuf bytes.Buffer
 	cmd.Stdout = &stdoutBuf
+	if o.Stdout != nil {
+		cmd.Stdout = io.MultiWriter(o.Stdout, cmd.Stdout)
+	}
+	cmd.Stderr = &stderrBuf
+	if o.Stderr != nil {
+		cmd.Stderr = io.MultiWriter(o.Stderr, cmd.Stderr)
+	}
 	err := cmd.Run()
 	if err != nil {
-		logger.Debug("running pre-tag hook returned an error", slog.String("output", stdoutBuf.String()), slog.Any("err", err))
 		exitErr := asExitErr(err)
-		if exitErr != nil {
-			err = errors.Join(err, errors.New(string(exitErr.Stderr)))
-			logger.Debug("pre-tag hook errored with exitErr", slog.String("stderr", string(exitErr.Stderr)))
-			if exitErr.ExitCode() == 10 {
-				logger.Debug("pre-tag hook aborted")
-				return stdoutBuf.String(), true, nil
-			}
+		if exitErr != nil && exitErr.ExitCode() == 10 {
+			logger.Debug("pre-tag hook aborted")
+			return stdoutBuf.String(), true, nil
 		}
+		logger.Error(
+			"pre-tag hook failed",
+			slog.Any("err", err),
+			slog.String("stdout", stdoutBuf.String()),
+			slog.String("stderr", stderrBuf.String()),
+		)
 		return "", false, err
 	}
 	return stdoutBuf.String(), false, nil
