@@ -210,7 +210,7 @@ func (c *rootCmd) runRelease(ctx context.Context, stdout, stderr io.Writer) (err
 
 	repo := c.Repo
 	if repo == "" {
-		repo, err = getGithubRepoFromRemote(c.CheckoutDir, c.PushRemote)
+		repo, err = getGithubRepoFromRemote(ctx, c.CheckoutDir, c.PushRemote)
 		if err != nil {
 			return err
 		}

@@ -19,7 +19,10 @@ import (
 
 func mustRunCmd(t *testing.T, dir string, env map[string]string, name string, args ...string) string {
 	t.Helper()
-	out, err := runCmd(dir, env, name, args...)
+	out, err := runCmd(context.Background(), &runCmdOpts{
+		dir: dir,
+		env: env,
+	}, name, args...)
 	require.NoError(t, err)
 	return out
 }
@@ -186,7 +189,9 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			PrereleaseHookOutput: "hello to my friends reading stdout\n",
 			PreTagHookOutput:     "hello to my friends reading stdout\n",
 		}, got)
-		taggedSha, err := runCmd(repos.origin, nil, "git", "rev-parse", "v2.1.0")
+		taggedSha, err := runCmd(ctx, &runCmdOpts{
+			dir: repos.origin,
+		}, "git", "rev-parse", "v2.1.0")
 		require.NoError(t, err)
 		require.Equal(t, repos.taggedCommits["head"], taggedSha)
 	})
@@ -528,7 +533,7 @@ exit 1
 		}
 		_, err := runner.Run(ctx)
 		require.EqualError(t, err, "release error")
-		ok, err := localTagExists(repos.origin, "v3.0.0")
+		ok, err := localTagExists(ctx, repos.origin, "v3.0.0")
 		require.NoError(t, err)
 		require.False(t, ok)
 	})
@@ -581,7 +586,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		}
 		_, err := runner.Run(ctx)
 		require.ErrorContains(t, err, "upload error")
-		ok, err := localTagExists(repos.origin, "v3.0.0")
+		ok, err := localTagExists(ctx, repos.origin, "v3.0.0")
 		require.NoError(t, err)
 		require.False(t, ok)
 	})
