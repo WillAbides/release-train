@@ -240,27 +240,11 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		return nil, err
 	}
 
-	runEnv := map[string]string{
-		"RELEASE_VERSION":    "",
-		"RELEASE_TAG":        result.ReleaseTag,
-		"PREVIOUS_VERSION":   result.PreviousVersion,
-		"FIRST_RELEASE":      fmt.Sprintf("%t", result.FirstRelease),
-		"GITHUB_TOKEN":       o.GithubToken,
-		"RELEASE_NOTES_FILE": o.releaseNotesFile(),
-		"RELEASE_TARGET":     o.releaseTargetFile(),
-		"ASSETS_DIR":         o.assetsDir(),
-	}
-	if result.ReleaseVersion != nil {
-		runEnv["RELEASE_VERSION"] = result.ReleaseVersion.String()
-	}
-
-	result.PreTagHookOutput, result.PreTagHookAborted, err = o.runPreTagHook(ctx, runEnv)
+	*result, err = o.runPreTagHook(ctx, *result)
 	if err != nil {
 		logger.Debug("runPreTagHook hook errored", slog.String("output", result.PreTagHookOutput))
 		return nil, err
 	}
-	result.PrereleaseHookOutput = result.PreTagHookOutput
-	result.PrereleaseHookAborted = result.PreTagHookAborted
 	if result.PreTagHookAborted {
 		return result, nil
 	}
@@ -376,34 +360,46 @@ func (o *Runner) tagRelease(releaseTag string) error {
 	return err
 }
 
-func (o *Runner) runPreTagHook(ctx context.Context, env map[string]string) (output string, abort bool, _ error) {
+func (o *Runner) runPreTagHook(ctx context.Context, result Result) (Result, error) {
 	logger := getLogger(ctx)
 	if o.PreTagHook == "" {
-		return "", false, nil
+		return result, nil
 	}
 	logger.Debug("running pre-tag hook", slog.String("hook", o.PreTagHook))
 
 	cmd := exec.Command("sh", "-c", o.PreTagHook)
 	cmd.Dir = o.CheckoutDir
 	cmd.Env = os.Environ()
-	for k, v := range env {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
+
+	addCmdEnv(cmd, "RELEASE_TAG", result.ReleaseTag)
+	addCmdEnv(cmd, "PREVIOUS_VERSION", result.PreviousVersion)
+	addCmdEnv(cmd, "FIRST_RELEASE", result.FirstRelease)
+	addCmdEnv(cmd, "GITHUB_TOKEN", o.GithubToken)
+	addCmdEnv(cmd, "RELEASE_NOTES_FILE", o.releaseNotesFile())
+	addCmdEnv(cmd, "RELEASE_TARGET", o.releaseTargetFile())
+	addCmdEnv(cmd, "ASSETS_DIR", o.assetsDir())
+	if result.ReleaseVersion != nil {
+		addCmdEnv(cmd, "RELEASE_VERSION", result.ReleaseVersion.String())
 	}
 	var stdoutBuf, stderrBuf bytes.Buffer
 	cmd.Stdout = &stdoutBuf
 	if o.Stdout != nil {
-		cmd.Stdout = io.MultiWriter(o.Stdout, cmd.Stdout)
+		cmd.Stdout = io.MultiWriter(o.Stdout, &stdoutBuf)
 	}
 	cmd.Stderr = &stderrBuf
 	if o.Stderr != nil {
-		cmd.Stderr = io.MultiWriter(o.Stderr, cmd.Stderr)
+		cmd.Stderr = io.MultiWriter(o.Stderr, &stderrBuf)
 	}
 	err := cmd.Run()
+	result.PreTagHookOutput = stdoutBuf.String()
+	result.PrereleaseHookOutput = stdoutBuf.String()
 	if err != nil {
 		exitErr := asExitErr(err)
 		if exitErr != nil && exitErr.ExitCode() == 10 {
 			logger.Debug("pre-tag hook aborted")
-			return stdoutBuf.String(), true, nil
+			result.PreTagHookAborted = true
+			result.PrereleaseHookAborted = true
+			return result, nil
 		}
 		logger.Error(
 			"pre-tag hook failed",
@@ -411,9 +407,13 @@ func (o *Runner) runPreTagHook(ctx context.Context, env map[string]string) (outp
 			slog.String("stdout", stdoutBuf.String()),
 			slog.String("stderr", stderrBuf.String()),
 		)
-		return "", false, err
+		return result, err
 	}
-	return stdoutBuf.String(), false, nil
+	return result, nil
+}
+
+func addCmdEnv(cmd *exec.Cmd, key string, val any) {
+	cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%v", key, val))
 }
 
 func gitNameRev(dir, commitish string, refs []string) bool {
