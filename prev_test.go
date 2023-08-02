@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"os"
-	"os/exec"
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
@@ -13,7 +12,16 @@ import (
 func Test_getPrevVersion(t *testing.T) {
 	ctx := context.Background()
 	dir := t.TempDir()
-	c := exec.Command("sh", "-c", `
+	_, e := runCmd(ctx, &runCmdOpts{
+		dir: dir,
+		env: map[string]string{
+			"GIT_AUTHOR_NAME":    "foo",
+			"GIT_COMMITTER_NAME": "foo",
+			"EMAIL":              "foo@example.com",
+		},
+		stdout: os.Stdout,
+		stderr: os.Stderr,
+	}, "sh", "-c", `
 git init
 git commit --allow-empty -m "first"
 git tag v0.1.0
@@ -29,13 +37,8 @@ git tag v2.0.0
 git tag foo
 git commit --allow-empty -m "forth"
 git tag bar
-`,
-	)
-	c.Env = append(os.Environ(), "EMAIL=foo@example.com", "GIT_AUTHOR_NAME=foo", "GIT_COMMITTER_NAME=foo")
-	c.Dir = dir
-	c.Stdout = os.Stdout
-	c.Stderr = os.Stderr
-	require.NoError(t, c.Run())
+`)
+	require.NoError(t, e)
 
 	t.Run("", func(t *testing.T) {
 		opts := getPrevTagOpts{

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"errors"
@@ -57,6 +58,44 @@ func runCmd(ctx context.Context, opts *runCmdOpts, command string, args ...strin
 		return "", err
 	}
 	return strings.TrimSpace(stdoutBuf.String()), nil
+}
+
+// runCmdHandleLines lets us run a command that has a large output and handle
+// one line at a time without waiting for the command to finish or buffering
+// the entire output in memory.
+func runCmdHandleLines(
+	ctx context.Context,
+	dir string,
+	cmdLine []string,
+	handleLine func(line string, cancel context.CancelFunc),
+) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, cmdLine[0], cmdLine[1:]...)
+	cmd.Dir = dir
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	err = cmd.Start()
+	if err != nil {
+		return err
+	}
+	scanner := bufio.NewScanner(stdout)
+	for scanner.Scan() {
+		line := scanner.Text()
+		handleLine(line, cancel)
+	}
+	err = cmd.Wait()
+	if err == nil {
+		return nil
+	}
+	if !errors.Is(err, context.Canceled) && err.Error() != "signal: killed" {
+		return err
+	}
+	return nil
 }
 
 func getGithubRepoFromRemote(ctx context.Context, dir, remote string) (string, error) {
