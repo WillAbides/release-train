@@ -1,9 +1,8 @@
 package main
 
 import (
+	"maps"
 	"strings"
-
-	"golang.org/x/exp/maps"
 )
 
 const (
