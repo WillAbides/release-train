@@ -35,7 +35,7 @@ func getCommitPRs(
 		if !checkAncestor(r.MergeCommitSha) {
 			continue
 		}
-		p, e := newPull(r.Number, opts.LabelAliases, r.Labels...)
+		p, e := newPullWithOptions(r.Number, opts.LabelAliases, opts.ForcePrerelease, r.Labels...)
 		if e != nil {
 			return nil, e
 		}
@@ -110,15 +110,16 @@ func compareCommits(ctx context.Context, opts *getNextOptions) ([]gitCommit, err
 }
 
 type getNextOptions struct {
-	GithubClient GithubClient
-	Repo         string
-	PrevVersion  string
-	Base         string
-	Head         string
-	MinBump      *changeLevel
-	MaxBump      *changeLevel
-	CheckPR      int
-	LabelAliases map[string]string
+	GithubClient    GithubClient
+	Repo            string
+	PrevVersion     string
+	Base            string
+	Head            string
+	MinBump         *changeLevel
+	MaxBump         *changeLevel
+	CheckPR         int
+	LabelAliases    map[string]string
+	ForcePrerelease bool
 }
 
 func (o *getNextOptions) repo() string {
@@ -185,7 +186,7 @@ func includePullInResults(ctx context.Context, opts *getNextOptions, commits []g
 	if err != nil {
 		return nil, err
 	}
-	pull, err := newPull(opts.CheckPR, opts.LabelAliases, base.Labels...)
+	pull, err := newPullWithOptions(opts.CheckPR, opts.LabelAliases, opts.ForcePrerelease, base.Labels...)
 	if err != nil {
 		return nil, err
 	}

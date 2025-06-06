@@ -754,4 +754,42 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			ChangeLevel:     changeLevelMinor,
 		}, got)
 	})
+
+	t.Run("force prerelease", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		repos := setupGit(t)
+		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
+			&github.CommitComparison{
+				AheadBy: 1,
+				Commits: []string{repos.taggedCommits["head"]},
+			}, nil,
+		)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["head"], 0).Return(
+			&github.CommitComparison{AheadBy: 0}, nil,
+		)
+		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
+			// PR with semver:minor label but no prerelease label - should be treated as prerelease when force is enabled
+			[]github.BasePull{{Number: 1, MergeCommitSha: mergeSha, Labels: []string{labelMinor}}}, nil,
+		)
+		got, err := (&Runner{
+			CheckoutDir:     repos.clone,
+			Ref:             repos.taggedCommits["head"],
+			TagPrefix:       "v",
+			Repo:            "orgName/repoName",
+			PushRemote:      "origin",
+			GithubClient:    githubClient,
+			ForcePrerelease: true,
+		}).Run(ctx)
+		require.NoError(t, err)
+		require.Equal(t, &Result{
+			PreviousRef:     "v2.0.0",
+			PreviousVersion: "2.0.0",
+			FirstRelease:    false,
+			ReleaseVersion:  semver.MustParse("2.1.0-0"),
+			ReleaseTag:      "v2.1.0-0",
+			ChangeLevel:     changeLevelMinor,
+		}, got)
+	})
 }

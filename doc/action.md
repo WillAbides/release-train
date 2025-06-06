@@ -146,6 +146,12 @@ Enable debug logging.
 
 Only literal 'true' will be treated as true.
 
+### force-prerelease
+
+Force all PRs with semver labels to be treated as prerelease. Behaves as if the "semver:prerelease" label is present on every PR that has at least one other semver label.
+
+Only literal 'true' will be treated as true.
+
 ### release-train-bin
 
 Path to release-train binary. Only needed if you're using a custom release-train binary.

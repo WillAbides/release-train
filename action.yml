@@ -71,6 +71,11 @@ inputs:
       Enable debug logging.
 
       Only literal 'true' will be treated as true.
+  force-prerelease:
+    description: |-
+      Force all PRs with semver labels to be treated as prerelease. Behaves as if the "semver:prerelease" label is present on every PR that has at least one other semver label.
+
+      Only literal 'true' will be treated as true.
   release-train-bin:
     description: Path to release-train binary. Only needed if you're using a custom release-train binary.
 outputs:
@@ -239,6 +244,18 @@ runs:
           "") ;;
           *)
             echo "Input debug must be 'true' or 'false'. Got '${{ inputs.debug }}'." >&2
+            exit 1
+        	;;
+        esac
+
+        case "${{ inputs.force-prerelease }}" in
+          true)
+            set -- "$@" --force-prerelease
+            ;;
+          false) ;;
+          "") ;;
+          *)
+            echo "Input force-prerelease must be 'true' or 'false'. Got '${{ inputs.force-prerelease }}'." >&2
             exit 1
         	;;
         esac
