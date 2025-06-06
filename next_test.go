@@ -487,7 +487,7 @@ func TestGetNext(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gh := mockGithubClient(t)
+			gh := mocks.NewMockGithubClient(gomock.NewController(t))
 			tt.setupMocks(gh)
 
 			// Set the GithubClient in options if not already set

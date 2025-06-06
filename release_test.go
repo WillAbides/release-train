@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/willabides/release-train/v3/internal/github"
+	"github.com/willabides/release-train/v3/internal/mocks"
 	"go.uber.org/mock/gomock"
 )
 
@@ -90,7 +91,7 @@ git tag head
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := mockGithubClient(t)
+		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
 			&github.CommitComparison{
 				AheadBy: 2,
@@ -202,7 +203,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		ctx := context.Background()
 		repos := setupGit(t)
 		mustRunCmd(t, repos.clone, nil, "git", "checkout", "third")
-		githubClient := mockGithubClient(t)
+		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CreateRelease(gomock.Any(), "orgName", "repoName", "x1.0.0", "", false).Return(
 			&github.RepoRelease{
 				ID:        1,
@@ -237,7 +238,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		ctx := context.Background()
 		repos := setupGit(t)
 
-		githubClient := mockGithubClient(t)
+		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
 			&github.CommitComparison{
 				AheadBy: 2,
@@ -308,7 +309,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		ctx := context.Background()
 		repos := setupGit(t)
 
-		githubClient := mockGithubClient(t)
+		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
 			&github.CommitComparison{
 				AheadBy: 2,
@@ -362,7 +363,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		logger := slog.New(logHandler)
 		ctx = withLogger(ctx, logger)
 
-		githubClient := mockGithubClient(t)
+		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
 			&github.CommitComparison{
 				AheadBy: 2,
@@ -408,7 +409,7 @@ exit 1
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := mockGithubClient(t)
+		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
 			&github.CommitComparison{
 				AheadBy: 0,
@@ -486,7 +487,7 @@ exit 1
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := mockGithubClient(t)
+		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
 			nil, errors.New("api error"),
 		)
@@ -504,7 +505,7 @@ exit 1
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := mockGithubClient(t)
+		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
 			&github.CommitComparison{
 				AheadBy: 1,
@@ -543,7 +544,7 @@ exit 1
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := mockGithubClient(t)
+		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
 			&github.CommitComparison{
 				AheadBy: 1,
@@ -596,7 +597,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := mockGithubClient(t)
+		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
 			&github.CommitComparison{
 				AheadBy: 1,
@@ -632,7 +633,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := mockGithubClient(t)
+		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
 			&github.CommitComparison{
 				AheadBy: 1,
@@ -670,7 +671,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		githubClient := mockGithubClient(t)
+		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v0.2.0", repos.taggedCommits["second"], -1).Return(
 			&github.CommitComparison{
 				AheadBy: 1,
@@ -722,7 +723,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		ctx := context.Background()
 		repos := setupGit(t)
 		mustRunCmd(t, repos.clone, nil, "git", "tag", "v2.1.0-rc.1", "fifth")
-		githubClient := mockGithubClient(t)
+		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.1.0-rc.1", repos.taggedCommits["head"], -1).Return(
 			&github.CommitComparison{
 				AheadBy: 1,
