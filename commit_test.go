@@ -4,9 +4,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/willabides/release-train/v3/internal/github"
 )
 
-func testCommit(t *testing.T, pulls ...BasePull) gitCommit {
+func testCommit(t *testing.T, pulls ...github.BasePull) gitCommit {
 	t.Helper()
 	c := gitCommit{Sha: "deadbeef"}
 	for i := range pulls {
@@ -17,8 +18,8 @@ func testCommit(t *testing.T, pulls ...BasePull) gitCommit {
 	return c
 }
 
-func newBasePull(number int, labels ...string) BasePull {
-	return BasePull{
+func newBasePull(number int, labels ...string) github.BasePull {
+	return github.BasePull{
 		Number: number,
 		Labels: labels,
 	}

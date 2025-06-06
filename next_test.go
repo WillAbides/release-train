@@ -10,6 +10,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/willabides/release-train/v3/internal/github"
 )
 
 func Test_incrPre(t *testing.T) {
@@ -116,395 +117,394 @@ func TestGetNext(t *testing.T) {
 	sha3 := "3aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	mergeSha := "4aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
-	t.Run("major", func(t *testing.T) {
-		gh := mockGithubClient(t)
-		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
-			&CommitComparison{
-				AheadBy: 2,
-				Commits: []string{sha1, sha2},
-			}, nil,
-		)
-		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", mergeSha, sha1, 0).Return(
-			&CommitComparison{AheadBy: 2}, nil,
-		)
-		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
-			[]BasePull{
-				// non-standard caps to test case insensitivity
-				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"SEMVER:BREAKING", "something else"}},
-				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
-				{Number: 3, MergeCommitSha: mergeSha},
-				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelMinor}},
-			}, nil,
-		)
-		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
-			[]BasePull{}, nil,
-		)
-
-		got, err := getNext(
-			ctx,
-			&getNextOptions{
-				Repo:         "willabides/semver-next",
-				Base:         "v0.15.0",
-				PrevVersion:  "0.15.0",
-				Head:         sha1,
-				GithubClient: gh,
+	tests := []struct {
+		name       string
+		setupMocks func(*MockGithubClient)
+		options    *getNextOptions
+		want       *getNextResult
+		wantErr    string
+	}{
+		{
+			name: "major",
+			setupMocks: func(gh *MockGithubClient) {
+				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
+					&github.CommitComparison{
+						AheadBy: 2,
+						Commits: []string{sha1, sha2},
+					}, nil,
+				)
+				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", mergeSha, sha1, 0).Return(
+					&github.CommitComparison{AheadBy: 2}, nil,
+				)
+				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
+					[]github.BasePull{
+						// non-standard caps to test case insensitivity
+						{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"SEMVER:BREAKING", "something else"}},
+						{Number: 2, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
+						{Number: 3, MergeCommitSha: mergeSha},
+						{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelMinor}},
+					}, nil,
+				)
+				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
+					[]github.BasePull{}, nil,
+				)
 			},
-		)
-		require.NoError(t, err)
-		want := getNextResult{
-			NextVersion:     *semver.MustParse("1.0.0"),
-			PreviousVersion: *semver.MustParse("0.15.0"),
-			ChangeLevel:     changeLevelMajor,
-		}
-		require.Equal(t, &want, got)
-	})
-
-	t.Run("minor", func(t *testing.T) {
-		gh := mockGithubClient(t)
-		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
-			&CommitComparison{
-				AheadBy: 2,
-				Commits: []string{sha1, sha2},
-			}, nil,
-		)
-		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", mergeSha, sha1, 0).Return(
-			&CommitComparison{AheadBy: 2}, nil,
-		)
-		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
-			[]BasePull{
-				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
-				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelMinor}},
-				{Number: 3, MergeCommitSha: mergeSha},
-				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
-			}, nil,
-		)
-		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
-			[]BasePull{}, nil,
-		)
-		got, err := getNext(
-			ctx,
-			&getNextOptions{
-				Repo:         "willabides/semver-next",
-				Base:         "v0.15.0",
-				PrevVersion:  "0.15.0",
-				Head:         sha1,
-				GithubClient: gh,
+			options: &getNextOptions{
+				Repo:        "willabides/semver-next",
+				Base:        "v0.15.0",
+				PrevVersion: "0.15.0",
+				Head:        sha1,
 			},
-		)
-		require.NoError(t, err)
-		want := getNextResult{
-			NextVersion:     *semver.MustParse("0.16.0"),
-			PreviousVersion: *semver.MustParse("0.15.0"),
-			ChangeLevel:     changeLevelMinor,
-		}
-		require.Equal(t, &want, got)
-	})
-
-	t.Run("patch", func(t *testing.T) {
-		gh := mockGithubClient(t)
-		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
-			&CommitComparison{
-				AheadBy: 2,
-				Commits: []string{sha1, sha2},
-			}, nil,
-		)
-		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", mergeSha, sha1, 0).Return(
-			&CommitComparison{AheadBy: 2}, nil,
-		)
-		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
-			[]BasePull{
-				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
-				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
-				{Number: 3, MergeCommitSha: mergeSha},
-				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
-			}, nil,
-		)
-		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
-			[]BasePull{}, nil,
-		)
-		got, err := getNext(
-			ctx,
-			&getNextOptions{
-				Repo:         "willabides/semver-next",
-				Base:         "v0.15.0",
-				PrevVersion:  "0.15.0",
-				Head:         sha1,
-				GithubClient: gh,
+			want: &getNextResult{
+				NextVersion:     *semver.MustParse("1.0.0"),
+				PreviousVersion: *semver.MustParse("0.15.0"),
+				ChangeLevel:     changeLevelMajor,
 			},
-		)
-		require.NoError(t, err)
-		want := getNextResult{
-			NextVersion:     *semver.MustParse("0.15.1"),
-			PreviousVersion: *semver.MustParse("0.15.0"),
-			ChangeLevel:     changeLevelPatch,
-		}
-		require.Equal(t, &want, got)
-	})
-
-	t.Run("check pr", func(t *testing.T) {
-		gh := mockGithubClient(t)
-		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
-			&CommitComparison{
-				AheadBy: 2,
-				Commits: []string{sha1, sha2},
-			}, nil,
-		)
-		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", mergeSha, sha1, 0).Return(
-			&CommitComparison{AheadBy: 2}, nil,
-		)
-		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
-			[]BasePull{
-				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
-				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
-				{Number: 3, MergeCommitSha: mergeSha},
-				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
-			}, nil,
-		)
-		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
-			[]BasePull{}, nil,
-		)
-		gh.EXPECT().GetPullRequest(gomock.Any(), "willabides", "semver-next", 14).Return(
-			&BasePull{
-				Number: 14,
-				Labels: []string{labelMinor},
-			}, nil,
-		)
-		gh.EXPECT().GetPullRequestCommits(gomock.Any(), "willabides", "semver-next", 14).Return(
-			[]string{sha1}, nil,
-		)
-
-		got, err := getNext(
-			ctx,
-			&getNextOptions{
-				Repo:         "willabides/semver-next",
-				Base:         "v0.15.0",
-				PrevVersion:  "0.15.0",
-				Head:         sha1,
-				GithubClient: gh,
-				CheckPR:      14,
+		},
+		{
+			name: "minor",
+			setupMocks: func(gh *MockGithubClient) {
+				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
+					&github.CommitComparison{
+						AheadBy: 2,
+						Commits: []string{sha1, sha2},
+					}, nil,
+				)
+				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", mergeSha, sha1, 0).Return(
+					&github.CommitComparison{AheadBy: 2}, nil,
+				)
+				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
+					[]github.BasePull{
+						{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
+						{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelMinor}},
+						{Number: 3, MergeCommitSha: mergeSha},
+						{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
+					}, nil,
+				)
+				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
+					[]github.BasePull{}, nil,
+				)
 			},
-		)
-		require.NoError(t, err)
-		want := getNextResult{
-			NextVersion:     *semver.MustParse("0.16.0"),
-			PreviousVersion: *semver.MustParse("0.15.0"),
-			ChangeLevel:     changeLevelMinor,
-		}
-		require.Equal(t, &want, got)
-	})
-
-	t.Run("no change", func(t *testing.T) {
-		gh := mockGithubClient(t)
-		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
-			&CommitComparison{
-				AheadBy: 0,
-				Commits: []string{sha1, sha2},
-			}, nil,
-		)
-		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", mergeSha, sha1, 0).Return(
-			&CommitComparison{AheadBy: 2}, nil,
-		)
-		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
-			[]BasePull{
-				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
-				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelNone}},
-				{Number: 3, MergeCommitSha: mergeSha},
-				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelNone}},
-			}, nil,
-		)
-		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
-			[]BasePull{}, nil,
-		)
-		got, err := getNext(
-			ctx,
-			&getNextOptions{
-				Repo:         "willabides/semver-next",
-				Base:         "v0.15.0",
-				PrevVersion:  "0.15.0",
-				Head:         sha1,
-				GithubClient: gh,
+			options: &getNextOptions{
+				Repo:        "willabides/semver-next",
+				Base:        "v0.15.0",
+				PrevVersion: "0.15.0",
+				Head:        sha1,
 			},
-		)
-		require.NoError(t, err)
-		want := getNextResult{
-			NextVersion:     *semver.MustParse("0.15.0"),
-			PreviousVersion: *semver.MustParse("0.15.0"),
-			ChangeLevel:     changeLevelNone,
-		}
-		require.Equal(t, &want, got)
-	})
-
-	t.Run("missing labels", func(t *testing.T) {
-		gh := mockGithubClient(t)
-		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
-			&CommitComparison{
-				AheadBy: 0,
-				Commits: []string{sha1, sha2},
-			}, nil,
-		)
-		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", mergeSha, sha1, 0).Return(
-			&CommitComparison{AheadBy: 2}, nil,
-		)
-		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
-			[]BasePull{
-				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
-			}, nil,
-		)
-		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
-			[]BasePull{
-				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
-				{Number: 3, MergeCommitSha: mergeSha, Labels: []string{}},
-			}, nil,
-		)
-		_, err := getNext(ctx, &getNextOptions{
-			Repo:         "willabides/semver-next",
-			Base:         "v0.15.0",
-			Head:         sha1,
-			GithubClient: gh,
-		})
-		require.EqualError(t, err, "commit 2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa has no labels on associated pull requests: [#2 #3]")
-	})
-
-	t.Run("empty diff", func(t *testing.T) {
-		gh := mockGithubClient(t)
-		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
-			&CommitComparison{AheadBy: 0, Commits: []string{}}, nil,
-		)
-		got, err := getNext(ctx, &getNextOptions{
-			Repo:         "willabides/semver-next",
-			Base:         "v0.15.0",
-			PrevVersion:  "0.15.0",
-			Head:         sha1,
-			GithubClient: gh,
-		})
-		require.NoError(t, err)
-		want := getNextResult{
-			NextVersion:     *semver.MustParse("0.15.0"),
-			PreviousVersion: *semver.MustParse("0.15.0"),
-			ChangeLevel:     changeLevelNone,
-		}
-		require.Equal(t, &want, got)
-	})
-	patchLvl := changeLevelPatch
-	minorLvl := changeLevelMinor
-	majorLvl := changeLevelMajor
-
-	t.Run("empty diff ignores minBump", func(t *testing.T) {
-		gh := mockGithubClient(t)
-		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
-			&CommitComparison{AheadBy: 0, Commits: []string{}}, nil,
-		)
-
-		got, err := getNext(ctx, &getNextOptions{
-			Repo:         "willabides/semver-next",
-			Base:         "v0.15.0",
-			PrevVersion:  "0.15.0",
-			Head:         sha1,
-			MinBump:      &patchLvl,
-			GithubClient: gh,
-		})
-		require.NoError(t, err)
-		want := getNextResult{
-			NextVersion:     *semver.MustParse("0.15.0"),
-			PreviousVersion: *semver.MustParse("0.15.0"),
-			ChangeLevel:     changeLevelNone,
-		}
-		require.Equal(t, &want, got)
-	})
-
-	t.Run("minBump", func(t *testing.T) {
-		gh := mockGithubClient(t)
-		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
-			&CommitComparison{AheadBy: 0, Commits: []string{sha1, sha2}}, nil,
-		)
-		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", mergeSha, sha1, 0).Return(
-			&CommitComparison{AheadBy: 2}, nil,
-		)
-		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
-			[]BasePull{
-				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
-				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
-				{Number: 3, MergeCommitSha: mergeSha},
-				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
-			}, nil,
-		)
-		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
-			[]BasePull{}, nil,
-		)
-		got, err := getNext(
-			ctx,
-			&getNextOptions{
-				Repo:         "willabides/semver-next",
-				Base:         "v0.15.0",
-				PrevVersion:  "0.15.0",
-				Head:         sha1,
-				MinBump:      &minorLvl,
-				GithubClient: gh,
+			want: &getNextResult{
+				NextVersion:     *semver.MustParse("0.16.0"),
+				PreviousVersion: *semver.MustParse("0.15.0"),
+				ChangeLevel:     changeLevelMinor,
 			},
-		)
-		require.NoError(t, err)
-		want := getNextResult{
-			NextVersion:     *semver.MustParse("0.16.0"),
-			PreviousVersion: *semver.MustParse("0.15.0"),
-			ChangeLevel:     changeLevelMinor,
-		}
-		require.Equal(t, &want, got)
-	})
+		},
+		{
+			name: "patch",
+			setupMocks: func(gh *MockGithubClient) {
+				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
+					&github.CommitComparison{
+						AheadBy: 2,
+						Commits: []string{sha1, sha2},
+					}, nil,
+				)
+				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", mergeSha, sha1, 0).Return(
+					&github.CommitComparison{AheadBy: 2}, nil,
+				)
+				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
+					[]github.BasePull{
+						{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
+						{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
+						{Number: 3, MergeCommitSha: mergeSha},
+						{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
+					}, nil,
+				)
+				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
+					[]github.BasePull{}, nil,
+				)
+			},
+			options: &getNextOptions{
+				Repo:        "willabides/semver-next",
+				Base:        "v0.15.0",
+				PrevVersion: "0.15.0",
+				Head:        sha1,
+			},
+			want: &getNextResult{
+				NextVersion:     *semver.MustParse("0.15.1"),
+				PreviousVersion: *semver.MustParse("0.15.0"),
+				ChangeLevel:     changeLevelPatch,
+			},
+		},
+		{
+			name: "check pr",
+			setupMocks: func(gh *MockGithubClient) {
+				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
+					&github.CommitComparison{
+						AheadBy: 2,
+						Commits: []string{sha1, sha2},
+					}, nil,
+				)
+				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", mergeSha, sha1, 0).Return(
+					&github.CommitComparison{AheadBy: 2}, nil,
+				)
+				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
+					[]github.BasePull{
+						{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
+						{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
+						{Number: 3, MergeCommitSha: mergeSha},
+						{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
+					}, nil,
+				)
+				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
+					[]github.BasePull{}, nil,
+				)
+				gh.EXPECT().GetPullRequest(gomock.Any(), "willabides", "semver-next", 14).Return(
+					&github.BasePull{
+						Number: 14,
+						Labels: []string{labelMinor},
+					}, nil,
+				)
+				gh.EXPECT().GetPullRequestCommits(gomock.Any(), "willabides", "semver-next", 14).Return(
+					[]string{sha1}, nil,
+				)
+			},
+			options: &getNextOptions{
+				Repo:        "willabides/semver-next",
+				Base:        "v0.15.0",
+				PrevVersion: "0.15.0",
+				Head:        sha1,
+				CheckPR:     14,
+			},
+			want: &getNextResult{
+				NextVersion:     *semver.MustParse("0.16.0"),
+				PreviousVersion: *semver.MustParse("0.15.0"),
+				ChangeLevel:     changeLevelMinor,
+			},
+		},
+		{
+			name: "no change",
+			setupMocks: func(gh *MockGithubClient) {
+				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
+					&github.CommitComparison{
+						AheadBy: 0,
+						Commits: []string{sha1, sha2},
+					}, nil,
+				)
+				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", mergeSha, sha1, 0).Return(
+					&github.CommitComparison{AheadBy: 2}, nil,
+				)
+				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
+					[]github.BasePull{
+						{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
+						{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelNone}},
+						{Number: 3, MergeCommitSha: mergeSha},
+						{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelNone}},
+					}, nil,
+				)
+				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
+					[]github.BasePull{}, nil,
+				)
+			},
+			options: &getNextOptions{
+				Repo:        "willabides/semver-next",
+				Base:        "v0.15.0",
+				PrevVersion: "0.15.0",
+				Head:        sha1,
+			},
+			want: &getNextResult{
+				NextVersion:     *semver.MustParse("0.15.0"),
+				PreviousVersion: *semver.MustParse("0.15.0"),
+				ChangeLevel:     changeLevelNone,
+			},
+		},
+		{
+			name: "missing labels",
+			setupMocks: func(gh *MockGithubClient) {
+				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
+					&github.CommitComparison{
+						AheadBy: 0,
+						Commits: []string{sha1, sha2},
+					}, nil,
+				)
+				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", mergeSha, sha1, 0).Return(
+					&github.CommitComparison{AheadBy: 2}, nil,
+				)
+				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
+					[]github.BasePull{
+						{Number: 1, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
+					}, nil,
+				)
+				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
+					[]github.BasePull{
+						{Number: 2, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
+						{Number: 3, MergeCommitSha: mergeSha, Labels: []string{}},
+					}, nil,
+				)
+			},
+			options: &getNextOptions{
+				Repo: "willabides/semver-next",
+				Base: "v0.15.0",
+				Head: sha1,
+			},
+			wantErr: "commit 2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa has no labels on associated pull requests: [#2 #3]",
+		},
+		{
+			name: "empty diff",
+			setupMocks: func(gh *MockGithubClient) {
+				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
+					&github.CommitComparison{AheadBy: 0, Commits: []string{}}, nil,
+				)
+			},
+			options: &getNextOptions{
+				Repo:        "willabides/semver-next",
+				Base:        "v0.15.0",
+				PrevVersion: "0.15.0",
+				Head:        sha1,
+			},
+			want: &getNextResult{
+				NextVersion:     *semver.MustParse("0.15.0"),
+				PreviousVersion: *semver.MustParse("0.15.0"),
+				ChangeLevel:     changeLevelNone,
+			},
+		},
+		{
+			name: "empty diff ignores minBump",
+			setupMocks: func(gh *MockGithubClient) {
+				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
+					&github.CommitComparison{AheadBy: 0, Commits: []string{}}, nil,
+				)
+			},
+			options: &getNextOptions{
+				Repo:        "willabides/semver-next",
+				Base:        "v0.15.0",
+				PrevVersion: "0.15.0",
+				Head:        sha1,
+				MinBump:     &[]changeLevel{changeLevelPatch}[0],
+			},
+			want: &getNextResult{
+				NextVersion:     *semver.MustParse("0.15.0"),
+				PreviousVersion: *semver.MustParse("0.15.0"),
+				ChangeLevel:     changeLevelNone,
+			},
+		},
+		{
+			name: "minBump",
+			setupMocks: func(gh *MockGithubClient) {
+				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
+					&github.CommitComparison{AheadBy: 0, Commits: []string{sha1, sha2}}, nil,
+				)
+				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", mergeSha, sha1, 0).Return(
+					&github.CommitComparison{AheadBy: 2}, nil,
+				)
+				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
+					[]github.BasePull{
+						{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"something else"}},
+						{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
+						{Number: 3, MergeCommitSha: mergeSha},
+						{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
+					}, nil,
+				)
+				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
+					[]github.BasePull{}, nil,
+				)
+			},
+			options: &getNextOptions{
+				Repo:        "willabides/semver-next",
+				Base:        "v0.15.0",
+				PrevVersion: "0.15.0",
+				Head:        sha1,
+				MinBump:     &[]changeLevel{changeLevelMinor}[0],
+			},
+			want: &getNextResult{
+				NextVersion:     *semver.MustParse("0.16.0"),
+				PreviousVersion: *semver.MustParse("0.15.0"),
+				ChangeLevel:     changeLevelMinor,
+			},
+		},
+		{
+			name: "compareCommits error",
+			setupMocks: func(gh *MockGithubClient) {
+				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
+					nil, assert.AnError,
+				)
+			},
+			options: &getNextOptions{
+				Repo: "willabides/semver-next",
+				Base: "v0.15.0",
+				Head: sha1,
+			},
+			wantErr: assert.AnError.Error(),
+		},
+		{
+			name: "listPullRequestsWithCommit error",
+			setupMocks: func(gh *MockGithubClient) {
+				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
+					&github.CommitComparison{AheadBy: 0, Commits: []string{sha1, sha2, sha3}}, nil,
+				)
+				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
+					nil, assert.AnError,
+				)
+				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
+					[]github.BasePull{}, nil,
+				)
+				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha3).Return(
+					nil, assert.AnError,
+				)
+			},
+			options: &getNextOptions{
+				Repo: "willabides/semver-next",
+				Base: "v0.15.0",
+				Head: sha1,
+			},
+			wantErr: errors.Join(assert.AnError, assert.AnError).Error(),
+		},
+		{
+			name:       "prev version not valid semver",
+			setupMocks: func(gh *MockGithubClient) {},
+			options: &getNextOptions{
+				PrevVersion: "foo",
+			},
+			wantErr: `invalid previous version "foo": Invalid Semantic Version`,
+		},
+		{
+			name:       "invalid repo",
+			setupMocks: func(gh *MockGithubClient) {},
+			options: &getNextOptions{
+				Repo:        "foo",
+				PrevVersion: "1.2.3",
+			},
+			wantErr: `repo must be in the form owner/name`,
+		},
+		{
+			name:       "minBump > maxBump",
+			setupMocks: func(gh *MockGithubClient) {},
+			options: &getNextOptions{
+				MinBump: &[]changeLevel{changeLevelMajor}[0],
+				MaxBump: &[]changeLevel{changeLevelMinor}[0],
+			},
+			wantErr: "minBump must be less than or equal to maxBump",
+		},
+	}
 
-	t.Run("compareCommits error", func(t *testing.T) {
-		gh := mockGithubClient(t)
-		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
-			nil, assert.AnError,
-		)
-		_, err := getNext(ctx, &getNextOptions{
-			Repo:         "willabides/semver-next",
-			Base:         "v0.15.0",
-			Head:         sha1,
-			GithubClient: gh,
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gh := mockGithubClient(t)
+			tt.setupMocks(gh)
+
+			// Set the GithubClient in options if not already set
+			if tt.options.GithubClient == nil {
+				tt.options.GithubClient = gh
+			}
+
+			got, err := getNext(ctx, tt.options)
+
+			if tt.wantErr != "" {
+				require.EqualError(t, err, tt.wantErr)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
 		})
-		require.EqualError(t, err, assert.AnError.Error())
-	})
-
-	t.Run("listPullRequestsWithCommit error", func(t *testing.T) {
-		gh := mockGithubClient(t)
-		gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
-			&CommitComparison{AheadBy: 0, Commits: []string{sha1, sha2, sha3}}, nil,
-		)
-		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha1).Return(
-			nil, assert.AnError,
-		)
-		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha2).Return(
-			[]BasePull{}, nil,
-		)
-		gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), "willabides", "semver-next", sha3).Return(
-			nil, assert.AnError,
-		)
-		_, err := getNext(ctx, &getNextOptions{
-			Repo:         "willabides/semver-next",
-			Base:         "v0.15.0",
-			Head:         sha1,
-			GithubClient: gh,
-		})
-		require.EqualError(t, err, errors.Join(assert.AnError, assert.AnError).Error())
-	})
-
-	t.Run("prev version not valid semver", func(t *testing.T) {
-		_, err := getNext(ctx, &getNextOptions{PrevVersion: "foo"})
-		require.EqualError(t, err, `invalid previous version "foo": Invalid Semantic Version`)
-	})
-
-	t.Run("invalid repo", func(t *testing.T) {
-		_, err := getNext(ctx, &getNextOptions{Repo: "foo", PrevVersion: "1.2.3"})
-		require.EqualError(t, err, `repo must be in the form owner/name`)
-	})
-
-	t.Run("minBump > maxBump", func(t *testing.T) {
-		_, err := getNext(ctx, &getNextOptions{
-			MinBump: &majorLvl,
-			MaxBump: &minorLvl,
-		})
-		require.EqualError(t, err, "minBump must be less than or equal to maxBump")
-	})
+	}
 }
 
 func Test_bumpVersion(t *testing.T) {

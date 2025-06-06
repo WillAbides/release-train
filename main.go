@@ -13,6 +13,7 @@ import (
 	"github.com/sethvargo/go-githubactions"
 	"github.com/willabides/actionslog"
 	"github.com/willabides/actionslog/human"
+	"github.com/willabides/release-train/v3/internal/github"
 	"gopkg.in/yaml.v3"
 )
 
@@ -142,7 +143,7 @@ type rootCmd struct {
 }
 
 func (c *rootCmd) GithubClient(ctx context.Context) (GithubClient, error) {
-	return NewGithubClient(ctx, c.GithubApiUrl, c.GithubToken, fmt.Sprintf("release-train/%s", version))
+	return github.NewClient(ctx, c.GithubApiUrl, c.GithubToken, fmt.Sprintf("release-train/%s", version))
 }
 
 func (c *rootCmd) Run(ctx context.Context, kongCtx *kong.Context) error {
