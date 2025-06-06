@@ -6,12 +6,12 @@ require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/alecthomas/kong v0.8.0
 	github.com/gofri/go-github-ratelimit v1.0.4
-	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v53 v53.2.0
 	github.com/sethvargo/go-githubactions v1.1.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	github.com/willabides/actionslog v0.5.1
 	github.com/wk8/go-ordered-map/v2 v2.1.8
+	go.uber.org/mock v0.5.2
 	golang.org/x/exp v0.0.0-20230725093048-515e97ebf090
 	golang.org/x/oauth2 v0.10.0
 	gopkg.in/yaml.v3 v3.0.1

@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/willabides/release-train/v3/internal/github"
+	"go.uber.org/mock/gomock"
 )
 
 func Test_incrPre(t *testing.T) {
