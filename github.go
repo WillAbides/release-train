@@ -6,7 +6,7 @@ import (
 	"github.com/willabides/release-train/v3/internal/github"
 )
 
-//go:generate go run go.uber.org/mock/mockgen@v0.5.2 -source=$GOFILE -destination=mock_$GOFILE -package main -write_package_comment=false
+//go:generate go run go.uber.org/mock/mockgen@v0.5.2 -source=$GOFILE -destination=internal/mocks/$GOFILE -package mocks -write_package_comment=false
 
 type GithubClient interface {
 	ListMergedPullsForCommit(ctx context.Context, owner, repo, sha string) ([]github.BasePull, error)

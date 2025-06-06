@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/willabides/release-train/v3/internal/github"
+	"github.com/willabides/release-train/v3/internal/mocks"
 	"go.uber.org/mock/gomock"
 )
 
@@ -119,14 +120,14 @@ func TestGetNext(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		setupMocks func(*MockGithubClient)
+		setupMocks func(*mocks.MockGithubClient)
 		options    *getNextOptions
 		want       *getNextResult
 		wantErr    string
 	}{
 		{
 			name: "major",
-			setupMocks: func(gh *MockGithubClient) {
+			setupMocks: func(gh *mocks.MockGithubClient) {
 				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
 					&github.CommitComparison{
 						AheadBy: 2,
@@ -163,7 +164,7 @@ func TestGetNext(t *testing.T) {
 		},
 		{
 			name: "minor",
-			setupMocks: func(gh *MockGithubClient) {
+			setupMocks: func(gh *mocks.MockGithubClient) {
 				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
 					&github.CommitComparison{
 						AheadBy: 2,
@@ -199,7 +200,7 @@ func TestGetNext(t *testing.T) {
 		},
 		{
 			name: "patch",
-			setupMocks: func(gh *MockGithubClient) {
+			setupMocks: func(gh *mocks.MockGithubClient) {
 				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
 					&github.CommitComparison{
 						AheadBy: 2,
@@ -235,7 +236,7 @@ func TestGetNext(t *testing.T) {
 		},
 		{
 			name: "check pr",
-			setupMocks: func(gh *MockGithubClient) {
+			setupMocks: func(gh *mocks.MockGithubClient) {
 				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
 					&github.CommitComparison{
 						AheadBy: 2,
@@ -281,7 +282,7 @@ func TestGetNext(t *testing.T) {
 		},
 		{
 			name: "no change",
-			setupMocks: func(gh *MockGithubClient) {
+			setupMocks: func(gh *mocks.MockGithubClient) {
 				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
 					&github.CommitComparison{
 						AheadBy: 0,
@@ -317,7 +318,7 @@ func TestGetNext(t *testing.T) {
 		},
 		{
 			name: "missing labels",
-			setupMocks: func(gh *MockGithubClient) {
+			setupMocks: func(gh *mocks.MockGithubClient) {
 				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
 					&github.CommitComparison{
 						AheadBy: 0,
@@ -348,7 +349,7 @@ func TestGetNext(t *testing.T) {
 		},
 		{
 			name: "empty diff",
-			setupMocks: func(gh *MockGithubClient) {
+			setupMocks: func(gh *mocks.MockGithubClient) {
 				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
 					&github.CommitComparison{AheadBy: 0, Commits: []string{}}, nil,
 				)
@@ -367,7 +368,7 @@ func TestGetNext(t *testing.T) {
 		},
 		{
 			name: "empty diff ignores minBump",
-			setupMocks: func(gh *MockGithubClient) {
+			setupMocks: func(gh *mocks.MockGithubClient) {
 				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
 					&github.CommitComparison{AheadBy: 0, Commits: []string{}}, nil,
 				)
@@ -387,7 +388,7 @@ func TestGetNext(t *testing.T) {
 		},
 		{
 			name: "minBump",
-			setupMocks: func(gh *MockGithubClient) {
+			setupMocks: func(gh *mocks.MockGithubClient) {
 				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
 					&github.CommitComparison{AheadBy: 0, Commits: []string{sha1, sha2}}, nil,
 				)
@@ -421,7 +422,7 @@ func TestGetNext(t *testing.T) {
 		},
 		{
 			name: "compareCommits error",
-			setupMocks: func(gh *MockGithubClient) {
+			setupMocks: func(gh *mocks.MockGithubClient) {
 				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
 					nil, assert.AnError,
 				)
@@ -435,7 +436,7 @@ func TestGetNext(t *testing.T) {
 		},
 		{
 			name: "listPullRequestsWithCommit error",
-			setupMocks: func(gh *MockGithubClient) {
+			setupMocks: func(gh *mocks.MockGithubClient) {
 				gh.EXPECT().CompareCommits(gomock.Any(), "willabides", "semver-next", "v0.15.0", sha1, -1).Return(
 					&github.CommitComparison{AheadBy: 0, Commits: []string{sha1, sha2, sha3}}, nil,
 				)
@@ -458,7 +459,7 @@ func TestGetNext(t *testing.T) {
 		},
 		{
 			name:       "prev version not valid semver",
-			setupMocks: func(gh *MockGithubClient) {},
+			setupMocks: func(gh *mocks.MockGithubClient) {},
 			options: &getNextOptions{
 				PrevVersion: "foo",
 			},
@@ -466,7 +467,7 @@ func TestGetNext(t *testing.T) {
 		},
 		{
 			name:       "invalid repo",
-			setupMocks: func(gh *MockGithubClient) {},
+			setupMocks: func(gh *mocks.MockGithubClient) {},
 			options: &getNextOptions{
 				Repo:        "foo",
 				PrevVersion: "1.2.3",
@@ -475,7 +476,7 @@ func TestGetNext(t *testing.T) {
 		},
 		{
 			name:       "minBump > maxBump",
-			setupMocks: func(gh *MockGithubClient) {},
+			setupMocks: func(gh *mocks.MockGithubClient) {},
 			options: &getNextOptions{
 				MinBump: &[]changeLevel{changeLevelMajor}[0],
 				MaxBump: &[]changeLevel{changeLevelMinor}[0],
