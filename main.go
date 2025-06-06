@@ -36,7 +36,7 @@ var flagHelp = kong.Vars{
 	"repo_help":             `GitHub repository in the form of owner/repo.`,
 	"github_token_help":     "The GitHub token to use for authentication. Must have `contents: write` permission if creating a release or tag.",
 	"github_api_url_help":   `GitHub API URL.`,
-	"force_prerelease_help": `Force all PRs with semver labels to be treated as prerelease. Behaves as if the "semver:prerelease" label is present on every PR that has at least one other semver label.`,
+	"force_prerelease_help": `Force the release to be a prerelease. This fails if a PR in the release is labeled as stable.`,
 
 	"check_pr_help": `
 Operates as if the given PR has already been merged. Useful for making sure the PR is properly labeled.

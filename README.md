@@ -498,9 +498,8 @@ Flags:
                                       GitHub API URL.
       --output-format="json"          Output either json our GitHub action output.
       --debug                         Enable debug logging.
-      --force-prerelease              Force all PRs with semver labels to be treated as prerelease.
-                                      Behaves as if the "semver:prerelease" label is present on
-                                      every PR that has at least one other semver label.
+      --force-prerelease              Force the release to be a prerelease. This fails if a PR in
+                                      the release is labeled as stable.
 ```
 
 <!--- end usage output --->

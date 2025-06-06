@@ -148,7 +148,7 @@ Only literal 'true' will be treated as true.
 
 ### force-prerelease
 
-Force all PRs with semver labels to be treated as prerelease. Behaves as if the "semver:prerelease" label is present on every PR that has at least one other semver label.
+Force the release to be a prerelease. This fails if a PR in the release is labeled as stable.
 
 Only literal 'true' will be treated as true.
 
