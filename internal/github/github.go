@@ -40,7 +40,7 @@ func NewClient(ctx context.Context, baseUrl, token, userAgent string) (*Client, 
 		return nil, err
 	}
 	// no need for uploadURL because if we upload release artifacts we will use release.UploadURL
-	client, err := github.NewEnterpriseClient(baseUrl, "", rateLimitClient)
+	client, err := github.NewClient(rateLimitClient).WithEnterpriseURLs(baseUrl, "")
 	if err != nil {
 		return nil, err
 	}
