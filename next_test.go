@@ -122,10 +122,8 @@ func TestGetNext(t *testing.T) {
 	repoOwner := "willabides"
 	repo := "semver-next"
 
-	comparisonBaseTagToSha1 := &github.CommitComparison{
-		AheadBy: 2,
-		Commits: []string{sha1, sha2},
-	}
+	cmpBaseTagToSha1 := &github.CommitComparison{AheadBy: 2, Commits: []string{sha1, sha2}}
+	cmpMergeShaToSha1 := &github.CommitComparison{AheadBy: 2}
 
 	tests := []struct {
 		name       string
@@ -134,27 +132,22 @@ func TestGetNext(t *testing.T) {
 		want       *getNextResult
 		wantErr    string
 
-		noStubs                 bool
-		comparisonBaseTagToSha1 *github.CommitComparison
+		noStubs              bool
+		cmpBaseTagToSha1     *github.CommitComparison
+		cmpMergeShaToSha1    *github.CommitComparison
+		sha1MergedPulls      []github.BasePull
+		sha2MergedPulls      []github.BasePull
+		pullRequest14        *github.BasePull
+		pullRequest14Commits []string
 	}{
 		{
 			name: "major",
-			setupMocks: func(gh *mocks.MockGithubClient) {
-				gh.EXPECT().CompareCommits(gomock.Any(), repoOwner, repo, mergeSha, sha1, 0).Return(
-					&github.CommitComparison{AheadBy: 2}, nil,
-				)
-				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), repoOwner, repo, sha1).Return(
-					[]github.BasePull{
-						// non-standard caps to test case insensitivity
-						{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"SEMVER:BREAKING", miscLabel}},
-						{Number: 2, MergeCommitSha: mergeSha, Labels: []string{miscLabel}},
-						{Number: 3, MergeCommitSha: mergeSha},
-						{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelMinor}},
-					}, nil,
-				)
-				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), repoOwner, repo, sha2).Return(
-					[]github.BasePull{}, nil,
-				)
+			sha1MergedPulls: []github.BasePull{
+				// non-standard caps to test case insensitivity
+				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{"SEMVER:BREAKING", miscLabel}},
+				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{miscLabel}},
+				{Number: 3, MergeCommitSha: mergeSha},
+				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelMinor}},
 			},
 			options: &getNextOptions{
 				Repo:        "willabides/semver-next",
@@ -170,21 +163,11 @@ func TestGetNext(t *testing.T) {
 		},
 		{
 			name: "minor",
-			setupMocks: func(gh *mocks.MockGithubClient) {
-				gh.EXPECT().CompareCommits(gomock.Any(), repoOwner, repo, mergeSha, sha1, 0).Return(
-					&github.CommitComparison{AheadBy: 2}, nil,
-				)
-				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), repoOwner, repo, sha1).Return(
-					[]github.BasePull{
-						{Number: 1, MergeCommitSha: mergeSha, Labels: []string{miscLabel}},
-						{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelMinor}},
-						{Number: 3, MergeCommitSha: mergeSha},
-						{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
-					}, nil,
-				)
-				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), repoOwner, repo, sha2).Return(
-					[]github.BasePull{}, nil,
-				)
+			sha1MergedPulls: []github.BasePull{
+				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{miscLabel}},
+				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelMinor}},
+				{Number: 3, MergeCommitSha: mergeSha},
+				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
 			},
 			options: &getNextOptions{
 				Repo:        "willabides/semver-next",
@@ -200,21 +183,11 @@ func TestGetNext(t *testing.T) {
 		},
 		{
 			name: "patch",
-			setupMocks: func(gh *mocks.MockGithubClient) {
-				gh.EXPECT().CompareCommits(gomock.Any(), repoOwner, repo, mergeSha, sha1, 0).Return(
-					&github.CommitComparison{AheadBy: 2}, nil,
-				)
-				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), repoOwner, repo, sha1).Return(
-					[]github.BasePull{
-						{Number: 1, MergeCommitSha: mergeSha, Labels: []string{miscLabel}},
-						{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
-						{Number: 3, MergeCommitSha: mergeSha},
-						{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
-					}, nil,
-				)
-				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), repoOwner, repo, sha2).Return(
-					[]github.BasePull{}, nil,
-				)
+			sha1MergedPulls: []github.BasePull{
+				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{miscLabel}},
+				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
+				{Number: 3, MergeCommitSha: mergeSha},
+				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
 			},
 			options: &getNextOptions{
 				Repo:        "willabides/semver-next",
@@ -230,31 +203,17 @@ func TestGetNext(t *testing.T) {
 		},
 		{
 			name: "check pr",
-			setupMocks: func(gh *mocks.MockGithubClient) {
-				gh.EXPECT().CompareCommits(gomock.Any(), repoOwner, repo, mergeSha, sha1, 0).Return(
-					&github.CommitComparison{AheadBy: 2}, nil,
-				)
-				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), repoOwner, repo, sha1).Return(
-					[]github.BasePull{
-						{Number: 1, MergeCommitSha: mergeSha, Labels: []string{miscLabel}},
-						{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
-						{Number: 3, MergeCommitSha: mergeSha},
-						{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
-					}, nil,
-				)
-				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), repoOwner, repo, sha2).Return(
-					[]github.BasePull{}, nil,
-				)
-				gh.EXPECT().GetPullRequest(gomock.Any(), repoOwner, repo, 14).Return(
-					&github.BasePull{
-						Number: 14,
-						Labels: []string{labelMinor},
-					}, nil,
-				)
-				gh.EXPECT().GetPullRequestCommits(gomock.Any(), repoOwner, repo, 14).Return(
-					[]string{sha1}, nil,
-				)
+			sha1MergedPulls: []github.BasePull{
+				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{miscLabel}},
+				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
+				{Number: 3, MergeCommitSha: mergeSha},
+				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
 			},
+			pullRequest14: &github.BasePull{
+				Number: 14,
+				Labels: []string{labelMinor},
+			},
+			pullRequest14Commits: []string{sha1},
 			options: &getNextOptions{
 				Repo:        "willabides/semver-next",
 				Base:        baseTag,
@@ -269,23 +228,13 @@ func TestGetNext(t *testing.T) {
 			},
 		},
 		{
-			name:                    "no change",
-			comparisonBaseTagToSha1: &github.CommitComparison{AheadBy: 0, Commits: []string{sha1, sha2}},
-			setupMocks: func(gh *mocks.MockGithubClient) {
-				gh.EXPECT().CompareCommits(gomock.Any(), repoOwner, repo, mergeSha, sha1, 0).Return(
-					&github.CommitComparison{AheadBy: 2}, nil,
-				)
-				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), repoOwner, repo, sha1).Return(
-					[]github.BasePull{
-						{Number: 1, MergeCommitSha: mergeSha, Labels: []string{miscLabel}},
-						{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelNone}},
-						{Number: 3, MergeCommitSha: mergeSha},
-						{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelNone}},
-					}, nil,
-				)
-				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), repoOwner, repo, sha2).Return(
-					[]github.BasePull{}, nil,
-				)
+			name:             "no change",
+			cmpBaseTagToSha1: &github.CommitComparison{AheadBy: 0, Commits: []string{sha1, sha2}},
+			sha1MergedPulls: []github.BasePull{
+				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{miscLabel}},
+				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelNone}},
+				{Number: 3, MergeCommitSha: mergeSha},
+				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelNone}},
 			},
 			options: &getNextOptions{
 				Repo:        "willabides/semver-next",
@@ -300,29 +249,14 @@ func TestGetNext(t *testing.T) {
 			},
 		},
 		{
-			name:                    "missing labels",
-			comparisonBaseTagToSha1: &github.CommitComparison{AheadBy: 0, Commits: []string{sha1, sha2}},
-			setupMocks: func(gh *mocks.MockGithubClient) {
-				//gh.EXPECT().CompareCommits(gomock.Any(), repoOwner, repo, baseTag, sha1, -1).Return(
-				//	&github.CommitComparison{
-				//		AheadBy: 0,
-				//		Commits: []string{sha1, sha2},
-				//	}, nil,
-				//)
-				gh.EXPECT().CompareCommits(gomock.Any(), repoOwner, repo, mergeSha, sha1, 0).Return(
-					&github.CommitComparison{AheadBy: 2}, nil,
-				)
-				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), repoOwner, repo, sha1).Return(
-					[]github.BasePull{
-						{Number: 1, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
-					}, nil,
-				)
-				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), repoOwner, repo, sha2).Return(
-					[]github.BasePull{
-						{Number: 2, MergeCommitSha: mergeSha, Labels: []string{miscLabel}},
-						{Number: 3, MergeCommitSha: mergeSha, Labels: []string{}},
-					}, nil,
-				)
+			name:             "missing labels",
+			cmpBaseTagToSha1: &github.CommitComparison{AheadBy: 0, Commits: []string{sha1, sha2}},
+			sha1MergedPulls: []github.BasePull{
+				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
+			},
+			sha2MergedPulls: []github.BasePull{
+				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{miscLabel}},
+				{Number: 3, MergeCommitSha: mergeSha, Labels: []string{}},
 			},
 			options: &getNextOptions{
 				Repo: "willabides/semver-next",
@@ -332,13 +266,8 @@ func TestGetNext(t *testing.T) {
 			wantErr: "commit 2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa has no labels on associated pull requests: [#2 #3]",
 		},
 		{
-			name:                    "empty diff",
-			comparisonBaseTagToSha1: &github.CommitComparison{AheadBy: 0, Commits: []string{}},
-			setupMocks: func(gh *mocks.MockGithubClient) {
-				//gh.EXPECT().CompareCommits(gomock.Any(), repoOwner, repo, baseTag, sha1, -1).Return(
-				//	&github.CommitComparison{AheadBy: 0, Commits: []string{}}, nil,
-				//)
-			},
+			name:             "empty diff",
+			cmpBaseTagToSha1: &github.CommitComparison{AheadBy: 0, Commits: []string{}},
 			options: &getNextOptions{
 				Repo:        "willabides/semver-next",
 				Base:        baseTag,
@@ -352,13 +281,9 @@ func TestGetNext(t *testing.T) {
 			},
 		},
 		{
-			name:                    "empty diff ignores minBump",
-			comparisonBaseTagToSha1: &github.CommitComparison{AheadBy: 0, Commits: []string{}},
-			setupMocks: func(gh *mocks.MockGithubClient) {
-				//gh.EXPECT().CompareCommits(gomock.Any(), repoOwner, repo, baseTag, sha1, -1).Return(
-				//	&github.CommitComparison{AheadBy: 0, Commits: []string{}}, nil,
-				//)
-			},
+			name:             "empty diff ignores minBump",
+			cmpBaseTagToSha1: &github.CommitComparison{AheadBy: 0, Commits: []string{}},
+
 			options: &getNextOptions{
 				Repo:        "willabides/semver-next",
 				Base:        baseTag,
@@ -373,26 +298,13 @@ func TestGetNext(t *testing.T) {
 			},
 		},
 		{
-			name:                    "minBump",
-			comparisonBaseTagToSha1: &github.CommitComparison{AheadBy: 0, Commits: []string{sha1, sha2}},
-			setupMocks: func(gh *mocks.MockGithubClient) {
-				//gh.EXPECT().CompareCommits(gomock.Any(), repoOwner, repo, baseTag, sha1, -1).Return(
-				//	&github.CommitComparison{AheadBy: 0, Commits: []string{sha1, sha2}}, nil,
-				//)
-				gh.EXPECT().CompareCommits(gomock.Any(), repoOwner, repo, mergeSha, sha1, 0).Return(
-					&github.CommitComparison{AheadBy: 2}, nil,
-				)
-				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), repoOwner, repo, sha1).Return(
-					[]github.BasePull{
-						{Number: 1, MergeCommitSha: mergeSha, Labels: []string{miscLabel}},
-						{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
-						{Number: 3, MergeCommitSha: mergeSha},
-						{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
-					}, nil,
-				)
-				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), repoOwner, repo, sha2).Return(
-					[]github.BasePull{}, nil,
-				)
+			name:             "minBump",
+			cmpBaseTagToSha1: &github.CommitComparison{AheadBy: 0, Commits: []string{sha1, sha2}},
+			sha1MergedPulls: []github.BasePull{
+				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{miscLabel}},
+				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
+				{Number: 3, MergeCommitSha: mergeSha},
+				{Number: 4, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
 			},
 			options: &getNextOptions{
 				Repo:        "willabides/semver-next",
@@ -447,16 +359,14 @@ func TestGetNext(t *testing.T) {
 			wantErr: errors.Join(assert.AnError, assert.AnError).Error(),
 		},
 		{
-			name:       "prev version not valid semver",
-			setupMocks: func(gh *mocks.MockGithubClient) {},
+			name: "prev version not valid semver",
 			options: &getNextOptions{
 				PrevVersion: "foo",
 			},
 			wantErr: `invalid previous version "foo": Invalid Semantic Version`,
 		},
 		{
-			name:       "invalid repo",
-			setupMocks: func(gh *mocks.MockGithubClient) {},
+			name: "invalid repo",
 			options: &getNextOptions{
 				Repo:        "foo",
 				PrevVersion: "1.2.3",
@@ -464,8 +374,7 @@ func TestGetNext(t *testing.T) {
 			wantErr: `repo must be in the form owner/name`,
 		},
 		{
-			name:       "minBump > maxBump",
-			setupMocks: func(gh *mocks.MockGithubClient) {},
+			name: "minBump > maxBump",
 			options: &getNextOptions{
 				MinBump: &[]changeLevel{changeLevelMajor}[0],
 				MaxBump: &[]changeLevel{changeLevelMinor}[0],
@@ -480,7 +389,27 @@ func TestGetNext(t *testing.T) {
 
 			if !tt.noStubs {
 				gh.EXPECT().CompareCommits(gomock.Any(), repoOwner, repo, baseTag, gomock.Any(), -1).Return(
-					firstNotNilPtr(tt.comparisonBaseTagToSha1, comparisonBaseTagToSha1), nil,
+					ptrOr(tt.cmpBaseTagToSha1, cmpBaseTagToSha1), nil,
+				).AnyTimes()
+
+				gh.EXPECT().CompareCommits(gomock.Any(), repoOwner, repo, mergeSha, sha1, 0).Return(
+					ptrOr(tt.cmpMergeShaToSha1, cmpMergeShaToSha1), nil,
+				).AnyTimes()
+
+				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), repoOwner, repo, sha1).Return(
+					tt.sha1MergedPulls, nil,
+				).AnyTimes()
+
+				gh.EXPECT().ListMergedPullsForCommit(gomock.Any(), repoOwner, repo, sha2).Return(
+					tt.sha2MergedPulls, nil,
+				).AnyTimes()
+
+				gh.EXPECT().GetPullRequest(gomock.Any(), repoOwner, repo, 14).Return(
+					tt.pullRequest14, nil,
+				).AnyTimes()
+
+				gh.EXPECT().GetPullRequestCommits(gomock.Any(), repoOwner, repo, 14).Return(
+					tt.pullRequest14Commits, nil,
 				).AnyTimes()
 			}
 
@@ -684,7 +613,8 @@ func Test_bumpVersion(t *testing.T) {
 	}
 }
 
-func firstNotNilPtr[T any](pointers ...*T) *T {
+// like cmp.Or but for nilable pointers
+func ptrOr[T any](pointers ...*T) *T {
 	for _, p := range pointers {
 		if p != nil {
 			return p
