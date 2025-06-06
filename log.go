@@ -3,8 +3,7 @@ package main
 import (
 	"context"
 	"io"
-
-	"golang.org/x/exp/slog"
+	"log/slog"
 )
 
 type contextKey string

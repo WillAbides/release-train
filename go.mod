@@ -1,6 +1,6 @@
 module github.com/willabides/release-train/v3
 
-go 1.20
+go 1.24.4
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
