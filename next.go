@@ -35,7 +35,7 @@ func getCommitPRs(
 		if !checkAncestor(r.MergeCommitSha) {
 			continue
 		}
-		p, e := newPullWithOptions(r.Number, opts.LabelAliases, opts.ForcePrerelease, r.Labels...)
+		p, e := newPull(r.Number, opts.LabelAliases, opts.ForcePrerelease, r.Labels...)
 		if e != nil {
 			return nil, e
 		}
@@ -186,7 +186,7 @@ func includePullInResults(ctx context.Context, opts *getNextOptions, commits []g
 	if err != nil {
 		return nil, err
 	}
-	pull, err := newPullWithOptions(opts.CheckPR, opts.LabelAliases, opts.ForcePrerelease, base.Labels...)
+	pull, err := newPull(opts.CheckPR, opts.LabelAliases, opts.ForcePrerelease, base.Labels...)
 	if err != nil {
 		return nil, err
 	}

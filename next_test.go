@@ -381,6 +381,82 @@ func TestGetNext(t *testing.T) {
 			},
 			wantErr: "minBump must be less than or equal to maxBump",
 		},
+		{
+			name: "force prerelease with semver labels",
+			sha1MergedPulls: []github.BasePull{
+				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{labelMinor, miscLabel}},
+				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
+				{Number: 3, MergeCommitSha: mergeSha, Labels: []string{miscLabel}}, // no semver label
+			},
+			options: &getNextOptions{
+				Repo:            "willabides/semver-next",
+				Base:            baseTag,
+				PrevVersion:     "0.15.0",
+				Head:            sha1,
+				ForcePrerelease: true,
+			},
+			want: &getNextResult{
+				NextVersion:     *semver.MustParse("0.16.0-0"),
+				PreviousVersion: *semver.MustParse("0.15.0"),
+				ChangeLevel:     changeLevelMinor,
+			},
+		},
+		{
+			name: "force prerelease with existing prerelease label",
+			sha1MergedPulls: []github.BasePull{
+				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{labelMinor, labelPrerelease}},
+			},
+			options: &getNextOptions{
+				Repo:            "willabides/semver-next",
+				Base:            baseTag,
+				PrevVersion:     "0.15.0",
+				Head:            sha1,
+				ForcePrerelease: true,
+			},
+			want: &getNextResult{
+				NextVersion:     *semver.MustParse("0.16.0-0"),
+				PreviousVersion: *semver.MustParse("0.15.0"),
+				ChangeLevel:     changeLevelMinor,
+			},
+		},
+		{
+			name: "force prerelease without semver labels",
+			sha1MergedPulls: []github.BasePull{
+				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{labelNone, miscLabel}},
+				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelNone, "documentation"}},
+			},
+			options: &getNextOptions{
+				Repo:            "willabides/semver-next",
+				Base:            baseTag,
+				PrevVersion:     "0.15.0",
+				Head:            sha1,
+				ForcePrerelease: true,
+			},
+			want: &getNextResult{
+				NextVersion:     *semver.MustParse("0.15.0"),
+				PreviousVersion: *semver.MustParse("0.15.0"),
+				ChangeLevel:     changeLevelNone,
+			},
+		},
+		{
+			name: "force prerelease disabled with semver labels",
+			sha1MergedPulls: []github.BasePull{
+				{Number: 1, MergeCommitSha: mergeSha, Labels: []string{labelMinor}},
+				{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelPatch}},
+			},
+			options: &getNextOptions{
+				Repo:            "willabides/semver-next",
+				Base:            baseTag,
+				PrevVersion:     "0.15.0",
+				Head:            sha1,
+				ForcePrerelease: false,
+			},
+			want: &getNextResult{
+				NextVersion:     *semver.MustParse("0.16.0"),
+				PreviousVersion: *semver.MustParse("0.15.0"),
+				ChangeLevel:     changeLevelMinor,
+			},
+		},
 	}
 
 	for _, tt := range tests {

@@ -14,17 +14,14 @@ type ghPull struct {
 	HasStableLabel   bool        `json:"has_stable_label,omitempty"`
 }
 
-func newPull(number int, aliases map[string]string, labels ...string) (*ghPull, error) {
-	return newPullWithOptions(number, aliases, false, labels...)
-}
-
-func newPullWithOptions(number int, aliases map[string]string, forcePrerelease bool, labels ...string) (*ghPull, error) {
+func newPull(number int, aliases map[string]string, forcePrerelease bool, labels ...string) (*ghPull, error) {
 	p := ghPull{
 		Number:      number,
 		ChangeLevel: changeLevelNone,
 	}
 	sort.Strings(labels)
 	hasSemverLabel := false
+	hasNoneLabel := false
 	for _, label := range labels {
 		resolvedLabel := ResolveLabel(label, aliases)
 		level, ok := labelLevels[resolvedLabel]
@@ -34,6 +31,9 @@ func newPullWithOptions(number int, aliases map[string]string, forcePrerelease b
 				p.ChangeLevel = level
 			}
 			hasSemverLabel = true
+			if level == changeLevelNone {
+				hasNoneLabel = true
+			}
 		}
 		pre, prefix := checkPrereleaseLabel(label, nil)
 		if pre {
@@ -51,8 +51,8 @@ func newPullWithOptions(number int, aliases map[string]string, forcePrerelease b
 	}
 
 	// Apply force prerelease logic: if forcePrerelease is true and the PR has at least one semver label
-	// but no prerelease label, add the prerelease label
-	if forcePrerelease && hasSemverLabel && !p.HasPreLabel {
+	// but no prerelease label and no explicit semver:none label, add the prerelease label
+	if forcePrerelease && hasSemverLabel && !p.HasPreLabel && !hasNoneLabel && p.ChangeLevel > changeLevelNone {
 		p.HasPreLabel = true
 	}
 

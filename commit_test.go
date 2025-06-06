@@ -11,7 +11,7 @@ func testCommit(t *testing.T, pulls ...github.BasePull) gitCommit {
 	t.Helper()
 	c := gitCommit{Sha: "deadbeef"}
 	for i := range pulls {
-		p, err := newPull(pulls[i].Number, nil, pulls[i].Labels...)
+		p, err := newPull(pulls[i].Number, nil, false, pulls[i].Labels...)
 		require.NoError(t, err)
 		c.Pulls = append(c.Pulls, *p)
 	}
