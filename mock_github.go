@@ -8,6 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	github "github.com/willabides/release-train/v3/internal/github"
 )
 
 // MockGithubClient is a mock of GithubClient interface.
@@ -34,10 +35,10 @@ func (m *MockGithubClient) EXPECT() *MockGithubClientMockRecorder {
 }
 
 // CompareCommits mocks base method.
-func (m *MockGithubClient) CompareCommits(ctx context.Context, owner, repo, base, head string, count int) (*CommitComparison, error) {
+func (m *MockGithubClient) CompareCommits(ctx context.Context, owner, repo, base, head string, count int) (*github.CommitComparison, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CompareCommits", ctx, owner, repo, base, head, count)
-	ret0, _ := ret[0].(*CommitComparison)
+	ret0, _ := ret[0].(*github.CommitComparison)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -49,10 +50,10 @@ func (mr *MockGithubClientMockRecorder) CompareCommits(ctx, owner, repo, base, h
 }
 
 // CreateRelease mocks base method.
-func (m *MockGithubClient) CreateRelease(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*RepoRelease, error) {
+func (m *MockGithubClient) CreateRelease(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*github.RepoRelease, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateRelease", ctx, owner, repo, tag, body, prerelease)
-	ret0, _ := ret[0].(*RepoRelease)
+	ret0, _ := ret[0].(*github.RepoRelease)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -93,10 +94,10 @@ func (mr *MockGithubClientMockRecorder) GenerateReleaseNotes(ctx, owner, repo, t
 }
 
 // GetPullRequest mocks base method.
-func (m *MockGithubClient) GetPullRequest(ctx context.Context, owner, repo string, number int) (*BasePull, error) {
+func (m *MockGithubClient) GetPullRequest(ctx context.Context, owner, repo string, number int) (*github.BasePull, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPullRequest", ctx, owner, repo, number)
-	ret0, _ := ret[0].(*BasePull)
+	ret0, _ := ret[0].(*github.BasePull)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -123,10 +124,10 @@ func (mr *MockGithubClientMockRecorder) GetPullRequestCommits(ctx, owner, repo, 
 }
 
 // ListMergedPullsForCommit mocks base method.
-func (m *MockGithubClient) ListMergedPullsForCommit(ctx context.Context, owner, repo, sha string) ([]BasePull, error) {
+func (m *MockGithubClient) ListMergedPullsForCommit(ctx context.Context, owner, repo, sha string) ([]github.BasePull, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListMergedPullsForCommit", ctx, owner, repo, sha)
-	ret0, _ := ret[0].([]BasePull)
+	ret0, _ := ret[0].([]github.BasePull)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

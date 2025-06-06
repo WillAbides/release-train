@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/willabides/release-train/v3/internal/github"
 )
 
 type getNextResult struct {
@@ -68,7 +69,7 @@ func compareCommits(ctx context.Context, opts *getNextOptions) ([]gitCommit, err
 		if ok {
 			return b
 		}
-		var ancestorComp *CommitComparison
+		var ancestorComp *github.CommitComparison
 		ancestorComp, ancestorErr = opts.GithubClient.CompareCommits(ctx, opts.owner(), opts.repo(), sha, opts.Head, 0)
 		if ancestorErr != nil {
 			return false
