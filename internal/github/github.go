@@ -10,7 +10,7 @@ import (
 	"strconv"
 
 	"github.com/gofri/go-github-ratelimit/github_ratelimit"
-	"github.com/google/go-github/v53/github"
+	"github.com/google/go-github/v72/github"
 	"golang.org/x/oauth2"
 )
 
@@ -99,9 +99,7 @@ func (g *Client) UploadAsset(ctx context.Context, uploadURL, filename string) er
 
 func (g *Client) ListMergedPullsForCommit(ctx context.Context, owner, repo, sha string) ([]BasePull, error) {
 	var result []BasePull
-	opts := &github.PullRequestListOptions{
-		ListOptions: github.ListOptions{PerPage: 100},
-	}
+	opts := &github.ListOptions{PerPage: 100}
 	for {
 		apiPulls, resp, err := g.client.PullRequests.ListPullRequestsWithCommit(ctx, owner, repo, sha, opts)
 		if err != nil {
