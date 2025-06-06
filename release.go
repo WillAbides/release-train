@@ -6,12 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
-	"golang.org/x/exp/slog"
 )
 
 type Runner struct {
@@ -229,7 +229,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	if !result.FirstRelease &&
 		result.ReleaseVersion != nil &&
 		result.PreviousVersion == result.ReleaseVersion.String() {
-		logger.Debug("no changes detected since previous release %s, skipping tag", result.PreviousVersion)
+		logger.Debug("no changes detected since previous release, skipping tag", slog.String("previous-version", result.PreviousVersion))
 		return result, nil
 	}
 

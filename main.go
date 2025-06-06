@@ -6,13 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 
 	"github.com/alecthomas/kong"
 	"github.com/sethvargo/go-githubactions"
 	"github.com/willabides/actionslog"
 	"github.com/willabides/actionslog/human"
-	"golang.org/x/exp/slog"
 	"gopkg.in/yaml.v3"
 )
 

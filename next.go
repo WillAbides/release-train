@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/Masterminds/semver/v3"
-	"golang.org/x/exp/slog"
 )
 
 type getNextResult struct {
@@ -19,7 +19,12 @@ type getNextResult struct {
 	ChangeLevel     changeLevel    `json:"change_level"`
 }
 
-func getCommitPRs(ctx context.Context, opts *getNextOptions, commitSha string, checkAncestor func(string) bool) ([]ghPull, error) {
+func getCommitPRs(
+	ctx context.Context,
+	opts *getNextOptions,
+	commitSha string,
+	checkAncestor func(string) bool,
+) ([]ghPull, error) {
 	ghResult, err := opts.GithubClient.ListMergedPullsForCommit(ctx, opts.owner(), opts.repo(), commitSha)
 	if err != nil {
 		return nil, err
@@ -201,7 +206,12 @@ func includePullInResults(ctx context.Context, opts *getNextOptions, commits []g
 	return result, nil
 }
 
-func bumpVersion(ctx context.Context, prev semver.Version, minBump, maxBump changeLevel, commits []gitCommit) (*getNextResult, error) {
+func bumpVersion(
+	ctx context.Context,
+	prev semver.Version,
+	minBump, maxBump changeLevel,
+	commits []gitCommit,
+) (*getNextResult, error) {
 	logger := getLogger(ctx)
 	logger.Debug("starting bumpVersion", slog.String("prev", prev.String()))
 	if maxBump == 0 {
