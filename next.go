@@ -175,7 +175,7 @@ func getNext(ctx context.Context, opts *getNextOptions) (*getNextResult, error) 
 		}
 		logger.Debug("found commits after including PR", slog.Any("commits", commits))
 	}
-	return bumpVersion(ctx, *prev, minBump, maxBump, commits)
+	return bumpVersion(ctx, *prev, minBump, maxBump, commits, false)
 }
 
 func includePullInResults(ctx context.Context, opts *getNextOptions, commits []gitCommit) ([]gitCommit, error) {
