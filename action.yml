@@ -36,6 +36,11 @@ inputs:
       Whether to create a release. Implies create-tag.
 
       Only literal 'true' will be treated as true.
+  force-prerelease:
+    description: |-
+      Force prerelease even if no prerelease PRs are present.
+
+      Only literal 'true' will be treated as true.
   draft:
     description: |-
       Leave the release as a draft.
@@ -176,6 +181,18 @@ runs:
           "") ;;
           *)
             echo "Input create-release must be 'true' or 'false'. Got '${{ inputs.create-release }}'." >&2
+            exit 1
+        	;;
+        esac
+
+        case "${{ inputs.force-prerelease }}" in
+          true)
+            set -- "$@" --force-prerelease
+            ;;
+          false) ;;
+          "") ;;
+          *)
+            echo "Input force-prerelease must be 'true' or 'false'. Got '${{ inputs.force-prerelease }}'." >&2
             exit 1
         	;;
         esac

@@ -108,15 +108,16 @@ func compareCommits(ctx context.Context, opts *getNextOptions) ([]gitCommit, err
 }
 
 type getNextOptions struct {
-	GithubClient GithubClient
-	Repo         string
-	PrevVersion  string
-	Base         string
-	Head         string
-	MinBump      *changeLevel
-	MaxBump      *changeLevel
-	CheckPR      int
-	LabelAliases map[string]string
+	GithubClient    GithubClient
+	Repo            string
+	PrevVersion     string
+	Base            string
+	Head            string
+	MinBump         *changeLevel
+	MaxBump         *changeLevel
+	CheckPR         int
+	LabelAliases    map[string]string
+	ForcePrerelease bool
 }
 
 func (o *getNextOptions) repo() string {
@@ -175,7 +176,7 @@ func getNext(ctx context.Context, opts *getNextOptions) (*getNextResult, error) 
 		}
 		logger.Debug("found commits after including PR", slog.Any("commits", commits))
 	}
-	return bumpVersion(ctx, *prev, minBump, maxBump, commits, false)
+	return bumpVersion(ctx, *prev, minBump, maxBump, commits, opts.ForcePrerelease)
 }
 
 func includePullInResults(ctx context.Context, opts *getNextOptions, commits []gitCommit) ([]gitCommit, error) {

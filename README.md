@@ -435,6 +435,7 @@ Flags:
       --ref="HEAD"                    git ref.
       --create-tag                    Whether to create a tag for the release.
       --create-release                Whether to create a release. Implies create-tag.
+      --force-prerelease              Force prerelease even if no prerelease PRs are present.
       --draft                         Leave the release as a draft.
       --tag-prefix="v"                The prefix to use for the tag.
       --v0                            Assert that current major version is 0 and treat breaking

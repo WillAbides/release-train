@@ -53,6 +53,12 @@ Whether to create a release. Implies create-tag.
 
 Only literal 'true' will be treated as true.
 
+### force-prerelease
+
+Force prerelease even if no prerelease PRs are present.
+
+Only literal 'true' will be treated as true.
+
 ### draft
 
 Leave the release as a draft.

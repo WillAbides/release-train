@@ -20,22 +20,23 @@ import (
 var version = "dev"
 
 var flagHelp = kong.Vars{
-	"generate_action_help": `Ignore all other flags and generate a GitHub action.`,
-	"ref_help":             `git ref.`,
-	"checkout_dir_help":    `The directory where the repository is checked out.`,
-	"create_tag_help":      `Whether to create a tag for the release.`,
-	"create_release_help":  `Whether to create a release. Implies create-tag.`,
-	"initial_tag_help":     `The tag to use if no previous version can be found. Set to "" to cause an error instead.`,
-	"tag_prefix_help":      `The prefix to use for the tag.`,
-	"label_help":           `PR label alias in the form of "<alias>=<label>" where <label> is a canonical label.`,
-	"output_format_help":   `Output either json our GitHub action output.`,
-	"debug_help":           `Enable debug logging.`,
-	"draft_help":           `Leave the release as a draft.`,
-	"tempdir_help":         `The prefix to use with mktemp to create a temporary directory.`,
-	"pushremote_help":      `The remote to push tags to.`,
-	"repo_help":            `GitHub repository in the form of owner/repo.`,
-	"github_token_help":    "The GitHub token to use for authentication. Must have `contents: write` permission if creating a release or tag.",
-	"github_api_url_help":  `GitHub API URL.`,
+	"generate_action_help":  `Ignore all other flags and generate a GitHub action.`,
+	"ref_help":              `git ref.`,
+	"checkout_dir_help":     `The directory where the repository is checked out.`,
+	"create_tag_help":       `Whether to create a tag for the release.`,
+	"create_release_help":   `Whether to create a release. Implies create-tag.`,
+	"force_prerelease_help": `Force prerelease even if no prerelease PRs are present.`,
+	"initial_tag_help":      `The tag to use if no previous version can be found. Set to "" to cause an error instead.`,
+	"tag_prefix_help":       `The prefix to use for the tag.`,
+	"label_help":            `PR label alias in the form of "<alias>=<label>" where <label> is a canonical label.`,
+	"output_format_help":    `Output either json our GitHub action output.`,
+	"debug_help":            `Enable debug logging.`,
+	"draft_help":            `Leave the release as a draft.`,
+	"tempdir_help":          `The prefix to use with mktemp to create a temporary directory.`,
+	"pushremote_help":       `The remote to push tags to.`,
+	"repo_help":             `GitHub repository in the form of owner/repo.`,
+	"github_token_help":     "The GitHub token to use for authentication. Must have `contents: write` permission if creating a release or tag.",
+	"github_api_url_help":   `GitHub API URL.`,
 
 	"check_pr_help": `
 Operates as if the given PR has already been merged. Useful for making sure the PR is properly labeled.
@@ -118,28 +119,29 @@ func main() {
 }
 
 type rootCmd struct {
-	Version        kong.VersionFlag  `action:"-"`
-	GenerateAction bool              `hidden:"true" help:"${generate_action_help}"`
-	Repo           string            `action:",${{ github.repository }}" help:"${repo_help}"`
-	CheckPR        int               `action:"check-pr,${{ github.event.number }}" help:"${check_pr_help}"`
-	Label          map[string]string `action:"labels" help:"${label_help}" placeholder:"<alias>=<label>;..."`
-	CheckoutDir    string            `action:",${{ github.workspace }}" short:"C" default:"." help:"${checkout_dir_help}"`
-	Ref            string            `default:"HEAD" help:"${ref_help}"`
-	GithubToken    string            `action:"github-token,${{ github.token }}" hidden:"true" env:"GITHUB_TOKEN" help:"${github_token_help}"`
-	CreateTag      bool              `help:"${create_tag_help}"`
-	CreateRelease  bool              `help:"${create_release_help}"`
-	Draft          bool              `help:"${draft_help}"`
-	TagPrefix      string            `default:"v" help:"${tag_prefix_help}"`
-	V0             bool              `name:"v0" help:"${v0_help}"`
-	InitialTag     string            `action:"initial-release-tag" help:"${initial_tag_help}" default:"v0.0.0"`
-	PreTagHook     string            `placeholder:"<command>" help:"${pre_tag_hook_help}"`
-	PreReleaseHook string            `placeholder:"<command>" help:"${pre_release_hook_help}"`
-	ReleaseRef     []string          `action:"release-refs" placeholder:"<branch>" help:"${release_ref_help}"`
-	PushRemote     string            `action:"-" default:"origin" help:"${pushremote_help}"`
-	Tempdir        string            `help:"${tempdir_help}"`
-	GithubApiUrl   string            `action:"-" help:"${github_api_url_help}" default:"https://api.github.com"`
-	OutputFormat   string            `action:"-" default:"json" help:"${output_format_help}" enum:"json,action"`
-	Debug          bool              `help:"${debug_help}"`
+	Version         kong.VersionFlag  `action:"-"`
+	GenerateAction  bool              `hidden:"true" help:"${generate_action_help}"`
+	Repo            string            `action:",${{ github.repository }}" help:"${repo_help}"`
+	CheckPR         int               `action:"check-pr,${{ github.event.number }}" help:"${check_pr_help}"`
+	Label           map[string]string `action:"labels" help:"${label_help}" placeholder:"<alias>=<label>;..."`
+	CheckoutDir     string            `action:",${{ github.workspace }}" short:"C" default:"." help:"${checkout_dir_help}"`
+	Ref             string            `default:"HEAD" help:"${ref_help}"`
+	GithubToken     string            `action:"github-token,${{ github.token }}" hidden:"true" env:"GITHUB_TOKEN" help:"${github_token_help}"`
+	CreateTag       bool              `help:"${create_tag_help}"`
+	CreateRelease   bool              `help:"${create_release_help}"`
+	ForcePrerelease bool              `help:"${force_prerelease_help}"`
+	Draft           bool              `help:"${draft_help}"`
+	TagPrefix       string            `default:"v" help:"${tag_prefix_help}"`
+	V0              bool              `name:"v0" help:"${v0_help}"`
+	InitialTag      string            `action:"initial-release-tag" help:"${initial_tag_help}" default:"v0.0.0"`
+	PreTagHook      string            `placeholder:"<command>" help:"${pre_tag_hook_help}"`
+	PreReleaseHook  string            `placeholder:"<command>" help:"${pre_release_hook_help}"`
+	ReleaseRef      []string          `action:"release-refs" placeholder:"<branch>" help:"${release_ref_help}"`
+	PushRemote      string            `action:"-" default:"origin" help:"${pushremote_help}"`
+	Tempdir         string            `help:"${tempdir_help}"`
+	GithubApiUrl    string            `action:"-" help:"${github_api_url_help}" default:"https://api.github.com"`
+	OutputFormat    string            `action:"-" default:"json" help:"${output_format_help}" enum:"json,action"`
+	Debug           bool              `help:"${debug_help}"`
 }
 
 func (c *rootCmd) GithubClient() (GithubClient, error) {
