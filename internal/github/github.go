@@ -3,15 +3,15 @@ package github
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 
-	"github.com/gofri/go-github-ratelimit/github_ratelimit"
+	ratelimit "github.com/gofri/go-github-ratelimit/v2/github_ratelimit"
 	"github.com/google/go-github/v72/github"
-	"golang.org/x/oauth2"
 )
 
 type BasePull struct {
@@ -31,23 +31,18 @@ type CommitComparison struct {
 	Commits  []string
 }
 
-func NewClient(ctx context.Context, baseUrl, token, userAgent string) (*Client, error) {
-	oauthClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
-	))
-	rateLimitClient, err := github_ratelimit.NewRateLimitWaiterClient(oauthClient.Transport)
-	if err != nil {
-		return nil, err
-	}
+func NewClient(baseUrl, token, userAgent string) (*Client, error) {
+	transport := ratelimit.NewSecondaryLimiter(http.DefaultTransport)
+	httpClient := &http.Client{Transport: transport}
+	githubClient := github.NewClient(httpClient).WithAuthToken(token)
+
 	// no need for uploadURL because if we upload release artifacts we will use release.UploadURL
-	client, err := github.NewClient(rateLimitClient).WithEnterpriseURLs(baseUrl, "")
+	githubClient, err := githubClient.WithEnterpriseURLs(baseUrl, "")
 	if err != nil {
 		return nil, err
 	}
-	if userAgent != "" {
-		client.UserAgent = userAgent
-	}
-	return &Client{client: client}, nil
+	githubClient.UserAgent = userAgent
+	return &Client{client: githubClient}, nil
 }
 
 type Client struct {
@@ -189,9 +184,9 @@ func (g *Client) CreateRelease(
 		TagName:    &tag,
 		Name:       &tag,
 		Body:       &body,
-		MakeLatest: ptr("legacy"),
+		MakeLatest: github.Ptr("legacy"),
 		Prerelease: &prerelease,
-		Draft:      ptr(true),
+		Draft:      github.Ptr(true),
 	})
 	if err != nil {
 		return nil, err
@@ -209,7 +204,7 @@ func (g *Client) DeleteRelease(ctx context.Context, owner, repo string, id int64
 
 func (g *Client) PublishRelease(ctx context.Context, owner, repo string, id int64) error {
 	_, _, err := g.client.Repositories.EditRelease(ctx, owner, repo, id, &github.RepositoryRelease{
-		Draft: ptr(false),
+		Draft: github.Ptr(false),
 	})
 	return err
 }
@@ -246,8 +241,4 @@ func (g *Client) GetPullRequestCommits(ctx context.Context, owner, repo string, 
 		opts.Page = resp.NextPage
 	}
 	return commitShas, nil
-}
-
-func ptr[T any](v T) *T {
-	return &v
 }
