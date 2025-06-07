@@ -5,7 +5,7 @@ go 1.24.4
 require (
 	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/alecthomas/kong v1.11.0
-	github.com/gofri/go-github-ratelimit v1.1.1
+	github.com/gofri/go-github-ratelimit/v2 v2.0.2
 	github.com/google/go-github/v72 v72.0.0
 	github.com/sethvargo/go-githubactions v1.3.1
 	github.com/stretchr/testify v1.10.0
