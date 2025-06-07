@@ -36,6 +36,10 @@ Usage: script/check-module-version <module name> <tag>
 
 script/cibuild is run by CI to test this project. It can also be run locally.
 
+### deadcode
+
+script/deadcode - checks for unused code
+
 ### fmt
 
 script/fmt formats go code and shell scripts.
