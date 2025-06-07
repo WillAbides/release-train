@@ -11,7 +11,6 @@ import (
 
 	"github.com/gofri/go-github-ratelimit/github_ratelimit"
 	"github.com/google/go-github/v72/github"
-	"golang.org/x/oauth2"
 )
 
 type BasePull struct {
@@ -31,16 +30,15 @@ type CommitComparison struct {
 	Commits  []string
 }
 
-func NewClient(ctx context.Context, baseUrl, token, userAgent string) (*Client, error) {
-	oauthClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
-	))
-	rateLimitClient, err := github_ratelimit.NewRateLimitWaiterClient(oauthClient.Transport)
+func NewClient(baseUrl, token, userAgent string) (*Client, error) {
+	rateLimitClient, err := github_ratelimit.NewRateLimitWaiterClient(nil)
 	if err != nil {
 		return nil, err
 	}
+	client := github.NewClient(rateLimitClient).WithAuthToken(token)
+
 	// no need for uploadURL because if we upload release artifacts we will use release.UploadURL
-	client, err := github.NewClient(rateLimitClient).WithEnterpriseURLs(baseUrl, "")
+	client, err = client.WithEnterpriseURLs(baseUrl, "")
 	if err != nil {
 		return nil, err
 	}

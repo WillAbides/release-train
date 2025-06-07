@@ -142,8 +142,8 @@ type rootCmd struct {
 	Debug          bool              `help:"${debug_help}"`
 }
 
-func (c *rootCmd) GithubClient(ctx context.Context) (GithubClient, error) {
-	return github.NewClient(ctx, c.GithubApiUrl, c.GithubToken, fmt.Sprintf("release-train/%s", version))
+func (c *rootCmd) GithubClient() (GithubClient, error) {
+	return github.NewClient(c.GithubApiUrl, c.GithubToken, fmt.Sprintf("release-train/%s", version))
 }
 
 func (c *rootCmd) Run(ctx context.Context, kongCtx *kong.Context) error {
@@ -193,7 +193,7 @@ func (c *rootCmd) runRelease(ctx context.Context, stdout, stderr io.Writer) (err
 		}
 	}()
 	logger.Debug("starting runRelease")
-	client, err := c.GithubClient(ctx)
+	client, err := c.GithubClient()
 	if err != nil {
 		return err
 	}

@@ -12,7 +12,6 @@ require (
 	github.com/willabides/actionslog v0.5.1
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 	go.uber.org/mock v0.5.2
-	golang.org/x/oauth2 v0.30.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
