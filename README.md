@@ -418,7 +418,7 @@ download the appropriate binary for your platform.
 <!--- start usage output --->
 
 ```
-Usage: release-train
+Usage: release-train [flags]
 
 Release every PR merge. No magic commit message required.
 
