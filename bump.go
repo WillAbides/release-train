@@ -69,6 +69,7 @@ func bumpVersion(
 	prev semver.Version,
 	minBump, maxBump changeLevel,
 	commits []gitCommit,
+	forcePrerelease bool,
 ) (*getNextResult, error) {
 	logger := getLogger(ctx)
 	logger.Debug("starting bumpVersion", slog.String("prev", prev.String()))
@@ -110,6 +111,9 @@ func bumpVersion(
 	if bumpCtx.isPre && len(bumpCtx.nonPrePulls) > 0 {
 		return nil, fmt.Errorf("cannot have pre-release and non-pre-release PRs in the same release. pre-release PRs: %v, non-pre-release PRs: %v", bumpCtx.prePulls, bumpCtx.nonPrePulls)
 	}
+	if forcePrerelease && len(bumpCtx.stablePulls) > 0 {
+		return nil, fmt.Errorf("cannot force pre-release with stable PRs. stable PRs: %v", bumpCtx.stablePulls)
+	}
 	if prev.Prerelease() != "" && bumpCtx.isStable && len(bumpCtx.unstablePulls) > 0 {
 		return nil, fmt.Errorf("in order to release a stable version, all PRs must be labeled as stable. stable PRs: %v, unstable PRs: %v", bumpCtx.stablePulls, bumpCtx.unstablePulls)
 	}
@@ -119,7 +123,7 @@ func bumpVersion(
 	if result.ChangeLevel > maxBump {
 		result.ChangeLevel = maxBump
 	}
-	if bumpCtx.isPre {
+	if bumpCtx.isPre || forcePrerelease {
 		next, err := incrPre(prev, result.ChangeLevel, bumpCtx.prePrefix)
 		if err != nil {
 			return nil, err

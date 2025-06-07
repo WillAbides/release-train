@@ -15,25 +15,26 @@ import (
 )
 
 type Runner struct {
-	CheckoutDir   string
-	Ref           string
-	GithubToken   string
-	CreateTag     bool
-	CreateRelease bool
-	Draft         bool
-	V0            bool
-	TagPrefix     string
-	InitialTag    string
-	PreTagHook    string
-	Repo          string
-	PushRemote    string
-	TempDir       string
-	ReleaseRefs   []string
-	LabelAliases  map[string]string
-	CheckPR       int
-	GithubClient  GithubClient
-	Stdout        io.Writer
-	Stderr        io.Writer
+	CheckoutDir     string
+	Ref             string
+	GithubToken     string
+	CreateTag       bool
+	CreateRelease   bool
+	Draft           bool
+	V0              bool
+	ForcePrerelease bool
+	TagPrefix       string
+	InitialTag      string
+	PreTagHook      string
+	Repo            string
+	PushRemote      string
+	TempDir         string
+	ReleaseRefs     []string
+	LabelAliases    map[string]string
+	CheckPR         int
+	GithubClient    GithubClient
+	Stdout          io.Writer
+	Stderr          io.Writer
 }
 
 func (o *Runner) releaseNotesFile() string {
@@ -119,14 +120,15 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 	}
 	var nextRes *getNextResult
 	nextRes, err = getNext(ctx, &getNextOptions{
-		Repo:         o.Repo,
-		GithubClient: o.GithubClient,
-		PrevVersion:  prevVersion.String(),
-		Base:         prevRef,
-		Head:         head,
-		MaxBump:      &maxBump,
-		LabelAliases: o.LabelAliases,
-		CheckPR:      o.CheckPR,
+		Repo:            o.Repo,
+		GithubClient:    o.GithubClient,
+		PrevVersion:     prevVersion.String(),
+		Base:            prevRef,
+		Head:            head,
+		MaxBump:         &maxBump,
+		LabelAliases:    o.LabelAliases,
+		CheckPR:         o.CheckPR,
+		ForcePrerelease: o.ForcePrerelease,
 	})
 	if err != nil {
 		return nil, err
