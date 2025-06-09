@@ -64,6 +64,7 @@ func (c *bumpContext) addStableCheck(pull ghPull) {
 	c.unstablePulls = append(c.unstablePulls, fmt.Sprintf("#%d", pull.Number))
 }
 
+//nolint:gocyclo // TODO: refactor this
 func bumpVersion(
 	ctx context.Context,
 	prev semver.Version,
@@ -90,10 +91,20 @@ func bumpVersion(
 		}
 	}
 	logger.Debug("mapped pulls", slog.Any("result", result))
+
 	if len(pullsMap) == 0 {
 		result.NextVersion = result.PreviousVersion
+		if forceStable && result.PreviousVersion.Prerelease() != "" {
+			var err error
+			result.NextVersion, err = result.PreviousVersion.SetPrerelease("")
+			if err != nil {
+				return nil, fmt.Errorf("failed to strip prerelease from version %s: %w", result.PreviousVersion.String(), err)
+			}
+		}
+		// ChangeLevel is already changeLevelNone by default if no commits
 		return &result, nil
 	}
+
 	pulls := make([]ghPull, 0, len(pullsMap))
 	for _, p := range pullsMap {
 		pulls = append(pulls, p)
@@ -108,22 +119,25 @@ func bumpVersion(
 			return nil, err
 		}
 	}
+
 	if bumpCtx.isPre && len(bumpCtx.nonPrePulls) > 0 {
 		return nil, fmt.Errorf("cannot have pre-release and non-pre-release PRs in the same release. pre-release PRs: %v, non-pre-release PRs: %v", bumpCtx.prePulls, bumpCtx.nonPrePulls)
 	}
 	if forcePrerelease && len(bumpCtx.stablePulls) > 0 {
 		return nil, fmt.Errorf("cannot force pre-release with stable PRs. stable PRs: %v", bumpCtx.stablePulls)
 	}
-	if prev.Prerelease() != "" && bumpCtx.isStable && len(bumpCtx.unstablePulls) > 0 {
-		return nil, fmt.Errorf("in order to release a stable version, all PRs must be labeled as stable. stable PRs: %v, unstable PRs: %v", bumpCtx.stablePulls, bumpCtx.unstablePulls)
-	}
+
+	// Adjust changeLevel by min/maxBump before pre-release checks
 	if result.ChangeLevel < minBump && len(commits) > 0 {
 		result.ChangeLevel = minBump
 	}
 	if result.ChangeLevel > maxBump {
 		result.ChangeLevel = maxBump
 	}
-	if bumpCtx.isPre || forcePrerelease {
+
+	// Determine if making a pre-release
+	makingPrerelease := !forceStable && (bumpCtx.isPre || forcePrerelease)
+	if makingPrerelease {
 		next, err := incrPre(prev, result.ChangeLevel, bumpCtx.prePrefix)
 		if err != nil {
 			return nil, err
@@ -131,19 +145,63 @@ func bumpVersion(
 		result.NextVersion = next
 		return &result, nil
 	}
-	if prev.Prerelease() != "" && !bumpCtx.isStable {
-		return nil, fmt.Errorf("cannot create a stable release from a pre-release unless all PRs are labeled semver:stable. unlabeled PRs: %v", bumpCtx.unstablePulls)
+
+	// At this point, we are NOT making a pre-release.
+	// Either forceStable is true, or PRs do not indicate pre-release.
+	// This means we are aiming for a stable version.
+
+	// Error if transitioning from pre-release to stable with unstable PRs, ONLY IF NOT forceStable.
+	if prev.Prerelease() != "" && !forceStable {
+		if len(bumpCtx.unstablePulls) > 0 {
+			if bumpCtx.isStable {
+				// Some PRs are stable-labeled, but not all.
+				return nil, fmt.Errorf("in order to release a stable version, all PRs must be labeled as stable. stable PRs: %v, unstable PRs: %v", bumpCtx.stablePulls, bumpCtx.unstablePulls)
+			}
+			// else: !bumpCtx.isStable. This means no PRs are stable-labeled.
+			return nil, fmt.Errorf("cannot create a stable release from a pre-release unless all PRs are labeled semver:stable. unlabeled PRs: %v", bumpCtx.unstablePulls)
+		}
 	}
+
 	result.NextVersion = prev
-	if bumpCtx.isStable {
+	shouldIncrementVersionNumber := true // Default to incrementing the version number part
+
+	if prev.Prerelease() != "" { // If previous was a pre-release
+		var err error
+		result.NextVersion, err = result.NextVersion.SetPrerelease("") // Make base stable
+		if err != nil {
+			return nil, fmt.Errorf("failed to strip prerelease for stable version from %s: %w", prev.String(), err)
+		}
+		logger.Debug("made stable from pre-release", slog.String("baseVersion", result.NextVersion.String()))
+
+		if forceStable {
+			// If forcing stable from a pre-release:
+			// - If there are unstable PRs, the version number itself does not increment, only becomes stable.
+			// - ChangeLevel still reflects the PRs' impact.
+			// - If all PRs are stable (or no relevant PRs), then increment.
+			if len(bumpCtx.unstablePulls) > 0 {
+				shouldIncrementVersionNumber = false
+				logger.Debug("forceStable from pre-release with unstable PRs: version number will not be incremented",
+					slog.Any("unstablePulls", bumpCtx.unstablePulls),
+					slog.String("nextVersion", result.NextVersion.String()))
+			}
+		}
+		// If !forceStable and prev was pre-release, the error check above ensures all PRs are stable (or would have errored),
+		// so increment is appropriate in that path.
+	} else if forceStable { // If previous was stable, and forceStable is true
+		// Ensure it's stable (e.g. if PRs might have suggested pre-release but forceStable overrides)
+		// This might be redundant if prev was already stable and had no pre-release string, but SetPrerelease("") is idempotent.
 		var err error
 		result.NextVersion, err = result.NextVersion.SetPrerelease("")
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to ensure stable version for %s with forceStable: %w", prev.String(), err)
 		}
-		logger.Debug("isStable", slog.Any("result", result))
+		logger.Debug("ensured stable due to forceStable on a previously stable version", slog.String("baseVersion", result.NextVersion.String()))
 	}
-	result.NextVersion = incrLevel(result.NextVersion, result.ChangeLevel)
+
+	if shouldIncrementVersionNumber {
+		result.NextVersion = incrLevel(result.NextVersion, result.ChangeLevel)
+	}
+
 	return &result, nil
 }
 
