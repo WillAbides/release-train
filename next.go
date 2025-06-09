@@ -118,6 +118,7 @@ type getNextOptions struct {
 	CheckPR         int
 	LabelAliases    map[string]string
 	ForcePrerelease bool
+	ForceStable     bool
 }
 
 func (o *getNextOptions) repo() string {
@@ -134,6 +135,9 @@ func getNext(ctx context.Context, opts *getNextOptions) (*getNextResult, error) 
 	logger := getLogger(ctx)
 	if opts == nil {
 		opts = &getNextOptions{}
+	}
+	if opts.ForceStable && opts.ForcePrerelease {
+		return nil, fmt.Errorf("cannot specify both --force-stable and --force-prerelease")
 	}
 	logger.Debug(
 		"starting GetNext",
@@ -176,7 +180,7 @@ func getNext(ctx context.Context, opts *getNextOptions) (*getNextResult, error) 
 		}
 		logger.Debug("found commits after including PR", slog.Any("commits", commits))
 	}
-	return bumpVersion(ctx, *prev, minBump, maxBump, commits, opts.ForcePrerelease)
+	return bumpVersion(ctx, *prev, minBump, maxBump, commits, opts.ForcePrerelease, opts.ForceStable)
 }
 
 func includePullInResults(ctx context.Context, opts *getNextOptions, commits []gitCommit) ([]gitCommit, error) {

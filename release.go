@@ -23,6 +23,7 @@ type Runner struct {
 	Draft           bool
 	V0              bool
 	ForcePrerelease bool
+	ForceStable     bool
 	TagPrefix       string
 	InitialTag      string
 	PreTagHook      string
@@ -129,6 +130,7 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 		LabelAliases:    o.LabelAliases,
 		CheckPR:         o.CheckPR,
 		ForcePrerelease: o.ForcePrerelease,
+		ForceStable:     o.ForceStable,
 	})
 	if err != nil {
 		return nil, err

@@ -36,6 +36,7 @@ func Test_bumpVersion(t *testing.T) {
 		maxBump         changeLevel
 		commits         []gitCommit
 		forcePrerelease bool
+		forceStable     bool
 
 		want    *getNextResult
 		wantErr string
@@ -382,10 +383,87 @@ func Test_bumpVersion(t *testing.T) {
 				ChangeLevel:     changeLevelPatch,
 			},
 		},
+		{
+			name:        "forceStable from stable with patch",
+			prev:        "1.2.3",
+			commits:     []gitCommit{commit(pull(1, changeLevelPatch, false, false, ""))},
+			forceStable: true,
+			want: &getNextResult{
+				NextVersion:     *semver.MustParse("1.2.4"),
+				PreviousVersion: *semver.MustParse("1.2.3"),
+				ChangeLevel:     changeLevelPatch,
+			},
+		},
+		{
+			name:        "forceStable from prerelease with stable patch PR",
+			prev:        "1.2.3-alpha.0",
+			commits:     []gitCommit{commit(pull(1, changeLevelPatch, false, true, ""))},
+			forceStable: true,
+			want: &getNextResult{
+				NextVersion:     *semver.MustParse("1.2.4"),
+				PreviousVersion: *semver.MustParse("1.2.3-alpha.0"),
+				ChangeLevel:     changeLevelPatch,
+			},
+		},
+		{
+			name:        "forceStable from prerelease with non-stable patch PR",
+			prev:        "1.2.3-alpha.0",
+			commits:     []gitCommit{commit(pull(1, changeLevelPatch, false, false, ""))},
+			forceStable: true,
+			want: &getNextResult{
+				NextVersion:     *semver.MustParse("1.2.3"),
+				PreviousVersion: *semver.MustParse("1.2.3-alpha.0"),
+				ChangeLevel:     changeLevelPatch,
+			},
+		},
+		{
+			name:        "forceStable from prerelease, stable no-op PR",
+			prev:        "1.2.3-alpha.0",
+			commits:     []gitCommit{commit(pull(1, changeLevelNone, false, true, ""))},
+			forceStable: true,
+			want: &getNextResult{
+				NextVersion:     *semver.MustParse("1.2.3"),
+				PreviousVersion: *semver.MustParse("1.2.3-alpha.0"),
+				ChangeLevel:     changeLevelNone,
+			},
+		},
+		{
+			name:        "forceStable from stable with pre-release labeled PR",
+			prev:        "1.2.3",
+			commits:     []gitCommit{commit(pull(1, changeLevelPatch, true, false, "alpha"))},
+			forceStable: true,
+			want: &getNextResult{
+				NextVersion:     *semver.MustParse("1.2.4"),
+				PreviousVersion: *semver.MustParse("1.2.3"),
+				ChangeLevel:     changeLevelPatch,
+			},
+		},
+		{
+			name:        "forceStable from stable with no commits",
+			prev:        "1.2.3",
+			commits:     []gitCommit{},
+			forceStable: true,
+			want: &getNextResult{
+				NextVersion:     *semver.MustParse("1.2.3"),
+				PreviousVersion: *semver.MustParse("1.2.3"),
+				ChangeLevel:     changeLevelNone,
+			},
+		},
+		{
+			name:        "forceStable from prerelease with no commits",
+			prev:        "1.2.3-alpha.0",
+			commits:     []gitCommit{},
+			forceStable: true,
+			want: &getNextResult{
+				NextVersion:     *semver.MustParse("1.2.3"),
+				PreviousVersion: *semver.MustParse("1.2.3-alpha.0"),
+				ChangeLevel:     changeLevelNone,
+			},
+		},
 	} {
 		t.Run(td.name, func(t *testing.T) {
 			prev := semver.MustParse(td.prev)
-			got, err := bumpVersion(context.Background(), *prev, td.minBump, td.maxBump, td.commits, td.forcePrerelease)
+			got, err := bumpVersion(context.Background(), *prev, td.minBump, td.maxBump, td.commits, td.forcePrerelease, td.forceStable)
 			if td.wantErr != "" {
 				require.EqualError(t, err, td.wantErr)
 				return

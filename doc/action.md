@@ -59,6 +59,12 @@ Force prerelease even if no prerelease PRs are present.
 
 Only literal 'true' will be treated as true.
 
+### force-stable
+
+Force stable release even if no stable PRs are present.
+
+Only literal 'true' will be treated as true.
+
 ### draft
 
 Leave the release as a draft.
