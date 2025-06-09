@@ -69,7 +69,7 @@ func bumpVersion(
 	prev semver.Version,
 	minBump, maxBump changeLevel,
 	commits []gitCommit,
-	forcePrerelease bool,
+	forcePrerelease, forceStable bool,
 ) (*getNextResult, error) {
 	logger := getLogger(ctx)
 	logger.Debug("starting bumpVersion", slog.String("prev", prev.String()))

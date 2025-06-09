@@ -36,6 +36,7 @@ func Test_bumpVersion(t *testing.T) {
 		maxBump         changeLevel
 		commits         []gitCommit
 		forcePrerelease bool
+		forceStable     bool
 
 		want    *getNextResult
 		wantErr string
@@ -385,7 +386,7 @@ func Test_bumpVersion(t *testing.T) {
 	} {
 		t.Run(td.name, func(t *testing.T) {
 			prev := semver.MustParse(td.prev)
-			got, err := bumpVersion(context.Background(), *prev, td.minBump, td.maxBump, td.commits, td.forcePrerelease)
+			got, err := bumpVersion(context.Background(), *prev, td.minBump, td.maxBump, td.commits, td.forcePrerelease, td.forceStable)
 			if td.wantErr != "" {
 				require.EqualError(t, err, td.wantErr)
 				return

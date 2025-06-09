@@ -41,6 +41,11 @@ inputs:
       Force prerelease even if no prerelease PRs are present.
 
       Only literal 'true' will be treated as true.
+  force-stable:
+    description: |-
+      Force stable release even if no stable PRs are present.
+
+      Only literal 'true' will be treated as true.
   draft:
     description: |-
       Leave the release as a draft.
@@ -193,6 +198,18 @@ runs:
           "") ;;
           *)
             echo "Input force-prerelease must be 'true' or 'false'. Got '${{ inputs.force-prerelease }}'." >&2
+            exit 1
+        	;;
+        esac
+
+        case "${{ inputs.force-stable }}" in
+          true)
+            set -- "$@" --force-stable
+            ;;
+          false) ;;
+          "") ;;
+          *)
+            echo "Input force-stable must be 'true' or 'false'. Got '${{ inputs.force-stable }}'." >&2
             exit 1
         	;;
         esac

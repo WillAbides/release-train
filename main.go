@@ -26,6 +26,7 @@ var flagHelp = kong.Vars{
 	"create_tag_help":       `Whether to create a tag for the release.`,
 	"create_release_help":   `Whether to create a release. Implies create-tag.`,
 	"force_prerelease_help": `Force prerelease even if no prerelease PRs are present.`,
+	"force_stable_help":     `Force stable release even if no stable PRs are present.`,
 	"initial_tag_help":      `The tag to use if no previous version can be found. Set to "" to cause an error instead.`,
 	"tag_prefix_help":       `The prefix to use for the tag.`,
 	"label_help":            `PR label alias in the form of "<alias>=<label>" where <label> is a canonical label.`,
@@ -130,6 +131,7 @@ type rootCmd struct {
 	CreateTag       bool              `help:"${create_tag_help}"`
 	CreateRelease   bool              `help:"${create_release_help}"`
 	ForcePrerelease bool              `help:"${force_prerelease_help}"`
+	ForceStable     bool              `help:"${force_stable_help}"`
 	Draft           bool              `help:"${draft_help}"`
 	TagPrefix       string            `default:"v" help:"${tag_prefix_help}"`
 	V0              bool              `name:"v0" help:"${v0_help}"`
@@ -248,6 +250,7 @@ func (c *rootCmd) runRelease(ctx context.Context, stdout, stderr io.Writer) (err
 		Stdout:          stdout,
 		Stderr:          stderr,
 		ForcePrerelease: c.ForcePrerelease,
+		ForceStable:     c.ForceStable,
 	}
 
 	result, err := runner.Run(ctx)
