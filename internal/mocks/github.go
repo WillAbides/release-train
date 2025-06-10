@@ -145,17 +145,17 @@ func (mr *MockGithubClientMockRecorder) ListMergedPullsForCommit(ctx, owner, rep
 }
 
 // PublishRelease mocks base method.
-func (m *MockGithubClient) PublishRelease(ctx context.Context, owner, repo string, id int64) error {
+func (m *MockGithubClient) PublishRelease(ctx context.Context, owner, repo, makeLatest string, id int64) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PublishRelease", ctx, owner, repo, id)
+	ret := m.ctrl.Call(m, "PublishRelease", ctx, owner, repo, makeLatest, id)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // PublishRelease indicates an expected call of PublishRelease.
-func (mr *MockGithubClientMockRecorder) PublishRelease(ctx, owner, repo, id any) *gomock.Call {
+func (mr *MockGithubClientMockRecorder) PublishRelease(ctx, owner, repo, makeLatest, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublishRelease", reflect.TypeOf((*MockGithubClient)(nil).PublishRelease), ctx, owner, repo, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublishRelease", reflect.TypeOf((*MockGithubClient)(nil).PublishRelease), ctx, owner, repo, makeLatest, id)
 }
 
 // UploadAsset mocks base method.

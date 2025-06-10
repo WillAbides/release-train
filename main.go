@@ -43,6 +43,9 @@ var flagHelp = kong.Vars{
 Operates as if the given PR has already been merged. Useful for making sure the PR is properly labeled.
 Skips tag and release.
 `,
+	"make_latest_help": `
+Mark the release as "latest" on GitHub. Can be set to "true", "false" or "legacy". See 
+https://docs.github.com/en/rest/releases/releases#update-a-release  for details.`,
 
 	"pre_tag_hook_help": `
 Command to run before tagging the release. You may abort the release by exiting with a non-zero exit code. Exit code 0
@@ -136,6 +139,7 @@ type rootCmd struct {
 	TagPrefix       string            `default:"v" help:"${tag_prefix_help}"`
 	V0              bool              `name:"v0" help:"${v0_help}"`
 	InitialTag      string            `action:"initial-release-tag" help:"${initial_tag_help}" default:"v0.0.0"`
+	MakeLatest      string            `action:"make-latest" default:"legacy" help:"${make_latest_help}" enum:"legacy,true,false"`
 	PreTagHook      string            `placeholder:"<command>" help:"${pre_tag_hook_help}"`
 	PreReleaseHook  string            `placeholder:"<command>" help:"${pre_release_hook_help}"`
 	ReleaseRef      []string          `action:"release-refs" placeholder:"<branch>" help:"${release_ref_help}"`
@@ -251,6 +255,7 @@ func (c *rootCmd) runRelease(ctx context.Context, stdout, stderr io.Writer) (err
 		Stderr:          stderr,
 		ForcePrerelease: c.ForcePrerelease,
 		ForceStable:     c.ForceStable,
+		MakeLatest:      c.MakeLatest,
 	}
 
 	result, err := runner.Run(ctx)

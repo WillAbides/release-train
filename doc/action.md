@@ -90,6 +90,13 @@ default: `v0.0.0`
 
 The tag to use if no previous version can be found. Set to "" to cause an error instead.
 
+### make-latest
+
+default: `legacy`
+
+Mark the release as "latest" on GitHub. Can be set to "true", "false" or "legacy". See 
+https://docs.github.com/en/rest/releases/releases#update-a-release  for details.
+
 ### pre-tag-hook
 
 Command to run before tagging the release. You may abort the release by exiting with a non-zero exit code. Exit code 0
