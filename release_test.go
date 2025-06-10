@@ -133,7 +133,7 @@ git tag head
 				return nil
 			},
 		).AnyTimes()
-		githubClient.EXPECT().PublishRelease(gomock.Any(), "orgName", "repoName", int64(1)).Return(nil)
+		githubClient.EXPECT().PublishRelease(gomock.Any(), "orgName", "repoName", "true", int64(1)).Return(nil)
 
 		preHook := `
 #!/bin/sh
@@ -176,6 +176,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			LabelAliases: map[string]string{
 				"MINORALIAS": labelMinor,
 			},
+			MakeLatest: "true",
 		}
 		got, err := runner.Run(ctx)
 		require.NoError(t, err)
@@ -210,7 +211,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 				UploadURL: "localhost",
 			}, nil,
 		)
-		githubClient.EXPECT().PublishRelease(gomock.Any(), "orgName", "repoName", int64(1)).Return(nil)
+		githubClient.EXPECT().PublishRelease(gomock.Any(), "orgName", "repoName", "", int64(1)).Return(nil)
 		runner := Runner{
 			CheckoutDir:   repos.clone,
 			Ref:           repos.taggedCommits["third"],
@@ -434,7 +435,7 @@ exit 1
 				UploadURL: "localhost",
 			}, nil,
 		)
-		githubClient.EXPECT().PublishRelease(gomock.Any(), "orgName", "repoName", int64(1)).Return(nil)
+		githubClient.EXPECT().PublishRelease(gomock.Any(), "orgName", "repoName", "", int64(1)).Return(nil)
 
 		runner := Runner{
 			CheckoutDir:   repos.clone,

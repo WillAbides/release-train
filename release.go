@@ -30,6 +30,7 @@ type Runner struct {
 	Repo            string
 	PushRemote      string
 	TempDir         string
+	MakeLatest      string
 	ReleaseRefs     []string
 	LabelAliases    map[string]string
 	CheckPR         int
@@ -301,7 +302,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		return result, nil
 	}
 
-	err = o.GithubClient.PublishRelease(ctx, o.repoOwner(), o.repoName(), rel.ID)
+	err = o.GithubClient.PublishRelease(ctx, o.repoOwner(), o.repoName(), o.MakeLatest, rel.ID)
 	if err != nil {
 		return nil, err
 	}

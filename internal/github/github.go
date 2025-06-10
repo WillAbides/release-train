@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 
 	ratelimit "github.com/gofri/go-github-ratelimit/v2/github_ratelimit"
@@ -202,10 +203,15 @@ func (g *Client) DeleteRelease(ctx context.Context, owner, repo string, id int64
 	return err
 }
 
-func (g *Client) PublishRelease(ctx context.Context, owner, repo string, id int64) error {
-	_, _, err := g.client.Repositories.EditRelease(ctx, owner, repo, id, &github.RepositoryRelease{
-		Draft: github.Ptr(false),
-	})
+func (g *Client) PublishRelease(ctx context.Context, owner, repo, makeLatest string, id int64) error {
+	release := github.RepositoryRelease{Draft: github.Ptr(false)}
+	if !slices.Contains([]string{"", "legacy", "true", "false"}, makeLatest) {
+		return fmt.Errorf("invalid makeLatest value: %s", makeLatest)
+	}
+	if makeLatest != "" {
+		release.MakeLatest = &makeLatest
+	}
+	_, _, err := g.client.Repositories.EditRelease(ctx, owner, repo, id, &release)
 	return err
 }
 

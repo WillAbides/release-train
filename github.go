@@ -15,7 +15,7 @@ type GithubClient interface {
 	CreateRelease(ctx context.Context, owner, repo, tag, body string, prerelease bool) (*github.RepoRelease, error)
 	UploadAsset(ctx context.Context, uploadURL, filename string) error
 	DeleteRelease(ctx context.Context, owner, repo string, id int64) error
-	PublishRelease(ctx context.Context, owner, repo string, id int64) error
+	PublishRelease(ctx context.Context, owner, repo, makeLatest string, id int64) error
 	GetPullRequest(ctx context.Context, owner, repo string, number int) (*github.BasePull, error)
 	GetPullRequestCommits(ctx context.Context, owner, repo string, number int) ([]string, error)
 }
