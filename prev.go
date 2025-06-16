@@ -9,12 +9,10 @@ import (
 )
 
 type getPrevTagOpts struct {
-	Head        string
-	RepoDir     string
-	Prefixes    []string
-	Fallback    string
-	Constraints *semver.Constraints
-	StableOnly  bool // Filter out prerelease versions
+	Head       string
+	RepoDir    string
+	Prefixes   []string
+	StableOnly bool // Filter out prerelease versions
 }
 
 func getPrevTag(ctx context.Context, options *getPrevTagOpts) (string, error) {
@@ -60,9 +58,6 @@ func getPrevTag(ctx context.Context, options *getPrevTagOpts) (string, error) {
 				if options.StableOnly && ver.Prerelease() != "" {
 					continue
 				}
-				if options.Constraints != nil && !options.Constraints.Check(ver) {
-					continue
-				}
 				versions = append(versions, prefixedVersion{prefix, ver})
 			}
 		}
@@ -91,11 +86,7 @@ func getPrevTag(ctx context.Context, options *getPrevTagOpts) (string, error) {
 		return false
 	})
 	if len(versions) == 0 {
-		fallback := options.Fallback
-		if options.StableOnly {
-			fallback = "" // Return empty string for stable-only searches when no stable version found
-		}
-		return fallback, nil
+		return "", nil
 	}
 	winner := versions[0]
 	return winner.prefix + winner.ver.Original(), nil
