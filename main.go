@@ -64,6 +64,11 @@ Environment variables available to the hook:
       The previous semantic version (e.g. 1.2.2). Empty on
       first release.
 
+    PREVIOUS_STABLE_VERSION
+      The previous stable semantic version (e.g. 1.2.2). Empty if there
+      hasn't been a stable version yet. A stable version is one without
+      prerelease identifiers.
+
     FIRST_RELEASE
       Whether this is the first release. Either "true" or
       "false".
