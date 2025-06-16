@@ -54,6 +54,7 @@ func (o *Runner) assetsDir() string {
 type Result struct {
 	PreviousRef           string          `json:"previous-ref"`
 	PreviousVersion       string          `json:"previous-version"`
+	PreviousStableRef     string          `json:"previous-stable-ref"`
 	PreviousStableVersion string          `json:"previous-stable-version"`
 	FirstRelease          bool            `json:"first-release"`
 	ReleaseVersion        *semver.Version `json:"release-version,omitempty"`
@@ -140,6 +141,7 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 			return nil, err
 		}
 		result.PreviousStableVersion = prevStableVersion.String()
+		result.PreviousStableRef = prevStableRef
 	}
 
 	var nextRes *getNextResult
@@ -412,7 +414,9 @@ func (o *Runner) runPreTagHook(ctx context.Context, result Result) (Result, erro
 	env := map[string]string{
 		"RELEASE_TAG":             result.ReleaseTag,
 		"PREVIOUS_VERSION":        result.PreviousVersion,
+		"PREVIOUS_REF":            result.PreviousRef,
 		"PREVIOUS_STABLE_VERSION": result.PreviousStableVersion,
+		"PREVIOUS_STABLE_REF":     result.PreviousStableRef,
 		"FIRST_RELEASE":           fmt.Sprintf("%t", result.FirstRelease),
 		"GITHUB_TOKEN":            o.GithubToken,
 		"RELEASE_NOTES_FILE":      o.releaseNotesFile(),

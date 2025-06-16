@@ -152,7 +152,9 @@ assertVar() {
 assertVar RELEASE_VERSION 2.1.0 "$RELEASE_VERSION"
 assertVar RELEASE_TAG v2.1.0 "$RELEASE_TAG"
 assertVar PREVIOUS_VERSION 2.0.0 "$PREVIOUS_VERSION"
+assertVar PREVIOUS_REF v2.0.0 "$PREVIOUS_REF"
 assertVar PREVIOUS_STABLE_VERSION 2.0.0 "$PREVIOUS_STABLE_VERSION"
+assertVar PREVIOUS_STABLE_REF v2.0.0 "$PREVIOUS_STABLE_REF"
 assertVar FIRST_RELEASE false "$FIRST_RELEASE"
 assertVar GITHUB_TOKEN token "$GITHUB_TOKEN"
 
@@ -184,6 +186,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		require.Equal(t, &Result{
 			PreviousRef:           "v2.0.0",
 			PreviousVersion:       "2.0.0",
+			PreviousStableRef:     "v2.0.0",
 			PreviousStableVersion: "2.0.0",
 			FirstRelease:          false,
 			ReleaseVersion:        semver.MustParse("2.1.0"),
@@ -298,6 +301,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			ReleaseVersion:        semver.MustParse("2.1.0"),
 			PreviousVersion:       "2.0.0",
 			PreviousRef:           "v2.0.0",
+			PreviousStableRef:     "v2.0.0",
 			PreviousStableVersion: "2.0.0",
 			ChangeLevel:           changeLevelMinor,
 			CreatedTag:            true,
@@ -348,6 +352,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			ReleaseVersion:        semver.MustParse("2.1.0"),
 			PreviousVersion:       "2.0.0",
 			PreviousRef:           "v2.0.0",
+			PreviousStableRef:     "v2.0.0",
 			PreviousStableVersion: "2.0.0",
 			ChangeLevel:           changeLevelMinor,
 			CreatedTag:            false,
@@ -455,6 +460,7 @@ exit 1
 		require.Equal(t, &Result{
 			PreviousRef:           "v2.0.0",
 			PreviousVersion:       "2.0.0",
+			PreviousStableRef:     "v2.0.0",
 			PreviousStableVersion: "2.0.0",
 			FirstRelease:          false,
 			ReleaseTag:            "v2.1.0",
@@ -628,6 +634,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		require.Equal(t, &Result{
 			PreviousRef:           "v2.0.0",
 			PreviousVersion:       "2.0.0",
+			PreviousStableRef:     "v2.0.0",
 			PreviousStableVersion: "2.0.0",
 			FirstRelease:          false,
 			ReleaseVersion:        semver.MustParse("3.0.0"),
@@ -667,6 +674,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		require.Equal(t, &Result{
 			PreviousRef:           "v2.0.0",
 			PreviousVersion:       "2.0.0",
+			PreviousStableRef:     "v2.0.0",
 			PreviousStableVersion: "2.0.0",
 			FirstRelease:          false,
 			ReleaseVersion:        semver.MustParse("3.0.0"),
@@ -705,6 +713,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		require.Equal(t, &Result{
 			PreviousRef:           "v0.2.0",
 			PreviousVersion:       "0.2.0",
+			PreviousStableRef:     "v0.2.0",
 			PreviousStableVersion: "0.2.0",
 			FirstRelease:          false,
 			ReleaseVersion:        semver.MustParse("0.3.0"),
@@ -757,6 +766,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		require.Equal(t, &Result{
 			PreviousRef:           "v2.1.0-rc.1",
 			PreviousVersion:       "2.1.0-rc.1",
+			PreviousStableRef:     "v2.0.0",
 			PreviousStableVersion: "2.0.0",
 			FirstRelease:          false,
 			ReleaseVersion:        semver.MustParse("2.1.0-rc.2"),
