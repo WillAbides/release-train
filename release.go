@@ -92,10 +92,11 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 	}
 
 	// Find the previous stable version
-	prevStableRef, err := getPrevStableTag(ctx, &getPrevTagOpts{
-		Head:     head,
-		RepoDir:  o.CheckoutDir,
-		Prefixes: []string{o.TagPrefix},
+	prevStableRef, err := getPrevTag(ctx, &getPrevTagOpts{
+		Head:       head,
+		RepoDir:    o.CheckoutDir,
+		Prefixes:   []string{o.TagPrefix},
+		StableOnly: true,
 	})
 	if err != nil {
 		return nil, err
