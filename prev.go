@@ -9,11 +9,10 @@ import (
 )
 
 type getPrevTagOpts struct {
-	Head        string
-	RepoDir     string
-	Prefixes    []string
-	Fallback    string
-	Constraints *semver.Constraints
+	Head       string
+	RepoDir    string
+	Prefixes   []string
+	StableOnly bool
 }
 
 func getPrevTag(ctx context.Context, options *getPrevTagOpts) (string, error) {
@@ -55,7 +54,7 @@ func getPrevTag(ctx context.Context, options *getPrevTagOpts) (string, error) {
 				if err != nil {
 					continue
 				}
-				if options.Constraints != nil && !options.Constraints.Check(ver) {
+				if options.StableOnly && ver.Prerelease() != "" {
 					continue
 				}
 				versions = append(versions, prefixedVersion{prefix, ver})
@@ -86,7 +85,7 @@ func getPrevTag(ctx context.Context, options *getPrevTagOpts) (string, error) {
 		return false
 	})
 	if len(versions) == 0 {
-		return options.Fallback, nil
+		return "", nil
 	}
 	winner := versions[0]
 	return winner.prefix + winner.ver.Original(), nil

@@ -5,7 +5,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/stretchr/testify/require"
 )
 
@@ -58,18 +57,5 @@ git tag bar
 		got, err := getPrevTag(ctx, &opts)
 		require.NoError(t, err)
 		require.Equal(t, "v2.0.0", got)
-	})
-
-	t.Run("", func(t *testing.T) {
-		versionZero, err := semver.NewConstraint("< 1.0.0")
-		require.NoError(t, err)
-		opts := getPrevTagOpts{
-			RepoDir:     dir,
-			Prefixes:    []string{"v", "foo"},
-			Constraints: versionZero,
-		}
-		got, err := getPrevTag(ctx, &opts)
-		require.NoError(t, err)
-		require.Equal(t, "v0.2.0", got)
 	})
 }

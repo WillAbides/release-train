@@ -54,6 +54,8 @@ func (o *Runner) assetsDir() string {
 type Result struct {
 	PreviousRef           string          `json:"previous-ref"`
 	PreviousVersion       string          `json:"previous-version"`
+	PreviousStableRef     string          `json:"previous-stable-ref"`
+	PreviousStableVersion string          `json:"previous-stable-version"`
 	FirstRelease          bool            `json:"first-release"`
 	ReleaseVersion        *semver.Version `json:"release-version,omitempty"`
 	ReleaseTag            string          `json:"release-tag,omitempty"`
@@ -88,6 +90,18 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Find the previous stable version
+	prevStableRef, err := getPrevTag(ctx, &getPrevTagOpts{
+		Head:       head,
+		RepoDir:    o.CheckoutDir,
+		Prefixes:   []string{o.TagPrefix},
+		StableOnly: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	firstRelease := prevRef == ""
 	if firstRelease {
 		result := Result{
@@ -120,6 +134,17 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 		PreviousRef:     prevRef,
 		PreviousVersion: prevVersion.String(),
 	}
+
+	// Set the previous stable version
+	if prevStableRef != "" {
+		prevStableVersion, err := semver.NewVersion(strings.TrimPrefix(prevStableRef, o.TagPrefix))
+		if err != nil {
+			return nil, err
+		}
+		result.PreviousStableVersion = prevStableVersion.String()
+		result.PreviousStableRef = prevStableRef
+	}
+
 	var nextRes *getNextResult
 	nextRes, err = getNext(ctx, &getNextOptions{
 		Repo:            o.Repo,
@@ -388,14 +413,17 @@ func (o *Runner) runPreTagHook(ctx context.Context, result Result) (Result, erro
 		releaseVersion = result.ReleaseVersion.String()
 	}
 	env := map[string]string{
-		"RELEASE_TAG":        result.ReleaseTag,
-		"PREVIOUS_VERSION":   result.PreviousVersion,
-		"FIRST_RELEASE":      fmt.Sprintf("%t", result.FirstRelease),
-		"GITHUB_TOKEN":       o.GithubToken,
-		"RELEASE_NOTES_FILE": o.releaseNotesFile(),
-		"RELEASE_TARGET":     o.releaseTargetFile(),
-		"ASSETS_DIR":         o.assetsDir(),
-		"RELEASE_VERSION":    releaseVersion,
+		"RELEASE_TAG":             result.ReleaseTag,
+		"PREVIOUS_VERSION":        result.PreviousVersion,
+		"PREVIOUS_REF":            result.PreviousRef,
+		"PREVIOUS_STABLE_VERSION": result.PreviousStableVersion,
+		"PREVIOUS_STABLE_REF":     result.PreviousStableRef,
+		"FIRST_RELEASE":           fmt.Sprintf("%t", result.FirstRelease),
+		"GITHUB_TOKEN":            o.GithubToken,
+		"RELEASE_NOTES_FILE":      o.releaseNotesFile(),
+		"RELEASE_TARGET":          o.releaseTargetFile(),
+		"ASSETS_DIR":              o.assetsDir(),
+		"RELEASE_VERSION":         releaseVersion,
 	}
 	var stdoutBuf, stderrBuf bytes.Buffer
 	var stdout, stderr io.Writer

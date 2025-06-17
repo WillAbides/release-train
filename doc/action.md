@@ -115,6 +115,20 @@ Environment variables available to the hook:
       The previous semantic version (e.g. 1.2.2). Empty on
       first release.
 
+    PREVIOUS_REF
+      The git ref of the previous release (e.g. v1.2.2). Empty on
+      first release.
+
+    PREVIOUS_STABLE_VERSION
+      The previous stable semantic version (e.g. 1.2.2). Empty if there
+      hasn't been a stable version yet. A stable version is one without
+      prerelease identifiers.
+
+    PREVIOUS_STABLE_REF
+      The git ref of the previous stable release (e.g. v1.2.2). Empty if there
+      hasn't been a stable version yet. A stable version is one without
+      prerelease identifiers.
+
     FIRST_RELEASE
       Whether this is the first release. Either "true" or
       "false".

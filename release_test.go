@@ -152,6 +152,9 @@ assertVar() {
 assertVar RELEASE_VERSION 2.1.0 "$RELEASE_VERSION"
 assertVar RELEASE_TAG v2.1.0 "$RELEASE_TAG"
 assertVar PREVIOUS_VERSION 2.0.0 "$PREVIOUS_VERSION"
+assertVar PREVIOUS_REF v2.0.0 "$PREVIOUS_REF"
+assertVar PREVIOUS_STABLE_VERSION 2.0.0 "$PREVIOUS_STABLE_VERSION"
+assertVar PREVIOUS_STABLE_REF v2.0.0 "$PREVIOUS_STABLE_REF"
 assertVar FIRST_RELEASE false "$FIRST_RELEASE"
 assertVar GITHUB_TOKEN token "$GITHUB_TOKEN"
 
@@ -181,16 +184,18 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		got, err := runner.Run(ctx)
 		require.NoError(t, err)
 		require.Equal(t, &Result{
-			PreviousRef:          "v2.0.0",
-			PreviousVersion:      "2.0.0",
-			FirstRelease:         false,
-			ReleaseVersion:       semver.MustParse("2.1.0"),
-			ReleaseTag:           "v2.1.0",
-			ChangeLevel:          changeLevelMinor,
-			CreatedTag:           true,
-			CreatedRelease:       true,
-			PrereleaseHookOutput: "hello to my friends reading stdout\n",
-			PreTagHookOutput:     "hello to my friends reading stdout\n",
+			PreviousRef:           "v2.0.0",
+			PreviousVersion:       "2.0.0",
+			PreviousStableRef:     "v2.0.0",
+			PreviousStableVersion: "2.0.0",
+			FirstRelease:          false,
+			ReleaseVersion:        semver.MustParse("2.1.0"),
+			ReleaseTag:            "v2.1.0",
+			ChangeLevel:           changeLevelMinor,
+			CreatedTag:            true,
+			CreatedRelease:        true,
+			PrereleaseHookOutput:  "hello to my friends reading stdout\n",
+			PreTagHookOutput:      "hello to my friends reading stdout\n",
 		}, got)
 		taggedSha, err := runCmd(ctx, &runCmdOpts{
 			dir: repos.origin,
@@ -291,14 +296,16 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		got, err := runner.Run(ctx)
 		require.NoError(t, err)
 		require.Equal(t, &Result{
-			FirstRelease:    false,
-			ReleaseTag:      "v2.1.0",
-			ReleaseVersion:  semver.MustParse("2.1.0"),
-			PreviousVersion: "2.0.0",
-			PreviousRef:     "v2.0.0",
-			ChangeLevel:     changeLevelMinor,
-			CreatedTag:      true,
-			CreatedRelease:  false,
+			FirstRelease:          false,
+			ReleaseTag:            "v2.1.0",
+			ReleaseVersion:        semver.MustParse("2.1.0"),
+			PreviousVersion:       "2.0.0",
+			PreviousRef:           "v2.0.0",
+			PreviousStableRef:     "v2.0.0",
+			PreviousStableVersion: "2.0.0",
+			ChangeLevel:           changeLevelMinor,
+			CreatedTag:            true,
+			CreatedRelease:        false,
 		}, got)
 		target := mustRunCmd(t, repos.origin, nil, "git", "rev-parse", "v2.1.0")
 		// We don't know what the commit sha will be, but it should be different from head.
@@ -345,6 +352,8 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			ReleaseVersion:        semver.MustParse("2.1.0"),
 			PreviousVersion:       "2.0.0",
 			PreviousRef:           "v2.0.0",
+			PreviousStableRef:     "v2.0.0",
+			PreviousStableVersion: "2.0.0",
 			ChangeLevel:           changeLevelMinor,
 			CreatedTag:            false,
 			CreatedRelease:        false,
@@ -449,14 +458,16 @@ exit 1
 		got, err := runner.Run(ctx)
 		require.NoError(t, err)
 		require.Equal(t, &Result{
-			PreviousRef:     "v2.0.0",
-			PreviousVersion: "2.0.0",
-			FirstRelease:    false,
-			ReleaseTag:      "v2.1.0",
-			ReleaseVersion:  semver.MustParse("2.1.0"),
-			ChangeLevel:     changeLevelMinor,
-			CreatedTag:      true,
-			CreatedRelease:  true,
+			PreviousRef:           "v2.0.0",
+			PreviousVersion:       "2.0.0",
+			PreviousStableRef:     "v2.0.0",
+			PreviousStableVersion: "2.0.0",
+			FirstRelease:          false,
+			ReleaseTag:            "v2.1.0",
+			ReleaseVersion:        semver.MustParse("2.1.0"),
+			ChangeLevel:           changeLevelMinor,
+			CreatedTag:            true,
+			CreatedRelease:        true,
 		}, got)
 	})
 
@@ -621,12 +632,14 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		}).Run(ctx)
 		require.NoError(t, err)
 		require.Equal(t, &Result{
-			PreviousRef:     "v2.0.0",
-			PreviousVersion: "2.0.0",
-			FirstRelease:    false,
-			ReleaseVersion:  semver.MustParse("3.0.0"),
-			ReleaseTag:      "v3.0.0",
-			ChangeLevel:     changeLevelMajor,
+			PreviousRef:           "v2.0.0",
+			PreviousVersion:       "2.0.0",
+			PreviousStableRef:     "v2.0.0",
+			PreviousStableVersion: "2.0.0",
+			FirstRelease:          false,
+			ReleaseVersion:        semver.MustParse("3.0.0"),
+			ReleaseTag:            "v3.0.0",
+			ChangeLevel:           changeLevelMajor,
 		}, got)
 	})
 
@@ -659,12 +672,14 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		}).Run(ctx)
 		require.NoError(t, err)
 		require.Equal(t, &Result{
-			PreviousRef:     "v2.0.0",
-			PreviousVersion: "2.0.0",
-			FirstRelease:    false,
-			ReleaseVersion:  semver.MustParse("3.0.0"),
-			ReleaseTag:      "v3.0.0",
-			ChangeLevel:     changeLevelMajor,
+			PreviousRef:           "v2.0.0",
+			PreviousVersion:       "2.0.0",
+			PreviousStableRef:     "v2.0.0",
+			PreviousStableVersion: "2.0.0",
+			FirstRelease:          false,
+			ReleaseVersion:        semver.MustParse("3.0.0"),
+			ReleaseTag:            "v3.0.0",
+			ChangeLevel:           changeLevelMajor,
 		}, got)
 	})
 
@@ -696,12 +711,14 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		}).Run(ctx)
 		require.NoError(t, err)
 		require.Equal(t, &Result{
-			PreviousRef:     "v0.2.0",
-			PreviousVersion: "0.2.0",
-			FirstRelease:    false,
-			ReleaseVersion:  semver.MustParse("0.3.0"),
-			ReleaseTag:      "v0.3.0",
-			ChangeLevel:     changeLevelMinor,
+			PreviousRef:           "v0.2.0",
+			PreviousVersion:       "0.2.0",
+			PreviousStableRef:     "v0.2.0",
+			PreviousStableVersion: "0.2.0",
+			FirstRelease:          false,
+			ReleaseVersion:        semver.MustParse("0.3.0"),
+			ReleaseTag:            "v0.3.0",
+			ChangeLevel:           changeLevelMinor,
 		}, got)
 	})
 
@@ -747,12 +764,14 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		}).Run(ctx)
 		require.NoError(t, err)
 		require.Equal(t, &Result{
-			PreviousRef:     "v2.1.0-rc.1",
-			PreviousVersion: "2.1.0-rc.1",
-			FirstRelease:    false,
-			ReleaseVersion:  semver.MustParse("2.1.0-rc.2"),
-			ReleaseTag:      "v2.1.0-rc.2",
-			ChangeLevel:     changeLevelMinor,
+			PreviousRef:           "v2.1.0-rc.1",
+			PreviousVersion:       "2.1.0-rc.1",
+			PreviousStableRef:     "v2.0.0",
+			PreviousStableVersion: "2.0.0",
+			FirstRelease:          false,
+			ReleaseVersion:        semver.MustParse("2.1.0-rc.2"),
+			ReleaseTag:            "v2.1.0-rc.2",
+			ChangeLevel:           changeLevelMinor,
 		}, got)
 	})
 }
