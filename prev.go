@@ -12,7 +12,7 @@ type getPrevTagOpts struct {
 	Head       string
 	RepoDir    string
 	Prefixes   []string
-	StableOnly bool // Filter out prerelease versions
+	StableOnly bool
 }
 
 func getPrevTag(ctx context.Context, options *getPrevTagOpts) (string, error) {
@@ -54,7 +54,6 @@ func getPrevTag(ctx context.Context, options *getPrevTagOpts) (string, error) {
 				if err != nil {
 					continue
 				}
-				// Filter out prerelease versions if StableOnly is true
 				if options.StableOnly && ver.Prerelease() != "" {
 					continue
 				}
