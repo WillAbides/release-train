@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -368,10 +367,6 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		t.Parallel()
 		ctx := context.Background()
 		repos := setupGit(t)
-		var logOut bytes.Buffer
-		logHandler := slog.NewTextHandler(&logOut, nil)
-		logger := slog.New(logHandler)
-		ctx = withLogger(ctx, logger)
 
 		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
@@ -412,7 +407,6 @@ exit 1
 		require.EqualError(t, err, "exit status 1")
 		require.Contains(t, stderr.String(), "this is an error\nthis is another error\n")
 		require.Contains(t, stdout.String(), "failure\n")
-		require.Contains(t, logOut.String(), `msg="pre-tag hook failed" err="exit status 1" stdout="failure\n" stderr="this is an error\nthis is another error\n"`)
 	})
 
 	t.Run("generates release notes from API", func(t *testing.T) {

@@ -1,14 +1,13 @@
 package main
 
 import (
-	"context"
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/stretchr/testify/require"
 )
 
-func Test_bumpVersion(t *testing.T) {
+func Test_calculateVersionChange(t *testing.T) {
 	pull := func(
 		number int,
 		level changeLevel,
@@ -38,13 +37,13 @@ func Test_bumpVersion(t *testing.T) {
 		forcePrerelease bool
 		forceStable     bool
 
-		want    *getNextResult
+		want    *versionChange
 		wantErr string
 	}{
 		{
 			name: "no commits",
 			prev: "1.2.3",
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.2.3"),
 				PreviousVersion: *semver.MustParse("1.2.3"),
 			},
@@ -52,7 +51,7 @@ func Test_bumpVersion(t *testing.T) {
 		{
 			name: "no commits, prerelease",
 			prev: "1.2.3-alpha.0",
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.2.3-alpha.0"),
 				PreviousVersion: *semver.MustParse("1.2.3-alpha.0"),
 			},
@@ -66,7 +65,7 @@ func Test_bumpVersion(t *testing.T) {
 					pull(2, changeLevelMinor, false, true, ""),
 				),
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.3.0"),
 				PreviousVersion: *semver.MustParse("1.2.3-2"),
 				ChangeLevel:     changeLevelMinor,
@@ -78,7 +77,7 @@ func Test_bumpVersion(t *testing.T) {
 			commits: []gitCommit{
 				commit(pull(1, changeLevelPatch, true, false, "")),
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.2.4-0"),
 				PreviousVersion: *semver.MustParse("1.2.3"),
 				ChangeLevel:     changeLevelPatch,
@@ -91,7 +90,7 @@ func Test_bumpVersion(t *testing.T) {
 			commits: []gitCommit{
 				commit(pull(1, changeLevelPatch, false, false, "")),
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.2.4-0"),
 				PreviousVersion: *semver.MustParse("1.2.3"),
 				ChangeLevel:     changeLevelPatch,
@@ -106,7 +105,7 @@ func Test_bumpVersion(t *testing.T) {
 					pull(2, changeLevelNone, true, false, "alpha"),
 				),
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.2.3-alpha.34"),
 				PreviousVersion: *semver.MustParse("1.2.3-alpha.33"),
 				ChangeLevel:     changeLevelPatch,
@@ -122,7 +121,7 @@ func Test_bumpVersion(t *testing.T) {
 					pull(2, changeLevelNone, false, false, "alpha"),
 				),
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.2.3-alpha.34"),
 				PreviousVersion: *semver.MustParse("1.2.3-alpha.33"),
 				ChangeLevel:     changeLevelPatch,
@@ -137,7 +136,7 @@ func Test_bumpVersion(t *testing.T) {
 					pull(2, changeLevelNone, true, false, "beta"),
 				),
 			},
-			wantErr: `cannot have multiple pre-release prefixes in the same release. pre-release prefix. release contains both "alpha" and "beta"`,
+			wantErr: `cannot have multiple pre-release prefixes in the same release. release contains both "alpha" and "beta"`,
 		},
 		{
 			name: "mixed prerelease and non-prerelease on stable",
@@ -167,7 +166,7 @@ func Test_bumpVersion(t *testing.T) {
 			commits: []gitCommit{
 				commit(pull(1, changeLevelNone, false, true, "")),
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("0.1.0"),
 				PreviousVersion: *semver.MustParse("0.1.0-0"),
 				ChangeLevel:     changeLevelNone,
@@ -188,7 +187,7 @@ func Test_bumpVersion(t *testing.T) {
 			commits: []gitCommit{
 				commit(pull(1, changeLevelMajor, true, false, "")),
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("2.0.0-0"),
 				PreviousVersion: *semver.MustParse("1.2.3"),
 				ChangeLevel:     changeLevelMajor,
@@ -200,7 +199,7 @@ func Test_bumpVersion(t *testing.T) {
 			commits: []gitCommit{
 				commit(pull(1, changeLevelMinor, true, false, "")),
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.0.0-alpha.1"),
 				PreviousVersion: *semver.MustParse("1.0.0-alpha.0"),
 				ChangeLevel:     changeLevelMinor,
@@ -212,7 +211,7 @@ func Test_bumpVersion(t *testing.T) {
 			commits: []gitCommit{
 				commit(pull(1, changeLevelMinor, true, false, "")),
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.0.0-1"),
 				PreviousVersion: *semver.MustParse("1.0.0-0"),
 				ChangeLevel:     changeLevelMinor,
@@ -224,7 +223,7 @@ func Test_bumpVersion(t *testing.T) {
 			commits: []gitCommit{
 				commit(pull(1, changeLevelMinor, true, false, "")),
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.1.0-0"),
 				PreviousVersion: *semver.MustParse("1.0.1-0"),
 				ChangeLevel:     changeLevelMinor,
@@ -236,7 +235,7 @@ func Test_bumpVersion(t *testing.T) {
 			commits: []gitCommit{
 				commit(pull(1, changeLevelPatch, true, false, "")),
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.0.1-1"),
 				PreviousVersion: *semver.MustParse("1.0.1-0"),
 				ChangeLevel:     changeLevelPatch,
@@ -248,7 +247,7 @@ func Test_bumpVersion(t *testing.T) {
 			commits: []gitCommit{
 				commit(pull(1, changeLevelMajor, true, false, "")),
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("2.0.0-0"),
 				PreviousVersion: *semver.MustParse("1.0.1-0"),
 				ChangeLevel:     changeLevelMajor,
@@ -260,7 +259,7 @@ func Test_bumpVersion(t *testing.T) {
 			commits: []gitCommit{
 				commit(pull(1, changeLevelMajor, true, false, "alpha")),
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("2.0.0-alpha.0"),
 				PreviousVersion: *semver.MustParse("1.0.1-0"),
 				ChangeLevel:     changeLevelMajor,
@@ -288,7 +287,7 @@ func Test_bumpVersion(t *testing.T) {
 			commits: []gitCommit{
 				commit(pull(1, changeLevelPatch, true, false, "")),
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.2.3-beta.1"),
 				PreviousVersion: *semver.MustParse("1.2.3-beta.0"),
 				ChangeLevel:     changeLevelPatch,
@@ -300,9 +299,21 @@ func Test_bumpVersion(t *testing.T) {
 			commits: []gitCommit{
 				commit(pull(1, changeLevelPatch, true, false, "")),
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.2.3-rc0.0"),
 				PreviousVersion: *semver.MustParse("1.2.3-rc0"),
+				ChangeLevel:     changeLevelPatch,
+			},
+		},
+		{
+			name: "prerelease prefix with no previous prerelease",
+			prev: "1.2.3",
+			commits: []gitCommit{
+				commit(pull(1, changeLevelPatch, true, false, "alpha")),
+			},
+			want: &versionChange{
+				NextVersion:     *semver.MustParse("1.2.4-alpha.0"),
+				PreviousVersion: *semver.MustParse("1.2.3"),
 				ChangeLevel:     changeLevelPatch,
 			},
 		},
@@ -340,7 +351,7 @@ func Test_bumpVersion(t *testing.T) {
 			commits: []gitCommit{
 				commit(pull(1, changeLevelPatch, false, true, "")),
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.3.0"),
 				PreviousVersion: *semver.MustParse("1.2.3"),
 				ChangeLevel:     changeLevelMinor,
@@ -353,7 +364,7 @@ func Test_bumpVersion(t *testing.T) {
 			commits: []gitCommit{
 				commit(pull(1, changeLevelMajor, false, true, "")),
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.2.4"),
 				PreviousVersion: *semver.MustParse("1.2.3"),
 				ChangeLevel:     changeLevelPatch,
@@ -364,7 +375,7 @@ func Test_bumpVersion(t *testing.T) {
 			prev:    "1.2.3",
 			minBump: changeLevelMinor,
 			commits: []gitCommit{},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.2.3"),
 				PreviousVersion: *semver.MustParse("1.2.3"),
 				ChangeLevel:     changeLevelNone,
@@ -377,7 +388,7 @@ func Test_bumpVersion(t *testing.T) {
 			commits: []gitCommit{
 				commit(pull(1, changeLevelNone, false, true, "")),
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.2.4"),
 				PreviousVersion: *semver.MustParse("1.2.3"),
 				ChangeLevel:     changeLevelPatch,
@@ -388,7 +399,7 @@ func Test_bumpVersion(t *testing.T) {
 			prev:        "1.2.3",
 			commits:     []gitCommit{commit(pull(1, changeLevelPatch, false, false, ""))},
 			forceStable: true,
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.2.4"),
 				PreviousVersion: *semver.MustParse("1.2.3"),
 				ChangeLevel:     changeLevelPatch,
@@ -399,7 +410,7 @@ func Test_bumpVersion(t *testing.T) {
 			prev:        "1.2.3-alpha.0",
 			commits:     []gitCommit{commit(pull(1, changeLevelPatch, false, true, ""))},
 			forceStable: true,
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.2.4"),
 				PreviousVersion: *semver.MustParse("1.2.3-alpha.0"),
 				ChangeLevel:     changeLevelPatch,
@@ -410,7 +421,7 @@ func Test_bumpVersion(t *testing.T) {
 			prev:        "1.2.3-alpha.0",
 			commits:     []gitCommit{commit(pull(1, changeLevelPatch, false, false, ""))},
 			forceStable: true,
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.2.3"),
 				PreviousVersion: *semver.MustParse("1.2.3-alpha.0"),
 				ChangeLevel:     changeLevelPatch,
@@ -421,7 +432,7 @@ func Test_bumpVersion(t *testing.T) {
 			prev:        "1.2.3-alpha.0",
 			commits:     []gitCommit{commit(pull(1, changeLevelNone, false, true, ""))},
 			forceStable: true,
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.2.3"),
 				PreviousVersion: *semver.MustParse("1.2.3-alpha.0"),
 				ChangeLevel:     changeLevelNone,
@@ -432,7 +443,7 @@ func Test_bumpVersion(t *testing.T) {
 			prev:        "1.2.3",
 			commits:     []gitCommit{commit(pull(1, changeLevelPatch, true, false, "alpha"))},
 			forceStable: true,
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.2.4"),
 				PreviousVersion: *semver.MustParse("1.2.3"),
 				ChangeLevel:     changeLevelPatch,
@@ -443,7 +454,7 @@ func Test_bumpVersion(t *testing.T) {
 			prev:        "1.2.3",
 			commits:     []gitCommit{},
 			forceStable: true,
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.2.3"),
 				PreviousVersion: *semver.MustParse("1.2.3"),
 				ChangeLevel:     changeLevelNone,
@@ -454,7 +465,7 @@ func Test_bumpVersion(t *testing.T) {
 			prev:        "1.2.3-alpha.0",
 			commits:     []gitCommit{},
 			forceStable: true,
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.2.3"),
 				PreviousVersion: *semver.MustParse("1.2.3-alpha.0"),
 				ChangeLevel:     changeLevelNone,
@@ -463,7 +474,7 @@ func Test_bumpVersion(t *testing.T) {
 	} {
 		t.Run(td.name, func(t *testing.T) {
 			prev := semver.MustParse(td.prev)
-			got, err := bumpVersion(context.Background(), *prev, td.minBump, td.maxBump, td.commits, td.forcePrerelease, td.forceStable)
+			got, err := calculateVersionChange(*prev, td.minBump, td.maxBump, td.commits, td.forcePrerelease, td.forceStable)
 			if td.wantErr != "" {
 				require.EqualError(t, err, td.wantErr)
 				return

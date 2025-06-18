@@ -190,7 +190,7 @@ func (c *rootCmd) Run(ctx context.Context, kongCtx *kong.Context) error {
 			}).WithOutput,
 		}
 	}
-	ctx = withLogger(ctx, slog.New(logHandler))
+	slog.SetDefault(slog.New(logHandler))
 	if c.GenerateAction {
 		return c.generateAction(kongCtx)
 	}
@@ -208,13 +208,12 @@ func (c *rootCmd) generateAction(kongCtx *kong.Context) error {
 }
 
 func (c *rootCmd) runRelease(ctx context.Context, stdout, stderr io.Writer) (errOut error) {
-	logger := getLogger(ctx)
 	defer func() {
 		if errOut != nil {
-			logger.Error(errOut.Error())
+			slog.Error(errOut.Error())
 		}
 	}()
-	logger.Debug("starting runRelease")
+	slog.Debug("starting runRelease")
 	client, err := c.GithubClient()
 	if err != nil {
 		return err

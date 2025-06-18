@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/exec"
 	"strings"
@@ -32,9 +33,9 @@ func runCmd(ctx context.Context, opts *runCmdOpts, command string, args ...strin
 	if opts == nil {
 		opts = &runCmdOpts{}
 	}
-	logger := getLogger(ctx)
+	logger := slog.Default()
 	if opts.noLog {
-		logger = discardLogger
+		logger = slog.New(slog.DiscardHandler)
 	}
 	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Dir = opts.dir

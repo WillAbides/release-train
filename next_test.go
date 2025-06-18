@@ -32,7 +32,7 @@ func TestGetNext(t *testing.T) {
 		name       string
 		setupMocks func(*mocks.MockGithubClient)
 		options    *getNextOptions
-		want       *getNextResult
+		want       *versionChange
 		wantErr    string
 
 		noStubs              bool
@@ -58,7 +58,7 @@ func TestGetNext(t *testing.T) {
 				PrevVersion: "0.15.0",
 				Head:        sha1,
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("1.0.0"),
 				PreviousVersion: *semver.MustParse("0.15.0"),
 				ChangeLevel:     changeLevelMajor,
@@ -78,7 +78,7 @@ func TestGetNext(t *testing.T) {
 				PrevVersion: "0.15.0",
 				Head:        sha1,
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("0.16.0"),
 				PreviousVersion: *semver.MustParse("0.15.0"),
 				ChangeLevel:     changeLevelMinor,
@@ -98,7 +98,7 @@ func TestGetNext(t *testing.T) {
 				PrevVersion: "0.15.0",
 				Head:        sha1,
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("0.15.1"),
 				PreviousVersion: *semver.MustParse("0.15.0"),
 				ChangeLevel:     changeLevelPatch,
@@ -124,7 +124,7 @@ func TestGetNext(t *testing.T) {
 				Head:        sha1,
 				CheckPR:     14,
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("0.16.0"),
 				PreviousVersion: *semver.MustParse("0.15.0"),
 				ChangeLevel:     changeLevelMinor,
@@ -145,7 +145,7 @@ func TestGetNext(t *testing.T) {
 				PrevVersion: "0.15.0",
 				Head:        sha1,
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("0.15.0"),
 				PreviousVersion: *semver.MustParse("0.15.0"),
 				ChangeLevel:     changeLevelNone,
@@ -177,7 +177,7 @@ func TestGetNext(t *testing.T) {
 				PrevVersion: "0.15.0",
 				Head:        sha1,
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("0.15.0"),
 				PreviousVersion: *semver.MustParse("0.15.0"),
 				ChangeLevel:     changeLevelNone,
@@ -194,7 +194,7 @@ func TestGetNext(t *testing.T) {
 				Head:        sha1,
 				MinBump:     &[]changeLevel{changeLevelPatch}[0],
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("0.15.0"),
 				PreviousVersion: *semver.MustParse("0.15.0"),
 				ChangeLevel:     changeLevelNone,
@@ -216,7 +216,7 @@ func TestGetNext(t *testing.T) {
 				Head:        sha1,
 				MinBump:     &[]changeLevel{changeLevelMinor}[0],
 			},
-			want: &getNextResult{
+			want: &versionChange{
 				NextVersion:     *semver.MustParse("0.16.0"),
 				PreviousVersion: *semver.MustParse("0.15.0"),
 				ChangeLevel:     changeLevelMinor,
