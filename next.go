@@ -12,12 +12,6 @@ import (
 	"github.com/willabides/release-train/v3/internal/github"
 )
 
-type getNextResult struct {
-	NextVersion     semver.Version `json:"next_version"`
-	PreviousVersion semver.Version `json:"previous_version"`
-	ChangeLevel     changeLevel    `json:"change_level"`
-}
-
 func getCommitPRs(
 	ctx context.Context,
 	opts *getNextOptions,
@@ -131,15 +125,14 @@ func (o *getNextOptions) owner() string {
 	return owner
 }
 
-func getNext(ctx context.Context, opts *getNextOptions) (*getNextResult, error) {
-	logger := getLogger(ctx)
+func getNext(ctx context.Context, opts *getNextOptions) (*versionChange, error) {
 	if opts == nil {
 		opts = &getNextOptions{}
 	}
 	if opts.ForceStable && opts.ForcePrerelease {
 		return nil, fmt.Errorf("cannot specify both --force-stable and --force-prerelease")
 	}
-	logger.Debug(
+	slog.Debug(
 		"starting GetNext",
 		slog.String("repo", opts.Repo),
 		slog.String("base", opts.Base),
@@ -172,15 +165,15 @@ func getNext(ctx context.Context, opts *getNextOptions) (*getNextResult, error) 
 	if err != nil {
 		return nil, err
 	}
-	logger.Debug("found commits", slog.Any("commits", commits))
+	slog.Debug("found commits", slog.Any("commits", commits))
 	if opts.CheckPR != 0 {
 		commits, err = includePullInResults(ctx, opts, commits)
 		if err != nil {
 			return nil, err
 		}
-		logger.Debug("found commits after including PR", slog.Any("commits", commits))
+		slog.Debug("found commits after including PR", slog.Any("commits", commits))
 	}
-	return bumpVersion(ctx, *prev, minBump, maxBump, commits, opts.ForcePrerelease, opts.ForceStable)
+	return calculateVersionChange(*prev, minBump, maxBump, commits, opts.ForcePrerelease, opts.ForceStable)
 }
 
 func includePullInResults(ctx context.Context, opts *getNextOptions, commits []gitCommit) ([]gitCommit, error) {

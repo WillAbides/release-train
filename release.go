@@ -69,8 +69,7 @@ type Result struct {
 }
 
 func (o *Runner) Next(ctx context.Context) (*Result, error) {
-	logger := getLogger(ctx)
-	logger.Debug("starting release Next")
+	slog.Debug("starting release Next")
 	ref := o.Ref
 	if o.Ref == "" {
 		ref = "HEAD"
@@ -145,7 +144,7 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 		result.PreviousStableRef = prevStableRef
 	}
 
-	var nextRes *getNextResult
+	var nextRes *versionChange
 	nextRes, err = getNext(ctx, &getNextOptions{
 		Repo:            o.Repo,
 		GithubClient:    o.GithubClient,
@@ -164,7 +163,7 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 	result.ReleaseVersion = &nextRes.NextVersion
 	result.ReleaseTag = o.TagPrefix + nextRes.NextVersion.String()
 	result.ChangeLevel = nextRes.ChangeLevel
-	logger.Debug("returning from release Next", slog.Any("result", result))
+	slog.Debug("returning from release Next", slog.Any("result", result))
 	return &result, nil
 }
 
@@ -216,8 +215,7 @@ func (o *Runner) getReleaseNotes(ctx context.Context, result *Result) (string, e
 }
 
 func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
-	logger := getLogger(ctx)
-	logger.Debug("starting Run")
+	slog.Debug("starting Run")
 	var teardowns []func() error
 	defer func() {
 		if errOut == nil {
@@ -259,7 +257,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	if !result.FirstRelease &&
 		result.ReleaseVersion != nil &&
 		result.PreviousVersion == result.ReleaseVersion.String() {
-		logger.Debug("no changes detected since previous release, skipping tag", slog.String("previous-version", result.PreviousVersion))
+		slog.Debug("no changes detected since previous release, skipping tag", slog.String("previous-version", result.PreviousVersion))
 		return result, nil
 	}
 
@@ -275,7 +273,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 
 	*result, err = o.runPreTagHook(ctx, *result)
 	if err != nil {
-		logger.Debug("runPreTagHook hook errored", slog.String("output", result.PreTagHookOutput))
+		slog.Debug("runPreTagHook hook errored", slog.String("output", result.PreTagHookOutput))
 		return nil, err
 	}
 	if result.PreTagHookAborted {
@@ -404,7 +402,6 @@ func (o *Runner) tagRelease(ctx context.Context, releaseTag string) error {
 }
 
 func (o *Runner) runPreTagHook(ctx context.Context, result Result) (Result, error) {
-	logger := getLogger(ctx)
 	if o.PreTagHook == "" {
 		return result, nil
 	}
@@ -447,14 +444,14 @@ func (o *Runner) runPreTagHook(ctx context.Context, result Result) (Result, erro
 		exitErr := asExitErr(err)
 		if exitErr != nil {
 			if exitErr.ExitCode() == 10 {
-				logger.Debug("pre-tag hook aborted")
+				slog.Debug("pre-tag hook aborted")
 				result.PreTagHookAborted = true
 				result.PrereleaseHookAborted = true
 				return result, nil
 			}
 			err = exitErr
 		}
-		logger.Error(
+		slog.Error(
 			"pre-tag hook failed",
 			slog.Any("err", err),
 			slog.String("stdout", stdoutBuf.String()),

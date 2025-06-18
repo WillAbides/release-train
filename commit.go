@@ -1,12 +1,13 @@
 package main
 
 import (
+	"cmp"
 	"fmt"
 )
 
 type gitCommit struct {
-	Sha   string   `json:"sha"`
-	Pulls []ghPull `json:"pulls,omitempty"`
+	Sha   string  `json:"sha"`
+	Pulls ghPulls `json:"pulls,omitempty"`
 }
 
 func (c gitCommit) changeLevel() changeLevel {
@@ -19,43 +20,14 @@ func (c gitCommit) changeLevel() changeLevel {
 	return level
 }
 
-func (c gitCommit) pullsLabeledStable() []ghPull {
-	var result []ghPull
-	for _, p := range c.Pulls {
-		if p.HasStableLabel {
-			result = append(result, p)
-		}
-	}
-	return result
-}
-
-func (c gitCommit) pullsLabeledPre() []ghPull {
-	var result []ghPull
-	for _, p := range c.Pulls {
-		if p.HasPreLabel {
-			result = append(result, p)
-		}
-	}
-	return result
-}
-
-func (c gitCommit) pullsWithPrefix() []ghPull {
-	var result []ghPull
-	for _, p := range c.Pulls {
-		if p.PreReleasePrefix != "" {
-			result = append(result, p)
-		}
-	}
-	return result
-}
-
 func (c gitCommit) validate() error {
-	prePulls := c.pullsLabeledPre()
-	stablePulls := c.pullsLabeledStable()
+	prePulls := c.Pulls.filter(func(pull ghPull) bool { return pull.HasPreLabel })
+	stablePulls := c.Pulls.stable()
+
 	if len(prePulls) > 0 && len(stablePulls) > 0 {
 		return fmt.Errorf("commit %s has both stable and prerelease labels: stable PR: %v, prerelease PR: %v", c.Sha, stablePulls, prePulls)
 	}
-	prefixPulls := c.pullsWithPrefix()
+	prefixPulls := c.Pulls.filter(func(pull ghPull) bool { return pull.PreReleasePrefix != "" })
 	if len(prefixPulls) > 1 {
 		for i := 1; i < len(prefixPulls); i++ {
 			if prefixPulls[i].PreReleasePrefix != prefixPulls[0].PreReleasePrefix {
@@ -75,4 +47,29 @@ func (c gitCommit) validate() error {
 		return fmt.Errorf("commit %s has no labels on associated pull requests: %v", c.Sha, c.Pulls)
 	}
 	return nil
+}
+
+type gitCommits []gitCommit
+
+func (c gitCommits) pulls() ghPulls {
+	var pulls []ghPull
+	for _, commit := range c {
+		pulls = append(pulls, commit.Pulls...)
+	}
+	return ghPulls(pulls).compact()
+}
+
+func (c gitCommits) changeLevel(minChange, maxChange changeLevel) changeLevel {
+	if len(c) == 0 {
+		return changeLevelNone
+	}
+
+	maxChange = cmp.Or(maxChange, changeLevelMajor)
+	level := minChange
+	for _, commit := range c {
+		commitLevel := min(commit.changeLevel(), maxChange)
+		level = max(level, commitLevel)
+	}
+
+	return level
 }
