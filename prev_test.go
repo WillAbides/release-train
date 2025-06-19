@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_getPrevVersion(t *testing.T) {
+func Test_getPrevTag(t *testing.T) {
 	ctx := t.Context()
 	dir := t.TempDir()
 	_, e := runCmd(ctx, &runCmdOpts{
@@ -40,8 +40,8 @@ git tag bar
 
 	t.Run("", func(t *testing.T) {
 		opts := getPrevTagOpts{
-			RepoDir:  dir,
-			Prefixes: []string{"v"},
+			RepoDir:   dir,
+			TagPrefix: "v",
 		}
 		got, err := getPrevTag(ctx, &opts)
 		require.NoError(t, err)
@@ -50,8 +50,8 @@ git tag bar
 
 	t.Run("", func(t *testing.T) {
 		opts := getPrevTagOpts{
-			RepoDir:  dir,
-			Prefixes: []string{"v", "bar"},
+			RepoDir:   dir,
+			TagPrefix: "v",
 		}
 		got, err := getPrevTag(ctx, &opts)
 		require.NoError(t, err)
