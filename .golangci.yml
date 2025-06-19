@@ -391,11 +391,15 @@ linters:
         linters: [godot]
       - text: 'should have a package comment'
         linters: [revive]
+      - text: 'var-naming: '
+        linters: [revive]
       - text: 'exported \S+ \S+ should have comment( \(or a comment on this block\))? or be unexported'
         linters: [revive]
       - text: 'package comment should be of the form ".+"'
         source: '// ?(nolint|TODO)'
         linters: [revive]
+      - text: 'ST1003' # identifier capitalization
+        linters: [staticcheck]
       - text: 'comment on exported \S+ \S+ should be of the form ".+"'
         source: '// ?(nolint|TODO)'
         linters: [revive, staticcheck]

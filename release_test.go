@@ -18,7 +18,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func mustRunCmd(t *testing.T, dir string, name string, args ...string) string {
+func mustRunCmd(t *testing.T, dir, name string, args ...string) string {
 	t.Helper()
 	out, err := runCmd(t.Context(), &runCmdOpts{dir: dir}, name, args...)
 	require.NoError(t, err)
@@ -109,7 +109,7 @@ git tag head
 			}, nil,
 		)
 		githubClient.EXPECT().UploadAsset(gomock.Any(), "localhost", gomock.Any()).DoAndReturn(
-			func(ctx context.Context, uploadURL, filename string) error {
+			func(_ context.Context, _, filename string) error {
 				t.Helper()
 				content, err := os.ReadFile(filename)
 				if !assert.NoError(t, err) {

@@ -32,6 +32,10 @@ type CommitComparison struct {
 	Commits  []string
 }
 
+type Client struct {
+	client *github.Client
+}
+
 func NewClient(baseUrl, token, userAgent string) (*Client, error) {
 	transport := ratelimit.NewSecondaryLimiter(http.DefaultTransport)
 	httpClient := &http.Client{Transport: transport}
@@ -44,10 +48,6 @@ func NewClient(baseUrl, token, userAgent string) (*Client, error) {
 	}
 	githubClient.UserAgent = userAgent
 	return &Client{client: githubClient}, nil
-}
-
-type Client struct {
-	client *github.Client
 }
 
 // UploadAsset is largely copied from github.Client.UploadReleaseAsset. It is modified to use uploadURL instead of
