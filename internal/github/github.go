@@ -56,7 +56,7 @@ type Client struct {
 func (g *Client) UploadAsset(ctx context.Context, uploadURL, filename string) error {
 	re := regexp.MustCompile(`^(?P<base>.+/)repos/(?P<owner>[^/]+)/(?P<repo>[^/]+)/releases/(?P<id>\d+)/assets`)
 	matches := re.FindStringSubmatch(uploadURL)
-	if len(matches) != 5 {
+	if len(matches) != re.NumSubexp()+1 {
 		return fmt.Errorf("invalid upload url: %s", uploadURL)
 	}
 	base := matches[1]
@@ -94,7 +94,8 @@ func (g *Client) UploadAsset(ctx context.Context, uploadURL, filename string) er
 
 func (g *Client) ListMergedPullsForCommit(ctx context.Context, owner, repo, sha string) ([]BasePull, error) {
 	var result []BasePull
-	opts := &github.ListOptions{PerPage: 100}
+	const pageSize = 100
+	opts := &github.ListOptions{PerPage: pageSize}
 	for {
 		apiPulls, resp, err := g.client.PullRequests.ListPullRequestsWithCommit(ctx, owner, repo, sha, opts)
 		if err != nil {
@@ -231,7 +232,8 @@ func (g *Client) GetPullRequest(ctx context.Context, owner, repo string, number 
 
 func (g *Client) GetPullRequestCommits(ctx context.Context, owner, repo string, number int) ([]string, error) {
 	var commitShas []string
-	opts := &github.ListOptions{PerPage: 100}
+	const pageSize = 100
+	opts := &github.ListOptions{PerPage: pageSize}
 	for {
 		apiCommits, resp, err := g.client.PullRequests.ListCommits(ctx, owner, repo, number, opts)
 		if err != nil {

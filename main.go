@@ -199,7 +199,8 @@ func (c *rootCmd) Run(ctx context.Context, kongCtx *kong.Context) error {
 
 func (c *rootCmd) generateAction(kongCtx *kong.Context) error {
 	enc := yaml.NewEncoder(os.Stdout)
-	enc.SetIndent(2)
+	const indentSize = 2
+	enc.SetIndent(indentSize)
 	got, err := getAction(kongCtx)
 	if err != nil {
 		return err

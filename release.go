@@ -169,11 +169,13 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 }
 
 func (o *Runner) repoOwner() string {
-	return strings.SplitN(o.Repo, "/", 2)[0]
+	owner, _, _ := strings.Cut(o.Repo, "/")
+	return owner
 }
 
 func (o *Runner) repoName() string {
-	return strings.SplitN(o.Repo, "/", 2)[1]
+	_, repo, _ := strings.Cut(o.Repo, "/")
+	return repo
 }
 
 func (o *Runner) getReleaseTarget() (string, error) {
@@ -442,9 +444,10 @@ func (o *Runner) runPreTagHook(ctx context.Context, result Result) (Result, erro
 	result.PreTagHookOutput = stdoutBuf.String()
 	result.PrereleaseHookOutput = stdoutBuf.String()
 	if err != nil {
+		const exitCodeAborted = 10
 		exitErr := asExitErr(err)
 		if exitErr != nil {
-			if exitErr.ExitCode() == 10 {
+			if exitErr.ExitCode() == exitCodeAborted {
 				slog.Debug("pre-tag hook aborted")
 				result.PreTagHookAborted = true
 				result.PrereleaseHookAborted = true
