@@ -18,12 +18,9 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func mustRunCmd(t *testing.T, dir string, env map[string]string, name string, args ...string) string {
+func mustRunCmd(t *testing.T, dir string, name string, args ...string) string {
 	t.Helper()
-	out, err := runCmd(t.Context(), &runCmdOpts{
-		dir: dir,
-		env: env,
-	}, name, args...)
+	out, err := runCmd(t.Context(), &runCmdOpts{dir: dir}, name, args...)
 	require.NoError(t, err)
 	return out
 }
@@ -40,7 +37,7 @@ func Test_releaseRunner_run(t *testing.T) {
 		t.Helper()
 		originDir := t.TempDir()
 		cloneDir := t.TempDir()
-		mustRunCmd(t, originDir, nil, "sh", "-c", `
+		mustRunCmd(t, originDir, "sh", "-c", `
 git init
 git config user.name 'tester'
 git config user.email 'tester'
@@ -70,15 +67,14 @@ git tag fifth
 git commit --allow-empty -m "sixth"
 git tag sixth
 git tag head
-`,
-		)
-		tags := mustRunCmd(t, originDir, nil, "git", "tag", "-l")
+`)
+		tags := mustRunCmd(t, originDir, "git", "tag", "-l")
 		tags = strings.ReplaceAll(tags, "\r\n", "\n")
 		taggedCommits := map[string]string{}
 		for _, tag := range strings.Split(tags, "\n") {
-			taggedCommits[tag] = mustRunCmd(t, originDir, nil, "git", "rev-parse", tag)
+			taggedCommits[tag] = mustRunCmd(t, originDir, "git", "rev-parse", tag)
 		}
-		mustRunCmd(t, cloneDir, nil, "git", "clone", originDir, ".")
+		mustRunCmd(t, cloneDir, "git", "clone", originDir, ".")
 		return &gitRepos{
 			origin:        originDir,
 			clone:         cloneDir,
@@ -207,7 +203,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		t.Parallel()
 		ctx := t.Context()
 		repos := setupGit(t)
-		mustRunCmd(t, repos.clone, nil, "git", "checkout", "third")
+		mustRunCmd(t, repos.clone, "git", "checkout", "third")
 		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CreateRelease(gomock.Any(), "orgName", "repoName", "x1.0.0", "", false).Return(
 			&github.RepoRelease{
@@ -306,7 +302,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			CreatedTag:            true,
 			CreatedRelease:        false,
 		}, got)
-		target := mustRunCmd(t, repos.origin, nil, "git", "rev-parse", "v2.1.0")
+		target := mustRunCmd(t, repos.origin, "git", "rev-parse", "v2.1.0")
 		// We don't know what the commit sha will be, but it should be different from head.
 		require.NotEqual(t, repos.taggedCommits["head"], target)
 	})
@@ -469,7 +465,7 @@ exit 1
 		t.Parallel()
 		ctx := t.Context()
 		repos := setupGit(t)
-		mustRunCmd(t, repos.clone, nil, "git", "pull", "--depth=1")
+		mustRunCmd(t, repos.clone, "git", "pull", "--depth=1")
 		runner := &Runner{
 			CheckoutDir: repos.clone,
 		}
@@ -481,7 +477,7 @@ exit 1
 		t.Parallel()
 		ctx := t.Context()
 		repos := setupGit(t)
-		mustRunCmd(t, repos.clone, nil, "rm", "-rf", ".git")
+		mustRunCmd(t, repos.clone, "rm", "-rf", ".git")
 		runner := &Runner{
 			CheckoutDir: repos.clone,
 		}
@@ -734,7 +730,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 		t.Parallel()
 		ctx := t.Context()
 		repos := setupGit(t)
-		mustRunCmd(t, repos.clone, nil, "git", "tag", "v2.1.0-rc.1", "fifth")
+		mustRunCmd(t, repos.clone, "git", "tag", "v2.1.0-rc.1", "fifth")
 		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.1.0-rc.1", repos.taggedCommits["head"], -1).Return(
 			&github.CommitComparison{

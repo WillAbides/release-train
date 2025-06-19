@@ -370,6 +370,9 @@ linters:
         # https://staticcheck.dev/docs/checks/#QF1008
         - -QF1008
 
+    unparam:
+      check-exported: true
+
     usetesting:
       # Enable/disable `os.TempDir()` detections.
       # Default: false
