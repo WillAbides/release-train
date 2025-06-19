@@ -125,6 +125,7 @@ if [ -n "{{.Input}}" ]; then
 fi
 `
 
+//nolint:gocognit // TODO: make this less complex
 func getAction(kongCtx *kong.Context) (*CompositeAction, error) {
 	boolTemplate := template.Must(template.New("").Parse(boolTemplateStr))
 	cumulativeTemplate := template.Must(template.New("").Parse(cumulativeTemplateStr))

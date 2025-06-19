@@ -217,6 +217,7 @@ func (o *Runner) getReleaseNotes(ctx context.Context, result *Result) (string, e
 	return o.GithubClient.GenerateReleaseNotes(ctx, o.repoOwner(), o.repoName(), result.ReleaseTag, result.PreviousRef)
 }
 
+//nolint:gocognit // TODO: make this less complex
 func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	slog.Debug("starting Run")
 	var teardowns []func() error

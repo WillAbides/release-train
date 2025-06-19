@@ -15,6 +15,7 @@ type getPrevTagOpts struct {
 	StableOnly bool
 }
 
+//nolint:gocognit // TODO: make this less complex
 func getPrevTag(ctx context.Context, options *getPrevTagOpts) (string, error) {
 	if options == nil {
 		options = &getPrevTagOpts{}
