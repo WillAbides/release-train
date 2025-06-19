@@ -279,7 +279,7 @@ func (c *rootCmd) runRelease(ctx context.Context, stdout, stderr io.Writer) (err
 	}
 
 	action := githubactions.New()
-	for _, item := range outputItems {
+	for _, item := range outputItems() {
 		action.SetOutput(item.name, item.value(result))
 	}
 	return nil
