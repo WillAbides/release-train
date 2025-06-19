@@ -32,6 +32,10 @@ type CommitComparison struct {
 	Commits  []string
 }
 
+type Client struct {
+	client *github.Client
+}
+
 func NewClient(baseUrl, token, userAgent string) (*Client, error) {
 	transport := ratelimit.NewSecondaryLimiter(http.DefaultTransport)
 	httpClient := &http.Client{Transport: transport}
@@ -46,17 +50,13 @@ func NewClient(baseUrl, token, userAgent string) (*Client, error) {
 	return &Client{client: githubClient}, nil
 }
 
-type Client struct {
-	client *github.Client
-}
-
 // UploadAsset is largely copied from github.Client.UploadReleaseAsset. It is modified to use uploadURL instead of
 // building it from releaseID so that we don't need to set upload url. It also accepts a filename instead of an
 // *os.File.
 func (g *Client) UploadAsset(ctx context.Context, uploadURL, filename string) error {
 	re := regexp.MustCompile(`^(?P<base>.+/)repos/(?P<owner>[^/]+)/(?P<repo>[^/]+)/releases/(?P<id>\d+)/assets`)
 	matches := re.FindStringSubmatch(uploadURL)
-	if len(matches) != 5 {
+	if len(matches) != re.NumSubexp()+1 {
 		return fmt.Errorf("invalid upload url: %s", uploadURL)
 	}
 	base := matches[1]
@@ -76,7 +76,6 @@ func (g *Client) UploadAsset(ctx context.Context, uploadURL, filename string) er
 	}
 
 	defer func() {
-		//nolint:errcheck // ignore close error for read-only file
 		_ = file.Close()
 	}()
 
@@ -95,7 +94,8 @@ func (g *Client) UploadAsset(ctx context.Context, uploadURL, filename string) er
 
 func (g *Client) ListMergedPullsForCommit(ctx context.Context, owner, repo, sha string) ([]BasePull, error) {
 	var result []BasePull
-	opts := &github.ListOptions{PerPage: 100}
+	const pageSize = 100
+	opts := &github.ListOptions{PerPage: pageSize}
 	for {
 		apiPulls, resp, err := g.client.PullRequests.ListPullRequestsWithCommit(ctx, owner, repo, sha, opts)
 		if err != nil {
@@ -232,7 +232,8 @@ func (g *Client) GetPullRequest(ctx context.Context, owner, repo string, number 
 
 func (g *Client) GetPullRequestCommits(ctx context.Context, owner, repo string, number int) ([]string, error) {
 	var commitShas []string
-	opts := &github.ListOptions{PerPage: 100}
+	const pageSize = 100
+	opts := &github.ListOptions{PerPage: pageSize}
 	for {
 		apiCommits, resp, err := g.client.PullRequests.ListCommits(ctx, owner, repo, number, opts)
 		if err != nil {

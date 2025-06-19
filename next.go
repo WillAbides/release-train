@@ -130,7 +130,7 @@ func getNext(ctx context.Context, opts *getNextOptions) (*versionChange, error) 
 		opts = &getNextOptions{}
 	}
 	if opts.ForceStable && opts.ForcePrerelease {
-		return nil, fmt.Errorf("cannot specify both --force-stable and --force-prerelease")
+		return nil, errors.New("cannot specify both --force-stable and --force-prerelease")
 	}
 	slog.Debug(
 		"starting GetNext",
@@ -152,14 +152,14 @@ func getNext(ctx context.Context, opts *getNextOptions) (*versionChange, error) 
 		prevVersion = opts.Base
 	}
 	if minBump > maxBump {
-		return nil, fmt.Errorf("minBump must be less than or equal to maxBump")
+		return nil, errors.New("minBump must be less than or equal to maxBump")
 	}
 	prev, err := semver.NewVersion(prevVersion)
 	if err != nil {
-		return nil, fmt.Errorf("invalid previous version %q: %v", prevVersion, err)
+		return nil, fmt.Errorf("invalid previous version %q: %w", prevVersion, err)
 	}
 	if opts.repo() == "" {
-		return nil, fmt.Errorf("repo must be in the form owner/name")
+		return nil, errors.New("repo must be in the form owner/name")
 	}
 	commits, err := compareCommits(ctx, opts)
 	if err != nil {

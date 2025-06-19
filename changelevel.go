@@ -101,6 +101,7 @@ func (l changeLevel) String() string {
 	}
 }
 
+//nolint:unparam // error needed to meet json.Marshaler
 func (l changeLevel) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("%q", l.String())), nil
 }

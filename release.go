@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -136,7 +137,8 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 
 	// Set the previous stable version
 	if prevStableRef != "" {
-		prevStableVersion, err := semver.NewVersion(strings.TrimPrefix(prevStableRef, o.TagPrefix))
+		var prevStableVersion *semver.Version
+		prevStableVersion, err = semver.NewVersion(strings.TrimPrefix(prevStableRef, o.TagPrefix))
 		if err != nil {
 			return nil, err
 		}
@@ -168,11 +170,13 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 }
 
 func (o *Runner) repoOwner() string {
-	return strings.SplitN(o.Repo, "/", 2)[0]
+	owner, _, _ := strings.Cut(o.Repo, "/")
+	return owner
 }
 
 func (o *Runner) repoName() string {
-	return strings.SplitN(o.Repo, "/", 2)[1]
+	_, repo, _ := strings.Cut(o.Repo, "/")
+	return repo
 }
 
 func (o *Runner) getReleaseTarget() (string, error) {
@@ -214,6 +218,7 @@ func (o *Runner) getReleaseNotes(ctx context.Context, result *Result) (string, e
 	return o.GithubClient.GenerateReleaseNotes(ctx, o.repoOwner(), o.repoName(), result.ReleaseTag, result.PreviousRef)
 }
 
+//nolint:gocognit // TODO: make this less complex
 func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	slog.Debug("starting Run")
 	var teardowns []func() error
@@ -247,7 +252,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		return nil, err
 	}
 	if shallow == "true" {
-		return nil, fmt.Errorf("shallow clones are not supported")
+		return nil, errors.New("shallow clones are not supported")
 	}
 	result, err := o.Next(ctx)
 	if err != nil {
@@ -382,7 +387,7 @@ func (o *Runner) tagRelease(ctx context.Context, releaseTag string) error {
 		return err
 	}
 	if !exists {
-		target := ""
+		var target string
 		target, err = o.getReleaseTarget()
 		if err != nil {
 			return err
@@ -415,7 +420,7 @@ func (o *Runner) runPreTagHook(ctx context.Context, result Result) (Result, erro
 		"PREVIOUS_REF":            result.PreviousRef,
 		"PREVIOUS_STABLE_VERSION": result.PreviousStableVersion,
 		"PREVIOUS_STABLE_REF":     result.PreviousStableRef,
-		"FIRST_RELEASE":           fmt.Sprintf("%t", result.FirstRelease),
+		"FIRST_RELEASE":           strconv.FormatBool(result.FirstRelease),
 		"GITHUB_TOKEN":            o.GithubToken,
 		"RELEASE_NOTES_FILE":      o.releaseNotesFile(),
 		"RELEASE_TARGET":          o.releaseTargetFile(),
@@ -441,9 +446,10 @@ func (o *Runner) runPreTagHook(ctx context.Context, result Result) (Result, erro
 	result.PreTagHookOutput = stdoutBuf.String()
 	result.PrereleaseHookOutput = stdoutBuf.String()
 	if err != nil {
+		const exitCodeAborted = 10
 		exitErr := asExitErr(err)
 		if exitErr != nil {
-			if exitErr.ExitCode() == 10 {
+			if exitErr.ExitCode() == exitCodeAborted {
 				slog.Debug("pre-tag hook aborted")
 				result.PreTagHookAborted = true
 				result.PrereleaseHookAborted = true
@@ -473,7 +479,7 @@ func gitNameRev(ctx context.Context, dir, commitish string, refs []string) bool 
 	return err == nil
 }
 
-// assertTagNotExists returns an error if tag exists either locally or on remote
+// assertTagNotExists returns an error if tag exists either locally or on remote.
 func assertTagNotExists(ctx context.Context, dir, remote, tag string) error {
 	out, err := runCmd(ctx, &runCmdOpts{
 		dir: dir,

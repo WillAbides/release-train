@@ -111,10 +111,11 @@ func getGithubRepoFromRemote(ctx context.Context, dir, remote string) (string, e
 	// trim everything before the last : for ssh remotes
 	remoteURL = remoteURL[strings.LastIndex(remoteURL, ":")+1:]
 	parts := strings.Split(remoteURL, "/")
-	if len(parts) < 2 {
+	const partCount = 2
+	if len(parts) < partCount {
 		return "", fmt.Errorf("remote url is not a properly formated github repo url: %s", orig)
 	}
-	return strings.Join(parts[len(parts)-2:], "/"), nil
+	return strings.Join(parts[len(parts)-partCount:], "/"), nil
 }
 
 func addCmdEnv(cmd *exec.Cmd, key string, val any) {

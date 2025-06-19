@@ -14,11 +14,19 @@ const (
 	labelPrerelease = "semver:prerelease"
 )
 
-var labelLevels = map[string]changeLevel{
-	labelBreaking: changeLevelMajor,
-	labelMinor:    changeLevelMinor,
-	labelPatch:    changeLevelPatch,
-	labelNone:     changeLevelNone,
+func labelLevel(label string) (changeLevel, bool) {
+	switch label {
+	case labelBreaking:
+		return changeLevelMajor, true
+	case labelMinor:
+		return changeLevelMinor, true
+	case labelPatch:
+		return changeLevelPatch, true
+	case labelNone:
+		return changeLevelNone, true
+	default:
+		return 0, false
+	}
 }
 
 func normalizeAliases(aliases map[string]string) map[string]string {
@@ -29,7 +37,7 @@ func normalizeAliases(aliases map[string]string) map[string]string {
 	return clone
 }
 
-// checkPrereleaseLabel returns true if the label is a prerelease label and the prerelease prefix (the part after the final colon)
+// checkPrereleaseLabel returns true if the label is a prerelease label and the prerelease prefix (the part after the final colon).
 func checkPrereleaseLabel(label string, aliases map[string]string) (pre bool, prefix string) {
 	downcased := strings.ToLower(label)
 	if downcased == labelPrerelease {
@@ -61,7 +69,7 @@ func checkPrereleaseLabel(label string, aliases map[string]string) (pre bool, pr
 
 func ResolveLabel(label string, aliases map[string]string) string {
 	label = strings.ToLower(label)
-	_, ok := labelLevels[label]
+	_, ok := labelLevel(label)
 	if ok {
 		return label
 	}
