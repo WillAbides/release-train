@@ -86,8 +86,8 @@ type Result struct {
 	PreTagHookAborted     bool            `json:"pre-tag-hook-aborted"`
 }
 
-func (o *Runner) Next(ctx context.Context) (*Result, error) {
-	slog.Debug("starting release Next")
+func (o *Runner) next(ctx context.Context) (*Result, error) {
+	slog.Debug("starting release next")
 	ref := cmp.Or(o.Ref, "HEAD")
 	head, err := o.runCmd(ctx, nil, "git", "rev-parse", ref)
 	if err != nil {
@@ -152,7 +152,7 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 	result.ReleaseVersion = &nextRes.NextVersion
 	result.ReleaseTag = o.TagPrefix + nextRes.NextVersion.String()
 	result.ChangeLevel = nextRes.ChangeLevel
-	slog.Debug("returning from release Next", slog.Any("result", result))
+	slog.Debug("returning from release next", slog.Any("result", result))
 	return &result, nil
 }
 
@@ -289,7 +289,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		return nil, err
 	}
 
-	result, err := o.Next(ctx)
+	result, err := o.next(ctx)
 	if err != nil {
 		return nil, err
 	}
