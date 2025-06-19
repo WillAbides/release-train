@@ -137,7 +137,8 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 
 	// Set the previous stable version
 	if prevStableRef != "" {
-		prevStableVersion, err := semver.NewVersion(strings.TrimPrefix(prevStableRef, o.TagPrefix))
+		var prevStableVersion *semver.Version
+		prevStableVersion, err = semver.NewVersion(strings.TrimPrefix(prevStableRef, o.TagPrefix))
 		if err != nil {
 			return nil, err
 		}
