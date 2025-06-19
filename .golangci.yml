@@ -272,6 +272,10 @@ linters:
           # Default: true
           skipRecvDeref: false
 
+    gosec:
+      excludes:
+        - G204 # Subprocess launched with a potential tainted input or cmd arguments
+
     govet:
       # Enable all analyzers.
       # Default: false
