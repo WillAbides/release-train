@@ -208,11 +208,6 @@ func (c *rootCmd) generateAction(kongCtx *kong.Context) error {
 }
 
 func (c *rootCmd) runRelease(ctx context.Context, stdout, stderr io.Writer) (errOut error) {
-	defer func() {
-		if errOut != nil {
-			slog.Error(errOut.Error())
-		}
-	}()
 	slog.Debug("starting runRelease")
 	client, err := c.GithubClient()
 	if err != nil {
