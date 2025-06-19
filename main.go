@@ -19,35 +19,36 @@ import (
 
 var version = "dev"
 
-var flagHelp = kong.Vars{
-	"generate_action_help":  `Ignore all other flags and generate a GitHub action.`,
-	"ref_help":              `git ref.`,
-	"checkout_dir_help":     `The directory where the repository is checked out.`,
-	"create_tag_help":       `Whether to create a tag for the release.`,
-	"create_release_help":   `Whether to create a release. Implies create-tag.`,
-	"force_prerelease_help": `Force prerelease even if no prerelease PRs are present.`,
-	"force_stable_help":     `Force stable release even if no stable PRs are present.`,
-	"initial_tag_help":      `The tag to use if no previous version can be found. Set to "" to cause an error instead.`,
-	"tag_prefix_help":       `The prefix to use for the tag.`,
-	"label_help":            `PR label alias in the form of "<alias>=<label>" where <label> is a canonical label.`,
-	"output_format_help":    `Output either json our GitHub action output.`,
-	"debug_help":            `Enable debug logging.`,
-	"draft_help":            `Leave the release as a draft.`,
-	"tempdir_help":          `The prefix to use with mktemp to create a temporary directory.`,
-	"pushremote_help":       `The remote to push tags to.`,
-	"repo_help":             `GitHub repository in the form of owner/repo.`,
-	"github_token_help":     "The GitHub token to use for authentication. Must have `contents: write` permission if creating a release or tag.",
-	"github_api_url_help":   `GitHub API URL.`,
+func helpVars() kong.Vars {
+	return kong.Vars{
+		"generate_action_help":  `Ignore all other flags and generate a GitHub action.`,
+		"ref_help":              `git ref.`,
+		"checkout_dir_help":     `The directory where the repository is checked out.`,
+		"create_tag_help":       `Whether to create a tag for the release.`,
+		"create_release_help":   `Whether to create a release. Implies create-tag.`,
+		"force_prerelease_help": `Force prerelease even if no prerelease PRs are present.`,
+		"force_stable_help":     `Force stable release even if no stable PRs are present.`,
+		"initial_tag_help":      `The tag to use if no previous version can be found. Set to "" to cause an error instead.`,
+		"tag_prefix_help":       `The prefix to use for the tag.`,
+		"label_help":            `PR label alias in the form of "<alias>=<label>" where <label> is a canonical label.`,
+		"output_format_help":    `Output either json our GitHub action output.`,
+		"debug_help":            `Enable debug logging.`,
+		"draft_help":            `Leave the release as a draft.`,
+		"tempdir_help":          `The prefix to use with mktemp to create a temporary directory.`,
+		"pushremote_help":       `The remote to push tags to.`,
+		"repo_help":             `GitHub repository in the form of owner/repo.`,
+		"github_token_help":     "The GitHub token to use for authentication. Must have `contents: write` permission if creating a release or tag.",
+		"github_api_url_help":   `GitHub API URL.`,
 
-	"check_pr_help": `
+		"check_pr_help": `
 Operates as if the given PR has already been merged. Useful for making sure the PR is properly labeled.
 Skips tag and release.
 `,
-	"make_latest_help": `
+		"make_latest_help": `
 Mark the release as "latest" on GitHub. Can be set to "true", "false" or "legacy". See 
 https://docs.github.com/en/rest/releases/releases#update-a-release  for details.`,
 
-	"pre_tag_hook_help": `
+		"pre_tag_hook_help": `
 Command to run before tagging the release. You may abort the release by exiting with a non-zero exit code. Exit code 0
 will continue the release. Exit code 10 will skip the release without error. Any other exit code will abort the release
 with an error.
@@ -106,24 +107,25 @@ When the hook creates a tag named $RELEASE_TAG, it will be used as the release t
 value written to $RELEASE_TARGET.
 `,
 
-	"pre_release_hook_help": `
+		"pre_release_hook_help": `
 *deprecated* Will be removed in a future release. Alias for pre-tag-hook.
 `,
 
-	"v0_help": `
+		"v0_help": `
 Assert that current major version is 0 and treat breaking changes as minor changes.
 Errors if the major version is not 0.
 `,
 
-	"release_ref_help": `
+		"release_ref_help": `
 Only allow tags and releases to be created from matching refs. Refs can be patterns accepted by git-show-ref.
 If undefined, any branch can be used.
 `,
+	}
 }
 
 func main() {
 	ctx := context.Background()
-	vars := flagHelp
+	vars := helpVars()
 	vars["version"] = version
 
 	var root rootCmd
