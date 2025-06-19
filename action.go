@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -33,7 +34,7 @@ var outputItems = []struct {
 	{
 		name:        "first-release",
 		description: `Whether this is the first release on the release branch. Either "true" or "false".`,
-		value:       func(r *Result) string { return fmt.Sprintf("%t", r.FirstRelease) },
+		value:       func(r *Result) string { return strconv.FormatBool(r.FirstRelease) },
 	},
 	{
 		name:        "release-version",
@@ -53,12 +54,12 @@ var outputItems = []struct {
 	{
 		name:        "created-tag",
 		description: `Whether a tag was created. Either "true" or "false".`,
-		value:       func(r *Result) string { return fmt.Sprintf("%t", r.CreatedTag) },
+		value:       func(r *Result) string { return strconv.FormatBool(r.CreatedTag) },
 	},
 	{
 		name:        "created-release",
 		description: `Whether a release was created. Either "true" or "false".`,
-		value:       func(r *Result) string { return fmt.Sprintf("%t", r.CreatedRelease) },
+		value:       func(r *Result) string { return strconv.FormatBool(r.CreatedRelease) },
 	},
 	{
 		name:        "pre-release-hook-output",
@@ -68,7 +69,7 @@ var outputItems = []struct {
 	{
 		name:        "pre-release-hook-aborted",
 		description: `*deprecated* Will be removed in a future release. Alias for pre-tag-hook-aborted`,
-		value:       func(r *Result) string { return fmt.Sprintf("%t", r.PrereleaseHookAborted) },
+		value:       func(r *Result) string { return strconv.FormatBool(r.PrereleaseHookAborted) },
 	},
 	{
 		name:        "pre-tag-hook-output",
@@ -78,7 +79,7 @@ var outputItems = []struct {
 	{
 		name:        "pre-tag-hook-aborted",
 		description: `Whether pre-tag-hook issued an abort by exiting 10. Either "true" or "false".`,
-		value:       func(r *Result) string { return fmt.Sprintf("%t", r.PreTagHookAborted) },
+		value:       func(r *Result) string { return strconv.FormatBool(r.PreTagHookAborted) },
 	},
 }
 

@@ -76,7 +76,6 @@ func (g *Client) UploadAsset(ctx context.Context, uploadURL, filename string) er
 	}
 
 	defer func() {
-		//nolint:errcheck // ignore close error for read-only file
 		_ = file.Close()
 	}()
 

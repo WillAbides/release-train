@@ -241,7 +241,7 @@ func (c *rootCmd) runRelease(ctx context.Context, stdout, stderr io.Writer) (err
 	preTagHook := c.PreTagHook
 	if c.PreReleaseHook != "" {
 		if preTagHook != "" {
-			return fmt.Errorf("cannot specify both --pre-tag-hook and --pre-release-hook")
+			return errors.New("cannot specify both --pre-tag-hook and --pre-release-hook")
 		}
 		preTagHook = c.PreReleaseHook
 	}

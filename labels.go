@@ -29,7 +29,7 @@ func normalizeAliases(aliases map[string]string) map[string]string {
 	return clone
 }
 
-// checkPrereleaseLabel returns true if the label is a prerelease label and the prerelease prefix (the part after the final colon)
+// checkPrereleaseLabel returns true if the label is a prerelease label and the prerelease prefix (the part after the final colon).
 func checkPrereleaseLabel(label string, aliases map[string]string) (pre bool, prefix string) {
 	downcased := strings.ToLower(label)
 	if downcased == labelPrerelease {

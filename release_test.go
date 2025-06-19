@@ -20,7 +20,7 @@ import (
 
 func mustRunCmd(t *testing.T, dir string, env map[string]string, name string, args ...string) string {
 	t.Helper()
-	out, err := runCmd(context.Background(), &runCmdOpts{
+	out, err := runCmd(t.Context(), &runCmdOpts{
 		dir: dir,
 		env: env,
 	}, name, args...)
@@ -88,7 +88,7 @@ git tag head
 
 	t.Run("kitchen sink", func(t *testing.T) {
 		t.Parallel()
-		ctx := context.Background()
+		ctx := t.Context()
 		repos := setupGit(t)
 		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
@@ -205,7 +205,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 
 	t.Run("first release", func(t *testing.T) {
 		t.Parallel()
-		ctx := context.Background()
+		ctx := t.Context()
 		repos := setupGit(t)
 		mustRunCmd(t, repos.clone, nil, "git", "checkout", "third")
 		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
@@ -240,7 +240,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 
 	t.Run("tags $RELEASE_TARGET", func(t *testing.T) {
 		t.Parallel()
-		ctx := context.Background()
+		ctx := t.Context()
 		repos := setupGit(t)
 
 		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
@@ -313,7 +313,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 
 	t.Run("prerelease hook exits 10 to skip release", func(t *testing.T) {
 		t.Parallel()
-		ctx := context.Background()
+		ctx := t.Context()
 		repos := setupGit(t)
 
 		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
@@ -365,7 +365,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 
 	t.Run("pre-release hook failure without createTag", func(t *testing.T) {
 		t.Parallel()
-		ctx := context.Background()
+		ctx := t.Context()
 		repos := setupGit(t)
 
 		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
@@ -411,7 +411,7 @@ exit 1
 
 	t.Run("generates release notes from API", func(t *testing.T) {
 		t.Parallel()
-		ctx := context.Background()
+		ctx := t.Context()
 		repos := setupGit(t)
 		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
@@ -467,7 +467,7 @@ exit 1
 
 	t.Run("shallow clone", func(t *testing.T) {
 		t.Parallel()
-		ctx := context.Background()
+		ctx := t.Context()
 		repos := setupGit(t)
 		mustRunCmd(t, repos.clone, nil, "git", "pull", "--depth=1")
 		runner := &Runner{
@@ -479,7 +479,7 @@ exit 1
 
 	t.Run("not a git repo", func(t *testing.T) {
 		t.Parallel()
-		ctx := context.Background()
+		ctx := t.Context()
 		repos := setupGit(t)
 		mustRunCmd(t, repos.clone, nil, "rm", "-rf", ".git")
 		runner := &Runner{
@@ -491,7 +491,7 @@ exit 1
 
 	t.Run("api error", func(t *testing.T) {
 		t.Parallel()
-		ctx := context.Background()
+		ctx := t.Context()
 		repos := setupGit(t)
 		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
@@ -509,7 +509,7 @@ exit 1
 
 	t.Run("release error deletes tag", func(t *testing.T) {
 		t.Parallel()
-		ctx := context.Background()
+		ctx := t.Context()
 		repos := setupGit(t)
 		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
@@ -548,7 +548,7 @@ exit 1
 
 	t.Run("upload error deletes release", func(t *testing.T) {
 		t.Parallel()
-		ctx := context.Background()
+		ctx := t.Context()
 		repos := setupGit(t)
 		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
@@ -601,7 +601,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 
 	t.Run("no create tag", func(t *testing.T) {
 		t.Parallel()
-		ctx := context.Background()
+		ctx := t.Context()
 		repos := setupGit(t)
 		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
@@ -639,7 +639,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 
 	t.Run("non-matching ref prevents tag", func(t *testing.T) {
 		t.Parallel()
-		ctx := context.Background()
+		ctx := t.Context()
 		repos := setupGit(t)
 		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
@@ -679,7 +679,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 
 	t.Run("V0 prevents bumping to v1", func(t *testing.T) {
 		t.Parallel()
-		ctx := context.Background()
+		ctx := t.Context()
 		repos := setupGit(t)
 		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
 		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v0.2.0", repos.taggedCommits["second"], -1).Return(
@@ -718,7 +718,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 
 	t.Run("V0 errors when previous version is v1", func(t *testing.T) {
 		t.Parallel()
-		ctx := context.Background()
+		ctx := t.Context()
 		repos := setupGit(t)
 		_, err := (&Runner{
 			CheckoutDir: repos.clone,
@@ -732,7 +732,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 
 	t.Run("iterates prerelease", func(t *testing.T) {
 		t.Parallel()
-		ctx := context.Background()
+		ctx := t.Context()
 		repos := setupGit(t)
 		mustRunCmd(t, repos.clone, nil, "git", "tag", "v2.1.0-rc.1", "fifth")
 		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))

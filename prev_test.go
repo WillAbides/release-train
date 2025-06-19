@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"os"
 	"testing"
 
@@ -9,7 +8,7 @@ import (
 )
 
 func Test_getPrevVersion(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	_, e := runCmd(ctx, &runCmdOpts{
 		dir: dir,

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -14,7 +13,7 @@ import (
 )
 
 func TestGetNext(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	sha1 := "1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	sha2 := "2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -338,7 +337,7 @@ func TestGetNext(t *testing.T) {
 	}
 }
 
-// like cmp.Or but for nilable pointers
+// like cmp.Or but for nilable pointers.
 func ptrOr[T any](pointers ...*T) *T {
 	for _, p := range pointers {
 		if p != nil {
