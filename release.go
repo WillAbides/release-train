@@ -88,52 +88,22 @@ type Result struct {
 
 func (o *Runner) Next(ctx context.Context) (*Result, error) {
 	slog.Debug("starting release Next")
-	ref := o.Ref
-	if o.Ref == "" {
-		ref = "HEAD"
-	}
-	head, err := runCmd(ctx, &runCmdOpts{
-		dir: o.CheckoutDir,
-	}, "git", "rev-parse", ref)
+	ref := cmp.Or(o.Ref, "HEAD")
+	head, err := o.runCmd(ctx, nil, "git", "rev-parse", ref)
 	if err != nil {
 		return nil, err
 	}
 	head = strings.TrimSpace(head)
-	prevRef, err := getPrevTag(ctx, &getPrevTagOpts{
-		Head:      head,
-		RepoDir:   o.CheckoutDir,
-		TagPrefix: o.TagPrefix,
-	})
+	prevRef, prevStableRef, err := o.getPrevRefs(ctx, head)
 	if err != nil {
 		return nil, err
 	}
 
-	// Find the previous stable version
-	prevStableRef, err := getPrevTag(ctx, &getPrevTagOpts{
-		Head:       head,
-		RepoDir:    o.CheckoutDir,
-		TagPrefix:  o.TagPrefix,
-		StableOnly: true,
-	})
-	if err != nil {
-		return nil, err
+	// It's the first release if there is no previous ref.
+	if prevRef == "" {
+		return o.firstRelease()
 	}
 
-	firstRelease := prevRef == ""
-	if firstRelease {
-		result := Result{
-			FirstRelease: true,
-			ReleaseTag:   o.InitialTag,
-			ChangeLevel:  changeLevelNone,
-		}
-		if o.InitialTag != "" {
-			result.ReleaseVersion, err = semver.NewVersion(strings.TrimPrefix(o.InitialTag, o.TagPrefix))
-			if err != nil {
-				return nil, err
-			}
-		}
-		return &result, nil
-	}
 	prevVersion, err := semver.NewVersion(strings.TrimPrefix(prevRef, o.TagPrefix))
 	if err != nil {
 		return nil, err
@@ -184,6 +154,52 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 	result.ChangeLevel = nextRes.ChangeLevel
 	slog.Debug("returning from release Next", slog.Any("result", result))
 	return &result, nil
+}
+
+func (o *Runner) firstRelease() (*Result, error) {
+	result := Result{
+		FirstRelease: true,
+		ReleaseTag:   o.InitialTag,
+		ChangeLevel:  changeLevelNone,
+	}
+	if o.InitialTag == "" {
+		return &result, nil
+	}
+	var err error
+	result.ReleaseVersion, err = semver.NewVersion(strings.TrimPrefix(o.InitialTag, o.TagPrefix))
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (o *Runner) getPrevRefs(ctx context.Context, head string) (ref, stableRef string, _ error) {
+	opts := getPrevTagOpts{
+		Head:      head,
+		RepoDir:   o.CheckoutDir,
+		TagPrefix: o.TagPrefix,
+	}
+	ref, err := getPrevTag(ctx, &opts)
+	if err != nil {
+		return "", "", err
+	}
+	// If this is stable or empty, we can use the same tag for stable
+	if ref == "" {
+		return "", "", nil
+	}
+	ver, err := semver.NewVersion(strings.TrimPrefix(ref, o.TagPrefix))
+	if err != nil {
+		return "", "", err
+	}
+	if ver.Prerelease() == "" {
+		return ref, ref, nil
+	}
+	opts.StableOnly = true
+	stableRef, err = getPrevTag(ctx, &opts)
+	if err != nil {
+		return "", "", err
+	}
+	return ref, stableRef, nil
 }
 
 func (o *Runner) repoOwner() string {
@@ -268,13 +284,11 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 			errOut = errors.Join(errOut, o.cleanupAfterErr())
 		}
 	}()
-	shallow, err := o.runCmd(ctx, nil, "git", "rev-parse", "--is-shallow-repository")
+	err := o.rejectShallowCheckout(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if shallow == "true" {
-		return nil, errors.New("shallow clones are not supported")
-	}
+
 	result, err := o.Next(ctx)
 	if err != nil {
 		return nil, err
@@ -328,6 +342,17 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	}
 
 	return result, nil
+}
+
+func (o *Runner) rejectShallowCheckout(ctx context.Context) error {
+	shallow, err := o.runCmd(ctx, nil, "git", "rev-parse", "--is-shallow-repository")
+	if err != nil {
+		return err
+	}
+	if shallow == "true" {
+		return errors.New("shallow clones are not supported")
+	}
+	return nil
 }
 
 // createRelease handles the creation of a GitHub release, including notes, assets, and publishing.
