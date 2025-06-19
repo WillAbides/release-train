@@ -387,7 +387,7 @@ func (o *Runner) tagRelease(ctx context.Context, releaseTag string) error {
 		return err
 	}
 	if !exists {
-		target := ""
+		var target string
 		target, err = o.getReleaseTarget()
 		if err != nil {
 			return err
