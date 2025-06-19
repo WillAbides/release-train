@@ -83,9 +83,9 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 	}
 	head = strings.TrimSpace(head)
 	prevRef, err := getPrevTag(ctx, &getPrevTagOpts{
-		Head:     head,
-		RepoDir:  o.CheckoutDir,
-		Prefixes: []string{o.TagPrefix},
+		Head:      head,
+		RepoDir:   o.CheckoutDir,
+		TagPrefix: o.TagPrefix,
 	})
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func (o *Runner) Next(ctx context.Context) (*Result, error) {
 	prevStableRef, err := getPrevTag(ctx, &getPrevTagOpts{
 		Head:       head,
 		RepoDir:    o.CheckoutDir,
-		Prefixes:   []string{o.TagPrefix},
+		TagPrefix:  o.TagPrefix,
 		StableOnly: true,
 	})
 	if err != nil {

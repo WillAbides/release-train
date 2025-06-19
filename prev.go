@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -11,11 +11,10 @@ import (
 type getPrevTagOpts struct {
 	Head       string
 	RepoDir    string
-	Prefixes   []string
+	TagPrefix  string
 	StableOnly bool
 }
 
-//nolint:gocognit // TODO: make this less complex
 func getPrevTag(ctx context.Context, options *getPrevTagOpts) (string, error) {
 	if options == nil {
 		options = &getPrevTagOpts{}
@@ -24,42 +23,28 @@ func getPrevTag(ctx context.Context, options *getPrevTagOpts) (string, error) {
 	if head == "" {
 		head = "HEAD"
 	}
-	prefixes := options.Prefixes
-	if len(prefixes) == 0 {
-		prefixes = []string{""}
+	versions, err := revlistVersions(ctx, options, head)
+	if err != nil {
+		return "", err
 	}
+	if len(versions) == 0 {
+		return "", nil
+	}
+	winner := slices.MaxFunc(versions, (*semver.Version).Compare)
+	return options.TagPrefix + winner.Original(), nil
+}
+
+func revlistVersions(ctx context.Context, options *getPrevTagOpts, head string) ([]*semver.Version, error) {
 	cmdLine := []string{"git", "rev-list", "--pretty=%D", head}
-	type prefixedVersion struct {
-		prefix string
-		ver    *semver.Version
-	}
-	var versions []prefixedVersion
+	var versions []*semver.Version
 	done := false
 	err := runCmdHandleLines(ctx, options.RepoDir, cmdLine, func(line string, cancel context.CancelFunc) {
 		if done {
 			return
 		}
-		refs := strings.Split(line, ", ")
-		for _, r := range refs {
-			var ok bool
-			r, ok = strings.CutPrefix(r, "tag: ")
-			if !ok {
-				continue
-			}
-			for _, prefix := range options.Prefixes {
-				r, ok = strings.CutPrefix(r, prefix)
-				if !ok {
-					continue
-				}
-				ver, err := semver.StrictNewVersion(r)
-				if err != nil {
-					continue
-				}
-				if options.StableOnly && ver.Prerelease() != "" {
-					continue
-				}
-				versions = append(versions, prefixedVersion{prefix, ver})
-			}
+		parsed := parseGitTagLine(line, options.TagPrefix, options.StableOnly)
+		if len(parsed) > 0 {
+			versions = append(versions, parsed...)
 		}
 		if len(versions) > 0 {
 			cancel()
@@ -67,27 +52,31 @@ func getPrevTag(ctx context.Context, options *getPrevTagOpts) (string, error) {
 		}
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	// order first by version then by index of prefix in prefixes
-	sort.Slice(versions, func(i, j int) bool {
-		a, b := versions[i], versions[j]
-		if !a.ver.Equal(b.ver) {
-			return a.ver.GreaterThan(b.ver)
+	return versions, nil
+}
+
+func parseGitTagLine(line, prefix string, stableOnly bool) []*semver.Version {
+	var result []*semver.Version
+	refs := strings.Split(line, ", ")
+	for _, r := range refs {
+		tag, hasTag := strings.CutPrefix(r, "tag: ")
+		if !hasTag {
+			continue
 		}
-		for _, prefix := range prefixes {
-			if a.prefix == prefix {
-				return b.prefix != prefix
-			}
-			if b.prefix == prefix {
-				return false
-			}
+		stripped, hasPrefix := strings.CutPrefix(tag, prefix)
+		if !hasPrefix {
+			continue
 		}
-		return false
-	})
-	if len(versions) == 0 {
-		return "", nil
+		ver, err := semver.StrictNewVersion(stripped)
+		if err != nil {
+			continue
+		}
+		if stableOnly && ver.Prerelease() != "" {
+			continue
+		}
+		result = append(result, ver)
 	}
-	winner := versions[0]
-	return winner.prefix + winner.ver.Original(), nil
+	return result
 }
