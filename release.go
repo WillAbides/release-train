@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -39,6 +40,9 @@ type Runner struct {
 	GithubClient    GithubClient
 	Stdout          io.Writer
 	Stderr          io.Writer
+
+	ran         bool
+	errCleanups []func() error
 }
 
 func (o *Runner) releaseNotesFile() string {
@@ -51,6 +55,18 @@ func (o *Runner) releaseTargetFile() string {
 
 func (o *Runner) assetsDir() string {
 	return filepath.Join(o.TempDir, "assets")
+}
+
+func (o *Runner) cleanupAfterErr() error {
+	var err error
+	for _, fn := range slices.Backward(o.errCleanups) {
+		err = errors.Join(err, fn())
+	}
+	return err
+}
+
+func (o *Runner) addErrCleanup(fn func() error) {
+	o.errCleanups = append(o.errCleanups, fn)
 }
 
 type Result struct {
@@ -242,14 +258,14 @@ func (o *Runner) runCmd(ctx context.Context, opts *runCmdOpts, command string, a
 }
 
 func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
+	if o.ran {
+		panic("Runner.Run called multiple times, this is not allowed")
+	}
+	o.ran = true
 	slog.Debug("starting Run")
-	var teardowns []func() error
 	defer func() {
-		if errOut == nil {
-			return
-		}
-		for i := len(teardowns) - 1; i >= 0; i-- {
-			errOut = errors.Join(errOut, teardowns[i]())
+		if errOut != nil {
+			errOut = errors.Join(errOut, o.cleanupAfterErr())
 		}
 	}()
 	shallow, err := o.runCmd(ctx, nil, "git", "rev-parse", "--is-shallow-repository")
@@ -297,7 +313,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	if err != nil {
 		return nil, err
 	}
-	teardowns = append(teardowns, func() error {
+	o.addErrCleanup(func() error {
 		_, e := o.runCmd(ctx, nil, "git", "push", o.PushRemote, "--delete", result.ReleaseTag)
 		return e
 	})
@@ -305,7 +321,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	result.CreatedTag = true
 
 	if o.CreateRelease {
-		err = o.createRelease(ctx, result, &teardowns)
+		err = o.createRelease(ctx, result)
 		if err != nil {
 			return nil, err
 		}
@@ -315,7 +331,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 }
 
 // createRelease handles the creation of a GitHub release, including notes, assets, and publishing.
-func (o *Runner) createRelease(ctx context.Context, result *Result, teardowns *[]func() error) error {
+func (o *Runner) createRelease(ctx context.Context, result *Result) error {
 	releaseNotes, err := o.getReleaseNotes(ctx, result)
 	if err != nil {
 		return err
@@ -327,7 +343,7 @@ func (o *Runner) createRelease(ctx context.Context, result *Result, teardowns *[
 		return err
 	}
 
-	*teardowns = append(*teardowns, func() error {
+	o.addErrCleanup(func() error {
 		return o.GithubClient.DeleteRelease(ctx, o.repoOwner(), o.repoName(), rel.ID)
 	})
 
