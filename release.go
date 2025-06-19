@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -218,7 +219,28 @@ func (o *Runner) getReleaseNotes(ctx context.Context, result *Result) (string, e
 	return o.GithubClient.GenerateReleaseNotes(ctx, o.repoOwner(), o.repoName(), result.ReleaseTag, result.PreviousRef)
 }
 
-//nolint:gocognit // TODO: make this less complex
+// shouldCreateTag returns true if a tag should be created.
+func (o *Runner) shouldCreateTag(ctx context.Context) bool {
+	// only when --create-tag or --create-release is set
+	if !cmp.Or(o.CreateTag, o.CreateRelease) {
+		return false
+	}
+	// never create a tag if --check-pr is set
+	if o.CheckPR != 0 {
+		return false
+	}
+	// only allowed refs
+	return o.isAllowedRef(ctx, o.Ref, o.ReleaseRefs)
+}
+
+func (o *Runner) runCmd(ctx context.Context, opts *runCmdOpts, command string, args ...string) (string, error) {
+	if opts == nil {
+		opts = &runCmdOpts{}
+	}
+	opts.dir = cmp.Or(opts.dir, o.CheckoutDir)
+	return runCmd(ctx, opts, command, args...)
+}
+
 func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	slog.Debug("starting Run")
 	var teardowns []func() error
@@ -230,24 +252,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 			errOut = errors.Join(errOut, teardowns[i]())
 		}
 	}()
-	createTag := o.CreateTag
-	release := o.CreateRelease
-	if release {
-		createTag = true
-	}
-	// no tag or release if release-refs is defined and the ref is not in the list
-	if len(o.ReleaseRefs) > 0 && !gitNameRev(ctx, o.CheckoutDir, o.Ref, o.ReleaseRefs) {
-		createTag = false
-		release = false
-	}
-	// no tag or release if check-pr is set
-	if o.CheckPR != 0 {
-		createTag = false
-		release = false
-	}
-	shallow, err := runCmd(ctx, &runCmdOpts{
-		dir: o.CheckoutDir,
-	}, "git", "rev-parse", "--is-shallow-repository")
+	shallow, err := o.runCmd(ctx, nil, "git", "rev-parse", "--is-shallow-repository")
 	if err != nil {
 		return nil, err
 	}
@@ -266,7 +271,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		return result, nil
 	}
 
-	err = assertTagNotExists(ctx, o.CheckoutDir, o.PushRemote, result.ReleaseTag)
+	err = o.assertTagNotExists(ctx, o.PushRemote, result.ReleaseTag)
 	if err != nil {
 		return nil, err
 	}
@@ -284,7 +289,7 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 	if result.PreTagHookAborted {
 		return result, nil
 	}
-	if result.ReleaseVersion == nil || !createTag {
+	if result.ReleaseVersion == nil || !o.shouldCreateTag(ctx) {
 		return result, nil
 	}
 
@@ -293,55 +298,56 @@ func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
 		return nil, err
 	}
 	teardowns = append(teardowns, func() error {
-		_, e := runCmd(ctx, &runCmdOpts{
-			dir: o.CheckoutDir,
-		}, "git", "push", o.PushRemote, "--delete", result.ReleaseTag)
+		_, e := o.runCmd(ctx, nil, "git", "push", o.PushRemote, "--delete", result.ReleaseTag)
 		return e
 	})
 
 	result.CreatedTag = true
 
-	if !release {
-		return result, nil
+	if o.CreateRelease {
+		err = o.createRelease(ctx, result, &teardowns)
+		if err != nil {
+			return nil, err
+		}
 	}
 
+	return result, nil
+}
+
+// createRelease handles the creation of a GitHub release, including notes, assets, and publishing.
+func (o *Runner) createRelease(ctx context.Context, result *Result, teardowns *[]func() error) error {
 	releaseNotes, err := o.getReleaseNotes(ctx, result)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	prerelease := result.ReleaseVersion.Prerelease() != ""
 	rel, err := o.GithubClient.CreateRelease(ctx, o.repoOwner(), o.repoName(), result.ReleaseTag, releaseNotes, prerelease)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	teardowns = append(teardowns, func() error {
+	*teardowns = append(*teardowns, func() error {
 		return o.GithubClient.DeleteRelease(ctx, o.repoOwner(), o.repoName(), rel.ID)
 	})
 
 	err = o.uploadAssets(ctx, rel.UploadURL)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	result.CreatedRelease = true
 	if o.Draft {
-		return result, nil
+		return nil
 	}
 
 	err = o.GithubClient.PublishRelease(ctx, o.repoOwner(), o.repoName(), o.MakeLatest, rel.ID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// push target last because it cannot be easily rolled back
-	err = o.pushTarget(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
+	return o.pushTarget(ctx)
 }
 
 func (o *Runner) uploadAssets(ctx context.Context, uploadURL string) error {
@@ -365,9 +371,7 @@ func (o *Runner) pushTarget(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	ref, err := runCmd(ctx, &runCmdOpts{
-		dir: o.CheckoutDir,
-	}, "git", "rev-parse", "--verify", "--symbolic-full-name", target)
+	ref, err := o.runCmd(ctx, nil, "git", "rev-parse", "--verify", "--symbolic-full-name", target)
 	if err != nil {
 		return err
 	}
@@ -375,9 +379,7 @@ func (o *Runner) pushTarget(ctx context.Context) error {
 		// only push branches
 		return nil
 	}
-	_, err = runCmd(ctx, &runCmdOpts{
-		dir: o.CheckoutDir,
-	}, "git", "push", o.PushRemote, target)
+	_, err = o.runCmd(ctx, nil, "git", "push", o.PushRemote, target)
 	return err
 }
 
@@ -393,16 +395,12 @@ func (o *Runner) tagRelease(ctx context.Context, releaseTag string) error {
 			return err
 		}
 
-		_, err = runCmd(ctx, &runCmdOpts{
-			dir: o.CheckoutDir,
-		}, "git", "tag", releaseTag, target)
+		_, err = o.runCmd(ctx, nil, "git", "tag", releaseTag, target)
 		if err != nil {
 			return err
 		}
 	}
-	_, err = runCmd(ctx, &runCmdOpts{
-		dir: o.CheckoutDir,
-	}, "git", "push", o.PushRemote, releaseTag)
+	_, err = o.runCmd(ctx, nil, "git", "push", o.PushRemote, releaseTag)
 	return err
 }
 
@@ -437,8 +435,7 @@ func (o *Runner) runPreTagHook(ctx context.Context, result Result) (Result, erro
 	if o.Stderr != nil {
 		stderr = io.MultiWriter(o.Stderr, &stderrBuf)
 	}
-	_, err := runCmd(ctx, &runCmdOpts{
-		dir:    o.CheckoutDir,
+	_, err := o.runCmd(ctx, &runCmdOpts{
 		stdout: stdout,
 		stderr: stderr,
 		env:    env,
@@ -468,29 +465,38 @@ func (o *Runner) runPreTagHook(ctx context.Context, result Result) (Result, erro
 	return result, nil
 }
 
-func gitNameRev(ctx context.Context, dir, commitish string, refs []string) bool {
+// isAllowedRef checks if the given commitish is one ot the allowed refs. Returns true when
+// allowedRefs is empty.
+func (o *Runner) isAllowedRef(ctx context.Context, commitish string, allowedRefs []string) bool {
+	if len(allowedRefs) == 0 {
+		return true
+	}
+	return o.gitNameRev(ctx, commitish, allowedRefs)
+}
+
+// gitNameRev checks if the given commitish (commit, branch, or tag) matches any of the provided refs
+// using `git name-rev`. It returns true if the command succeeds, meaning the commitish can be resolved
+// to one of the refs. This is useful for determining if a specific ref (e.g., a branch or tag) is present
+// in a list of allowed refs, which helps control release or tagging logic based on repository state.
+func (o *Runner) gitNameRev(ctx context.Context, commitish string, refs []string) bool {
 	args := []string{"name-rev", commitish, "--no-undefined"}
 	for _, ref := range refs {
 		args = append(args, "--refs", ref)
 	}
-	_, err := runCmd(ctx, &runCmdOpts{
-		dir: dir,
-	}, "git", args...)
+	_, err := o.runCmd(ctx, nil, "git", args...)
 	return err == nil
 }
 
 // assertTagNotExists returns an error if tag exists either locally or on remote.
-func assertTagNotExists(ctx context.Context, dir, remote, tag string) error {
-	out, err := runCmd(ctx, &runCmdOpts{
-		dir: dir,
-	}, "git", "ls-remote", "--tags", remote, tag)
+func (o *Runner) assertTagNotExists(ctx context.Context, remote, tag string) error {
+	out, err := o.runCmd(ctx, nil, "git", "ls-remote", "--tags", remote, tag)
 	if err != nil {
 		return err
 	}
 	if strings.TrimSpace(out) != "" {
 		return fmt.Errorf("tag %q already exists on remote", tag)
 	}
-	ok, err := localTagExists(ctx, dir, tag)
+	ok, err := localTagExists(ctx, o.CheckoutDir, tag)
 	if err != nil {
 		return err
 	}

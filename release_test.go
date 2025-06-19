@@ -359,7 +359,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 		}, got)
 	})
 
-	t.Run("pre-release hook failure without createTag", func(t *testing.T) {
+	t.Run("pre-release hook failure without shouldCreateTag", func(t *testing.T) {
 		t.Parallel()
 		ctx := t.Context()
 		repos := setupGit(t)
