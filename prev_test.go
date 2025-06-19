@@ -8,6 +8,7 @@ import (
 )
 
 func Test_getPrevTag(t *testing.T) {
+	t.Parallel()
 	const stdSetup = `
 		git init
 		git commit --allow-empty -m "first"
@@ -21,7 +22,9 @@ func Test_getPrevTag(t *testing.T) {
 		git commit --allow-empty -m "second"
 		git commit --allow-empty -m "third"
 		git tag v2.0.0
+		git tag v4
 		git tag foo
+		git tag foo3.0.0
 		git commit --allow-empty -m "forth"
 		git tag bar
 	`
@@ -41,13 +44,57 @@ func Test_getPrevTag(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name:     "",
-			setupCmd: stdSetup,
-			opts:     getPrevTagOpts{TagPrefix: "v"},
+			name:    "",
+			opts:    getPrevTagOpts{TagPrefix: "v"},
+			wantTag: "v2.0.0",
+		},
+		{
+			name:     "no tags",
+			setupCmd: `git init && git commit --allow-empty -m "first"`,
+			wantTag:  "",
+		},
+		{
+			name:    "no matching prefix",
+			opts:    getPrevTagOpts{TagPrefix: "z"},
+			wantTag: "",
+		},
+		{
+			name:     "StableOnly",
+			setupCmd: stdSetup + "\ngit tag v2.1.0-beta.1\n",
+			opts:     getPrevTagOpts{TagPrefix: "v", StableOnly: true},
 			wantTag:  "v2.0.0",
+		},
+		{
+			name:     "prerelease tag",
+			setupCmd: stdSetup + "\ngit tag v2.1.0-beta.1\n",
+			opts:     getPrevTagOpts{TagPrefix: "v"},
+			wantTag:  "v2.1.0-beta.1",
+		},
+		{
+			name:     "specific head",
+			setupCmd: stdSetup + "\ngit tag v3.0.0\n",
+			opts:     getPrevTagOpts{TagPrefix: "v", Head: "HEAD~1"},
+			wantTag:  "v2.0.0",
+		},
+		{
+			name: "no prefix no match",
+			opts: getPrevTagOpts{TagPrefix: ""},
+		},
+		{
+			name:     "no prefix match",
+			setupCmd: stdSetup + "\ngit tag 1.2.3-alpha.1\n",
+			opts:     getPrevTagOpts{TagPrefix: ""},
+			wantTag:  "1.2.3-alpha.1",
+		},
+		{
+			name:     "git error",
+			setupCmd: "echo 'do nothing'",
+			opts:     getPrevTagOpts{TagPrefix: "v"},
+			wantErr:  true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			ctx := t.Context()
 			dir := t.TempDir()
 			setupOpts := &runCmdOpts{
