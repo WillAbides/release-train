@@ -26,7 +26,7 @@ func newPull(number int, aliases map[string]string, labels ...string) (*ghPull, 
 	sort.Strings(labels)
 	for _, label := range labels {
 		resolvedLabel := ResolveLabel(label, aliases)
-		level, ok := labelLevels[resolvedLabel]
+		level, ok := labelLevel(resolvedLabel)
 		if ok {
 			p.LevelLabels = append(p.LevelLabels, label)
 			if level > p.ChangeLevel {
