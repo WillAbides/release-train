@@ -96,7 +96,7 @@ func (a *actionInputHelper) Input() string {
 	return fmt.Sprintf("${{ inputs.%s }}", a.Name)
 }
 
-var boolTemplate = template.Must(template.New("").Parse(`
+const boolTemplateStr = `
 case "{{.Input}}" in
   true)
     set -- "$@" --{{.Flag}}
@@ -108,24 +108,28 @@ case "{{.Input}}" in
     exit 1
 	;;
 esac
-`))
+`
 
-var cumulativeTemplate = template.Must(template.New("").Parse(`
+const cumulativeTemplateStr = `
 while IFS= read -r line; do
   [ -n "$line" ] || continue
   set -- "$@" --{{.Flag}} "$line"
 done <<EOF
 {{.Input}}
 EOF
-`))
+`
 
-var scalarTemplate = template.Must(template.New("").Parse(`
+const scalarTemplateStr = `
 if [ -n "{{.Input}}" ]; then
   set -- "$@" --{{.Flag}} '{{.Input}}'
 fi
-`))
+`
 
 func getAction(kongCtx *kong.Context) (*CompositeAction, error) {
+	boolTemplate := template.Must(template.New("").Parse(boolTemplateStr))
+	cumulativeTemplate := template.Must(template.New("").Parse(cumulativeTemplateStr))
+	scalarTemplate := template.Must(template.New("").Parse(scalarTemplateStr))
+
 	script := `#!/bin/sh
 set -e
 
