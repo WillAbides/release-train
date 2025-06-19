@@ -269,7 +269,7 @@ func (c *rootCmd) runRelease(ctx context.Context, stdout, stderr io.Writer) (err
 		MakeLatest:      c.MakeLatest,
 	}
 
-	result, err := runner.Run(ctx)
+	result, err := runner.run(ctx)
 	if err != nil {
 		return err
 	}

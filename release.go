@@ -273,12 +273,12 @@ func (o *Runner) runCmd(ctx context.Context, opts *runCmdOpts, command string, a
 	return runCmd(ctx, opts, command, args...)
 }
 
-func (o *Runner) Run(ctx context.Context) (_ *Result, errOut error) {
+func (o *Runner) run(ctx context.Context) (_ *Result, errOut error) {
 	if o.ran {
-		panic("Runner.Run called multiple times, this is not allowed")
+		panic("Runner.run called multiple times, this is not allowed")
 	}
 	o.ran = true
-	slog.Debug("starting Run")
+	slog.Debug("starting run")
 	defer func() {
 		if errOut != nil {
 			errOut = errors.Join(errOut, o.cleanupAfterErr())

@@ -176,7 +176,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			},
 			MakeLatest: "true",
 		}
-		got, err := runner.Run(ctx)
+		got, err := runner.run(ctx)
 		require.NoError(t, err)
 		require.Equal(t, &Result{
 			PreviousRef:           "v2.0.0",
@@ -222,7 +222,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			CreateRelease: true,
 			InitialTag:    "x1.0.0",
 		}
-		got, err := runner.Run(ctx)
+		got, err := runner.run(ctx)
 		require.NoError(t, err)
 		require.Equal(t, &Result{
 			FirstRelease:   true,
@@ -288,7 +288,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			GithubToken:  "token",
 			TempDir:      t.TempDir(),
 		}
-		got, err := runner.Run(ctx)
+		got, err := runner.run(ctx)
 		require.NoError(t, err)
 		require.Equal(t, &Result{
 			FirstRelease:          false,
@@ -339,7 +339,7 @@ echo "$(git rev-parse HEAD)" > "$RELEASE_TARGET"
 			CreateTag:    true,
 			PreTagHook:   preHook,
 		}
-		got, err := runner.Run(ctx)
+		got, err := runner.run(ctx)
 		require.NoError(t, err)
 		require.Equal(t, &Result{
 			FirstRelease:          false,
@@ -399,7 +399,7 @@ exit 1
 			GithubClient: githubClient,
 			PreTagHook:   preHook,
 		}
-		_, err := runner.Run(ctx)
+		_, err := runner.run(ctx)
 		require.EqualError(t, err, "exit status 1")
 		require.Contains(t, stderr.String(), "this is an error\nthis is another error\n")
 		require.Contains(t, stdout.String(), "failure\n")
@@ -445,7 +445,7 @@ exit 1
 			GithubClient:  githubClient,
 			CreateRelease: true,
 		}
-		got, err := runner.Run(ctx)
+		got, err := runner.run(ctx)
 		require.NoError(t, err)
 		require.Equal(t, &Result{
 			PreviousRef:           "v2.0.0",
@@ -469,7 +469,7 @@ exit 1
 		runner := &Runner{
 			CheckoutDir: repos.clone,
 		}
-		_, err := runner.Run(ctx)
+		_, err := runner.run(ctx)
 		require.EqualError(t, err, "shallow clones are not supported")
 	})
 
@@ -481,7 +481,7 @@ exit 1
 		runner := &Runner{
 			CheckoutDir: repos.clone,
 		}
-		_, err := runner.Run(ctx)
+		_, err := runner.run(ctx)
 		require.ErrorContains(t, err, "not a git repository")
 	})
 
@@ -499,7 +499,7 @@ exit 1
 			TagPrefix:    "v",
 			Repo:         "orgName/repoName",
 			GithubClient: githubClient,
-		}).Run(ctx)
+		}).run(ctx)
 		require.EqualError(t, err, "api error")
 	})
 
@@ -535,7 +535,7 @@ exit 1
 			GithubClient:  githubClient,
 			CreateRelease: true,
 		}
-		_, err := runner.Run(ctx)
+		_, err := runner.run(ctx)
 		require.EqualError(t, err, "release error")
 		ok, err := localTagExists(ctx, repos.origin, "v3.0.0")
 		require.NoError(t, err)
@@ -588,7 +588,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			PreTagHook:    preHook,
 			TempDir:       t.TempDir(),
 		}
-		_, err := runner.Run(ctx)
+		_, err := runner.run(ctx)
 		require.ErrorContains(t, err, "upload error")
 		ok, err := localTagExists(ctx, repos.origin, "v3.0.0")
 		require.NoError(t, err)
@@ -619,7 +619,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			Repo:         "orgName/repoName",
 			PushRemote:   "origin",
 			GithubClient: githubClient,
-		}).Run(ctx)
+		}).run(ctx)
 		require.NoError(t, err)
 		require.Equal(t, &Result{
 			PreviousRef:           "v2.0.0",
@@ -659,7 +659,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			GithubClient:  githubClient,
 			CreateRelease: true,
 			ReleaseRefs:   []string{"fake"},
-		}).Run(ctx)
+		}).run(ctx)
 		require.NoError(t, err)
 		require.Equal(t, &Result{
 			PreviousRef:           "v2.0.0",
@@ -698,7 +698,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			PushRemote:   "origin",
 			GithubClient: githubClient,
 			V0:           true,
-		}).Run(ctx)
+		}).run(ctx)
 		require.NoError(t, err)
 		require.Equal(t, &Result{
 			PreviousRef:           "v0.2.0",
@@ -722,7 +722,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			TagPrefix:   "v",
 			Repo:        "orgName/repoName",
 			V0:          true,
-		}).Run(ctx)
+		}).run(ctx)
 		require.EqualError(t, err, `v0 flag is set, but previous version "1.0.0" has major version > 0`)
 	})
 
@@ -751,7 +751,7 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			Repo:         "orgName/repoName",
 			PushRemote:   "origin",
 			GithubClient: githubClient,
-		}).Run(ctx)
+		}).run(ctx)
 		require.NoError(t, err)
 		require.Equal(t, &Result{
 			PreviousRef:           "v2.1.0-rc.1",
