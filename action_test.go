@@ -11,31 +11,31 @@ import (
 )
 
 func TestAction(t *testing.T) {
-	action := CompositeAction{
+	action := compositeAction{
 		Name:        "my action",
 		Description: "this is\na test",
 		Author:      "me",
-		Branding: &Branding{
+		Branding: &branding{
 			Icon:  "test",
 			Color: "test",
 		},
 
-		Outputs: orderedmap.New[string, CompositeOutput](
-			orderedmap.WithInitialData[string, CompositeOutput](
-				orderedmap.Pair[string, CompositeOutput]{
+		Outputs: orderedmap.New[string, compositeOutput](
+			orderedmap.WithInitialData[string, compositeOutput](
+				orderedmap.Pair[string, compositeOutput]{
 					Key: "test",
-					Value: CompositeOutput{
+					Value: compositeOutput{
 						Value:       "test",
 						Description: "this is a test",
 					},
 				},
 			),
 		),
-		Inputs: orderedmap.New[string, Input](
-			orderedmap.WithInitialData[string, Input](
-				orderedmap.Pair[string, Input]{
+		Inputs: orderedmap.New[string, actionInput](
+			orderedmap.WithInitialData[string, actionInput](
+				orderedmap.Pair[string, actionInput]{
 					Key: "test",
-					Value: Input{
+					Value: actionInput{
 						DeprecationMessage: "omg this is deprecated",
 						Description:        "we are testing\nthis",
 						Required:           true,
@@ -44,9 +44,9 @@ func TestAction(t *testing.T) {
 				},
 			),
 		),
-		Runs: CompositeRuns{
+		Runs: compositeRuns{
 			Using: "composite",
-			Steps: []CompositeStep{
+			Steps: []compositeStep{
 				{
 					Name:             "test",
 					Id:               "test",
@@ -117,7 +117,7 @@ runs:
 	err := enc.Encode(&action)
 	require.NoError(t, err)
 	require.Equal(t, strings.TrimSpace(want), strings.TrimSpace(buf.String()))
-	var action2 CompositeAction
+	var action2 compositeAction
 	err = yaml.Unmarshal(buf.Bytes(), &action2)
 	require.NoError(t, err)
 	require.Equal(t, action, action2)
