@@ -46,6 +46,7 @@ jobs:
           go build -o bin/release-train .
           echo RELEASE_TRAIN_BIN="$(pwd)"/bin/release-train >> "$GITHUB_ENV"
           echo branch_name="${GITHUB_REF##*/}" >> "$GITHUB_OUTPUT"
+      - uses: jetify-com/devbox-install-action@v0.14.0
       - run: script/cibuild
       - id: release-train
         name: release-train
