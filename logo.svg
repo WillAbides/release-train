@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 360" width="500" height="360">
+  <title>Pelican Riding a Bicycle</title>
+
+  <!-- ===== BICYCLE ===== -->
+
+  <!-- Rear wheel spokes -->
+  <g stroke="#95A5A6" stroke-width="1.5">
+    <line x1="135" y1="270" x2="135" y2="202"/>
+    <line x1="135" y1="270" x2="135" y2="338"/>
+    <line x1="135" y1="270" x2="67"  y2="270"/>
+    <line x1="135" y1="270" x2="203" y2="270"/>
+    <line x1="135" y1="270" x2="183" y2="222"/>
+    <line x1="135" y1="270" x2="87"  y2="318"/>
+    <line x1="135" y1="270" x2="87"  y2="222"/>
+    <line x1="135" y1="270" x2="183" y2="318"/>
+  </g>
+
+  <!-- Front wheel spokes -->
+  <g stroke="#95A5A6" stroke-width="1.5">
+    <line x1="355" y1="270" x2="355" y2="202"/>
+    <line x1="355" y1="270" x2="355" y2="338"/>
+    <line x1="355" y1="270" x2="287" y2="270"/>
+    <line x1="355" y1="270" x2="423" y2="270"/>
+    <line x1="355" y1="270" x2="403" y2="222"/>
+    <line x1="355" y1="270" x2="307" y2="318"/>
+    <line x1="355" y1="270" x2="307" y2="222"/>
+    <line x1="355" y1="270" x2="403" y2="318"/>
+  </g>
+
+  <!-- Rear wheel rim -->
+  <circle cx="135" cy="270" r="68" fill="none" stroke="#2C3E50" stroke-width="6"/>
+  <circle cx="135" cy="270" r="8"  fill="#2C3E50"/>
+
+  <!-- Front wheel rim -->
+  <circle cx="355" cy="270" r="68" fill="none" stroke="#2C3E50" stroke-width="6"/>
+  <circle cx="355" cy="270" r="8"  fill="#2C3E50"/>
+
+  <!-- Bicycle frame -->
+  <!-- Chain stay -->
+  <line x1="135" y1="270" x2="238" y2="270" stroke="#E74C3C" stroke-width="7" stroke-linecap="round"/>
+  <!-- Seat tube -->
+  <line x1="238" y1="270" x2="222" y2="188" stroke="#E74C3C" stroke-width="7" stroke-linecap="round"/>
+  <!-- Seat stay -->
+  <line x1="222" y1="188" x2="135" y2="270" stroke="#E74C3C" stroke-width="6" stroke-linecap="round"/>
+  <!-- Top tube -->
+  <line x1="222" y1="188" x2="322" y2="183" stroke="#E74C3C" stroke-width="7" stroke-linecap="round"/>
+  <!-- Down tube -->
+  <line x1="238" y1="270" x2="328" y2="208" stroke="#E74C3C" stroke-width="7" stroke-linecap="round"/>
+  <!-- Head tube -->
+  <line x1="322" y1="183" x2="328" y2="208" stroke="#E74C3C" stroke-width="9" stroke-linecap="round"/>
+  <!-- Fork -->
+  <line x1="328" y1="208" x2="355" y2="270" stroke="#E74C3C" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Seat post -->
+  <line x1="222" y1="188" x2="218" y2="163" stroke="#2C3E50" stroke-width="5" stroke-linecap="round"/>
+  <!-- Saddle -->
+  <ellipse cx="218" cy="161" rx="20" ry="6" fill="#34495E"/>
+  <path d="M200,159 Q218,151 236,159" stroke="#2C3E50" stroke-width="4" fill="none" stroke-linecap="round"/>
+
+  <!-- Stem -->
+  <line x1="322" y1="183" x2="318" y2="158" stroke="#2C3E50" stroke-width="5" stroke-linecap="round"/>
+  <!-- Handlebar -->
+  <line x1="304" y1="155" x2="334" y2="162" stroke="#2C3E50" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="304" cy="155" r="5" fill="#2C3E50"/>
+  <circle cx="334" cy="162" r="5" fill="#2C3E50"/>
+
+  <!-- Bottom bracket -->
+  <circle cx="238" cy="270" r="10" fill="#2C3E50"/>
+  <!-- Chainring -->
+  <circle cx="238" cy="270" r="22" fill="none" stroke="#2C3E50" stroke-width="3"/>
+
+  <!-- Cranks (left crank forward/down at ~135°, right crank back/up at ~315°) -->
+  <line x1="238" y1="270" x2="218" y2="290" stroke="#2C3E50" stroke-width="5" stroke-linecap="round"/>
+  <line x1="238" y1="270" x2="258" y2="250" stroke="#2C3E50" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Pedals -->
+  <rect x="206" y="288" width="26" height="7" rx="2" fill="#34495E" transform="rotate(-10 219 292)"/>
+  <rect x="246" y="247" width="26" height="7" rx="2" fill="#34495E" transform="rotate(-10 259 251)"/>
+
+  <!-- ===== PELICAN ===== -->
+
+  <!-- Tail feathers (left side of body) -->
+  <path d="M170,122 Q150,124 140,132 Q153,122 170,126" fill="white" stroke="#B0BEC5" stroke-width="1.2"/>
+  <path d="M170,117 Q148,117 137,125 Q152,116 170,120" fill="white" stroke="#B0BEC5" stroke-width="1.2"/>
+  <path d="M170,128 Q149,133 141,142 Q155,131 170,133" fill="white" stroke="#B0BEC5" stroke-width="1.2"/>
+
+  <!-- Body -->
+  <ellipse cx="215" cy="124" rx="48" ry="37" fill="white" stroke="#B0BEC5" stroke-width="2"/>
+
+  <!-- Wing fold / primary feather line -->
+  <path d="M174,120 Q193,141 215,134 Q238,141 256,120" fill="none" stroke="#B0BEC5" stroke-width="1.8"/>
+
+  <!-- Pelican legs -->
+  <!-- Left leg to left pedal (~219, 292) -->
+  <path d="M202,158 Q205,205 214,248 Q217,270 219,292"
+        fill="none" stroke="#F5A623" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Right leg to right pedal (~259, 251) -->
+  <path d="M223,158 Q232,192 244,222 Q252,239 259,251"
+        fill="none" stroke="#F5A623" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Webbed feet on pedals -->
+  <!-- Left foot -->
+  <path d="M211,294 Q219,298 227,294 Q223,303 219,305 Q215,303 211,294 Z"
+        fill="#F5A623" stroke="#D4881A" stroke-width="1"/>
+  <!-- Right foot -->
+  <path d="M251,253 Q259,257 267,253 Q263,262 259,264 Q255,262 251,253 Z"
+        fill="#F5A623" stroke="#D4881A" stroke-width="1"/>
+
+  <!-- Neck -->
+  <path d="M232,91 Q255,79 266,68"
+        fill="none" stroke="white" stroke-width="16" stroke-linecap="round"/>
+  <path d="M232,91 Q255,79 266,68"
+        fill="none" stroke="#B0BEC5" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- Head -->
+  <circle cx="269" cy="62" r="22" fill="white" stroke="#B0BEC5" stroke-width="2"/>
+
+  <!-- Upper mandible -->
+  <path d="M282,57 L332,50 L333,61 L282,66 Z" fill="#F5A623" stroke="#D4881A" stroke-width="1"/>
+  <!-- Throat pouch (lower mandible) -->
+  <path d="M282,66 L333,61 L329,77 L280,76 Z" fill="#E07B39" stroke="#C0621A" stroke-width="1.2"/>
+  <!-- Bill tip hook -->
+  <path d="M332,50 L340,56 L333,61 Z" fill="#D4881A"/>
+
+  <!-- Eye -->
+  <circle cx="274" cy="57" r="5.5" fill="#2C3E50"/>
+  <circle cx="275.5" cy="55.5" r="2" fill="white"/>
+
+  <!-- Furrowed brow (concentration while riding) -->
+  <path d="M268,51 Q274,48 280,51" fill="none" stroke="#90A4AE" stroke-width="1.8" stroke-linecap="round"/>
+
+  <!-- Head crest feathers -->
+  <path d="M261,42 Q264,32 268,27 Q268,34 265,40" fill="white" stroke="#B0BEC5" stroke-width="1"/>
+  <path d="M267,41 Q271,30 275,25 Q274,32 271,39" fill="white" stroke="#B0BEC5" stroke-width="1"/>
+</svg>
