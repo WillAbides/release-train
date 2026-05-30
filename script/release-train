@@ -30,7 +30,7 @@ is_full_sha() {
 # the given commit SHA. Returns non-zero if ls-remote fails or no matching tag is found.
 resolve_sha_to_tag() {
   _rstt_sha="$1"
-  _rstt_refs="$(git ls-remote --tags "$CANONICAL_GIT_URL" 2>/dev/null)" || return 1
+  _rstt_refs="$(git ls-remote --tags "$CANONICAL_GIT_URL" 2> /dev/null)" || return 1
   _rstt_tag="$(printf '%s\n' "$_rstt_refs" | awk -v sha="$_rstt_sha" '
     $1 == sha {
       ref = $2
