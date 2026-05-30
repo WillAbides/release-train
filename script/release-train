@@ -6,31 +6,113 @@ set -e
 
 REPO_DIR="$(CDPATH="" cd -- "$(dirname -- "$0")/.." && pwd -P)"
 
-action_dl() {
+CANONICAL_REPO="WillAbides/release-train"
+RELEASE_DOWNLOAD_BASE="https://github.com/$CANONICAL_REPO/releases/download"
+CANONICAL_GIT_URL="https://github.com/$CANONICAL_REPO.git"
+
+# looks_like_release_tag returns 0 if $1 looks like a semver release tag (vX.Y.Z...).
+looks_like_release_tag() {
+  case "$1" in
+    v[0-9]*.[0-9]*.[0-9]*) return 0 ;;
+  esac
+  return 1
+}
+
+# is_full_sha returns 0 if $1 is a 40-character hex string.
+is_full_sha() {
+  case "$1" in
+    *[!0-9a-fA-F]* | '') return 1 ;;
+  esac
+  [ "${#1}" -eq 40 ]
+}
+
+# resolve_sha_to_tag prints a semver release tag from the canonical repo that points at
+# the given commit SHA. Returns non-zero if ls-remote fails or no matching tag is found.
+resolve_sha_to_tag() {
+  _rstt_sha="$1"
+  _rstt_refs="$(git ls-remote --tags "$CANONICAL_GIT_URL" 2>/dev/null)" || return 1
+  _rstt_tag="$(printf '%s\n' "$_rstt_refs" | awk -v sha="$_rstt_sha" '
+    $1 == sha {
+      ref = $2
+      sub(/^refs\/tags\//, "", ref)
+      sub(/\^\{\}$/, "", ref)
+      if (ref ~ /^v[0-9]+\.[0-9]+\.[0-9]+/) {
+        print ref
+        exit
+      }
+    }
+  ')"
+  [ -n "$_rstt_tag" ] || return 1
+  printf '%s\n' "$_rstt_tag"
+}
+
+# determine_release_tag prints the release-train release tag that should be downloaded
+# based on the action's pinned ref, or returns non-zero to indicate that the script should
+# fall back to building from source.
+determine_release_tag() {
+  [ -n "$GITHUB_ACTION_PATH" ] || return 1
+  _drt_raw="$(basename "$GITHUB_ACTION_PATH")"
+
+  if looks_like_release_tag "$_drt_raw"; then
+    printf '%s\n' "$_drt_raw"
+    return 0
+  fi
+
+  # Only resolve a SHA when the action is pinned against the canonical repo. Forks at
+  # the same SHA can have tags pointing at unrelated source we cannot safely map to a
+  # canonical release.
+  _drt_repo="${GITHUB_ACTION_REPOSITORY:-$CANONICAL_REPO}"
+  [ "$_drt_repo" = "$CANONICAL_REPO" ] || return 1
+
+  is_full_sha "$_drt_raw" || return 1
+
+  _drt_tag="$(resolve_sha_to_tag "$_drt_raw")" || return 1
+  echo "Resolved action commit $_drt_raw to release tag $_drt_tag" >&2
+  printf '%s\n' "$_drt_tag"
+}
+
+# download_release downloads bindown.yaml for the given release tag and installs
+# release-train into bin/. Any failure here is fatal: the user explicitly pinned to a
+# released version, so silently falling back to a source build would mask the problem.
+download_release() {
   (
-    [ -n "$GITHUB_ACTION_PATH" ] || return 1
+    _dr_tag="$1"
     cd "$REPO_DIR"
-    ACTION_VERSION="$(basename "$GITHUB_ACTION_PATH")"
-    echo "Using release-train version $ACTION_VERSION from action"
+    echo "Using release-train version $_dr_tag from action"
 
-    mkdir -p tmp
-    rm -f tmp/bindown.yaml
+    mkdir -p tmp bin
+    rm -f tmp/bindown.yaml bin/release-train
 
-    curl -L -o tmp/bindown.yaml \
-      "https://github.com/WillAbides/release-train/releases/download/$ACTION_VERSION/bindown.yaml"
+    if ! curl --fail --silent --show-error --location \
+      --output tmp/bindown.yaml \
+      "$RELEASE_DOWNLOAD_BASE/$_dr_tag/bindown.yaml"; then
+      echo "release-train: failed to download bindown.yaml for $_dr_tag from $RELEASE_DOWNLOAD_BASE/$_dr_tag/bindown.yaml" >&2
+      return 1
+    fi
 
-    script/bindown install release-train --configfile tmp/bindown.yaml --cache .cache --output bin/release-train
-    echo "Successfully downloaded release-train $ACTION_VERSION from action" >&2
+    if ! script/bindown install release-train \
+      --configfile tmp/bindown.yaml --cache .cache --output bin/release-train; then
+      echo "release-train: failed to install release-train $_dr_tag via bindown" >&2
+      return 1
+    fi
+
+    echo "Successfully downloaded release-train $_dr_tag from action" >&2
   )
 }
 
 local_build() {
   (
     cd "$REPO_DIR"
+    mkdir -p bin
+    rm -f bin/release-train
     go build -o bin/release-train .
   )
 }
 
-action_dl || local_build
+if RELEASE_TAG="$(determine_release_tag)"; then
+  download_release "$RELEASE_TAG"
+else
+  local_build
+fi
 
 exec "$REPO_DIR"/bin/release-train "$@"
