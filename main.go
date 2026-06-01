@@ -20,7 +20,7 @@ import (
 var version = "dev"
 
 func helpVars() kong.Vars {
-	return kong.Vars{
+	return kong.Vars{ //nolint:gosec // G101 false positive: help text mentioning "token" is not a credential
 		"generate_action_help":  `Ignore all other flags and generate a GitHub action.`,
 		"ref_help":              `git ref.`,
 		"checkout_dir_help":     `The directory where the repository is checked out.`,
