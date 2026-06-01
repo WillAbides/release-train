@@ -116,8 +116,23 @@ release. Some options such as `--check-pr` will modify this behavior.
    yet.
 6. **Upload release assets**. Any files written to `$ASSETS_DIR` will be
    uploaded as release assets.
-7. **Publish the release**.
-8. **Emit output** including release version, tag, change level, etc.
+7. **Push the release target** (e.g. a bake commit produced by the pre-tag
+   hook) to its branch on the remote. Pushing the target before publishing
+   ensures that on a repository with
+   [Immutable Releases](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases)
+   enabled, a rejected push to a protected branch does not permanently reserve
+   the tag name.
+8. **Publish the release**.
+9. **Emit output** including release version, tag, change level, etc.
+
+If the push in step 7 fails, the draft release and the pushed tag are cleaned
+up so the run can be retried. If step 8 (publish) fails, the draft release,
+the tag, and the pushed target are left in place — once publish has been
+attempted there is no way to tell whether the server processed it, and
+deleting the release or tag at that point would permanently reserve the tag
+name on Immutable Releases repositories. Recover by publishing the draft
+release manually, or by deleting the draft release and tag and reverting the
+target branch by hand.
 
 ## Recipes
 
