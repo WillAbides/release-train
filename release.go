@@ -65,8 +65,23 @@ func (o *Runner) cleanupAfterErr() error {
 	return err
 }
 
-func (o *Runner) addErrCleanup(fn func() error) {
-	o.errCleanups = append(o.errCleanups, fn)
+// addErrCleanup registers fn to run during cleanupAfterErr. The returned
+// cancel function deactivates the cleanup so that it becomes a no-op. Callers
+// must invoke cancel once the action that fn would undo has reached a point
+// where rolling it back is no longer safe or correct — for example, after
+// PublishRelease has been attempted, because the server may have processed
+// the publish even if the client saw an error, and on a repository with
+// Immutable Releases enabled, deleting either the release or its tag in that
+// state permanently reserves the tag name.
+func (o *Runner) addErrCleanup(fn func() error) (cancel func()) {
+	active := true
+	o.errCleanups = append(o.errCleanups, func() error {
+		if !active {
+			return nil
+		}
+		return fn()
+	})
+	return func() { active = false }
 }
 
 type Result struct {
@@ -327,7 +342,7 @@ func (o *Runner) run(ctx context.Context) (_ *Result, errOut error) {
 	if err != nil {
 		return nil, err
 	}
-	o.addErrCleanup(func() error {
+	cancelTagDelete := o.addErrCleanup(func() error {
 		_, e := o.runCmd(ctx, nil, "git", "push", o.PushRemote, "--delete", result.ReleaseTag)
 		return e
 	})
@@ -335,7 +350,7 @@ func (o *Runner) run(ctx context.Context) (_ *Result, errOut error) {
 	result.CreatedTag = true
 
 	if o.CreateRelease {
-		err = o.createRelease(ctx, result)
+		err = o.createRelease(ctx, result, cancelTagDelete)
 		if err != nil {
 			return nil, err
 		}
@@ -356,7 +371,17 @@ func (o *Runner) rejectShallowCheckout(ctx context.Context) error {
 }
 
 // createRelease handles the creation of a GitHub release, including notes, assets, and publishing.
-func (o *Runner) createRelease(ctx context.Context, result *Result) error {
+//
+// To remain compatible with repositories that have Immutable Releases enabled
+// (https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases),
+// the release is created as a draft, all assets are uploaded, the release
+// target is pushed, and only then is the release published. This matches the
+// workflow GitHub recommends for immutable releases: create draft → upload
+// assets → publish. Once PublishRelease has been attempted both destructive
+// cleanups (DeleteRelease and the tag delete) are cancelled, because the
+// server may have processed the publish even if the client saw an error, and
+// deleting either side in that state permanently reserves the tag name.
+func (o *Runner) createRelease(ctx context.Context, result *Result, cancelTagDelete func()) error {
 	releaseNotes, err := o.getReleaseNotes(ctx, result)
 	if err != nil {
 		return err
@@ -368,7 +393,7 @@ func (o *Runner) createRelease(ctx context.Context, result *Result) error {
 		return err
 	}
 
-	o.addErrCleanup(func() error {
+	cancelDeleteRelease := o.addErrCleanup(func() error {
 		return o.GithubClient.DeleteRelease(ctx, o.repoOwner(), o.repoName(), rel.ID)
 	})
 
@@ -382,13 +407,21 @@ func (o *Runner) createRelease(ctx context.Context, result *Result) error {
 		return nil
 	}
 
-	err = o.GithubClient.PublishRelease(ctx, o.repoOwner(), o.repoName(), o.MakeLatest, rel.ID)
+	// Push the target before publishing so the release stays a draft (and no
+	// immutable-tag row exists) until the most failure-prone step — the push
+	// to a possibly-protected branch — has succeeded.
+	err = o.pushTarget(ctx)
 	if err != nil {
 		return err
 	}
 
-	// push target last because it cannot be easily rolled back
-	return o.pushTarget(ctx)
+	// Publish boundary: from here on, neither the release nor the tag may be
+	// deleted by cleanup. A PublishRelease error does not guarantee the
+	// server did not process the publish.
+	cancelDeleteRelease()
+	cancelTagDelete()
+
+	return o.GithubClient.PublishRelease(ctx, o.repoOwner(), o.repoName(), o.MakeLatest, rel.ID)
 }
 
 func (o *Runner) uploadAssets(ctx context.Context, uploadURL string) error {

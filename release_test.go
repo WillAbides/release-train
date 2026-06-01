@@ -764,4 +764,127 @@ echo bar > "$ASSETS_DIR/bar.txt"
 			ChangeLevel:           changeLevelMinor,
 		}, got)
 	})
+
+	t.Run("pushTarget failure cleans up draft release and tag", func(t *testing.T) {
+		t.Parallel()
+		ctx := t.Context()
+		repos := setupGit(t)
+		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
+			&github.CommitComparison{
+				AheadBy: 1,
+				Commits: []string{repos.taggedCommits["head"]},
+			}, nil,
+		)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["head"], 0).Return(
+			&github.CommitComparison{AheadBy: 0}, nil,
+		)
+		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
+			[]github.BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelBreaking}}}, nil,
+		)
+		githubClient.EXPECT().GenerateReleaseNotes(gomock.Any(), "orgName", "repoName", "v3.0.0", "v2.0.0").Return(
+			"release notes", nil,
+		)
+		githubClient.EXPECT().CreateRelease(gomock.Any(), "orgName", "repoName", "v3.0.0", "release notes", false).Return(
+			&github.RepoRelease{
+				ID:        1,
+				UploadURL: "localhost",
+			}, nil,
+		)
+		// The release is still a draft when pushTarget fails, so DeleteRelease
+		// cleanup runs safely. No PublishRelease expectation: the publish must
+		// not be attempted when pushTarget fails.
+		githubClient.EXPECT().DeleteRelease(gomock.Any(), "orgName", "repoName", int64(1)).Return(nil)
+		preHook := `
+#!/bin/sh
+set -e
+git config user.name 'tester'
+git config user.email 'tester'
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+echo "bake" > bake.txt
+git add bake.txt > /dev/null
+git commit -m "bake commit" > /dev/null
+echo "$current_branch" > "$RELEASE_TARGET"
+`
+		runner := &Runner{
+			CheckoutDir:   repos.clone,
+			Ref:           repos.taggedCommits["head"],
+			TagPrefix:     "v",
+			Repo:          "orgName/repoName",
+			PushRemote:    "origin",
+			GithubClient:  githubClient,
+			CreateRelease: true,
+			PreTagHook:    preHook,
+			TempDir:       t.TempDir(),
+		}
+		_, err := runner.run(ctx)
+		// Push to a checked-out branch of a non-bare origin is rejected by
+		// the default receive.denyCurrentBranch=refuse setting.
+		require.ErrorContains(t, err, "remote rejected")
+		ok, err := localTagExists(ctx, repos.origin, "v3.0.0")
+		require.NoError(t, err)
+		require.False(t, ok, "tag must be cleaned up after pushTarget failure")
+	})
+
+	t.Run("PublishRelease failure does not delete release or tag", func(t *testing.T) {
+		t.Parallel()
+		ctx := t.Context()
+		repos := setupGit(t)
+		// Allow pushes to origin's currently checked-out branch so pushTarget
+		// succeeds and we reach PublishRelease.
+		mustRunCmd(t, repos.origin, "git", "config", "receive.denyCurrentBranch", "ignore")
+		githubClient := mocks.NewMockGithubClient(gomock.NewController(t))
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", "v2.0.0", repos.taggedCommits["head"], -1).Return(
+			&github.CommitComparison{
+				AheadBy: 1,
+				Commits: []string{repos.taggedCommits["head"]},
+			}, nil,
+		)
+		githubClient.EXPECT().CompareCommits(gomock.Any(), "orgName", "repoName", mergeSha, repos.taggedCommits["head"], 0).Return(
+			&github.CommitComparison{AheadBy: 0}, nil,
+		)
+		githubClient.EXPECT().ListMergedPullsForCommit(gomock.Any(), "orgName", "repoName", repos.taggedCommits["head"]).Return(
+			[]github.BasePull{{Number: 2, MergeCommitSha: mergeSha, Labels: []string{labelBreaking}}}, nil,
+		)
+		githubClient.EXPECT().GenerateReleaseNotes(gomock.Any(), "orgName", "repoName", "v3.0.0", "v2.0.0").Return(
+			"release notes", nil,
+		)
+		githubClient.EXPECT().CreateRelease(gomock.Any(), "orgName", "repoName", "v3.0.0", "release notes", false).Return(
+			&github.RepoRelease{
+				ID:        1,
+				UploadURL: "localhost",
+			}, nil,
+		)
+		githubClient.EXPECT().PublishRelease(gomock.Any(), "orgName", "repoName", "", int64(1)).Return(errors.New("publish failed"))
+		// No DeleteRelease expectation: once PublishRelease has been attempted
+		// the cleanup must not delete the release. The mock controller fails
+		// the test if DeleteRelease is invoked.
+		preHook := `
+#!/bin/sh
+set -e
+git config user.name 'tester'
+git config user.email 'tester'
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+echo "bake" > bake.txt
+git add bake.txt > /dev/null
+git commit -m "bake commit" > /dev/null
+echo "$current_branch" > "$RELEASE_TARGET"
+`
+		runner := &Runner{
+			CheckoutDir:   repos.clone,
+			Ref:           repos.taggedCommits["head"],
+			TagPrefix:     "v",
+			Repo:          "orgName/repoName",
+			PushRemote:    "origin",
+			GithubClient:  githubClient,
+			CreateRelease: true,
+			PreTagHook:    preHook,
+			TempDir:       t.TempDir(),
+		}
+		_, err := runner.run(ctx)
+		require.ErrorContains(t, err, "publish failed")
+		ok, err := localTagExists(ctx, repos.origin, "v3.0.0")
+		require.NoError(t, err)
+		require.True(t, ok, "tag must not be deleted once PublishRelease has been attempted")
+	})
 }
