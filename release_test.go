@@ -887,5 +887,4 @@ echo "$current_branch" > "$RELEASE_TARGET"
 		require.NoError(t, err)
 		require.True(t, ok, "tag must not be deleted once PublishRelease has been attempted")
 	})
-
 }
